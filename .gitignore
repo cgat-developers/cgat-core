@@ -1,0 +1,55 @@
+*.py[cod]
+.*
+*.log
+
+# exclude recipes - add manuall
+recipes
+
+
+# Vim auxiliary files
+*~
+*.swp
+
+# C extensions
+*.so
+_*.c
+_*.pyxbldc
+CGAT/Components/Components.cpp
+CGAT/NCL/cnestedlist.c
+CGAT/Nubiscan/cnubiscan.c
+
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+doc/_build
+doc/_static
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+_test_scripts.yaml
+_test_commandline.yaml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
