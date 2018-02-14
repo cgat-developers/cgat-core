@@ -11,11 +11,11 @@ import sqlite3
 from CGATCore import Database as Database
 import CGATCore.Experiment as E
 
-from CGATCore.IOTools import touchFile, snip
+from CGATCore.IOTools import touch_file, snip
 
-from CGATCore.Pipeline.Execution import buildStatement, run
-from CGATCore.Pipeline.Files import getTempFile
-from CGATCore.Pipeline.Parameters import getParams
+from CGATCore.Pipeline.Execution import interpolate_statement, run
+from CGATCore.Pipeline.Files import get_temp_file
+from CGATCore.Pipeline.Parameters import get_params
 
 
 def tablequote(track):
@@ -108,7 +108,7 @@ def build_load_statement(tablename, retry=True, options=""):
     --table=%(tablename)s
     ''')
 
-    load_statement = buildStatement(**locals())
+    load_statement = interpolate_statement(statement, **locals())
 
     return load_statement
 
