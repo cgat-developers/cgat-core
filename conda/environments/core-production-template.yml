@@ -1,0 +1,39 @@
+
+name: cgat-c
+
+channels:
+- bioconda
+- conda-forge
+- defaults
+
+dependencies:
+# python dependencies
+- python
+# WARNING: bx-python is Py2 only but "pip install bx-python" works with Py3
+- alignlib-lite
+- biopython
+- cython
+- future
+- matplotlib
+- numpy
+- pandas
+- pybedtools
+- pybigwig
+- pysam
+- python-lzo
+- pyyaml
+- rpy2
+- scipy
+- setuptools
+- six
+# Misc dependencies
+- bedtools
+- coreutils
+- gcc
+- grep
+- libpng
+- nomkl
+- ucsc-bedgraphtobigwig
+- ucsc-wigtobigwig
+- zlib
+
