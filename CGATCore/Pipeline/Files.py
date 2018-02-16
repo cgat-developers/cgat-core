@@ -10,9 +10,7 @@ import tempfile
 
 import CGATCore.IOTools as IOTools
 import CGATCore.Experiment as E
-
-# Set from Pipeline.py
-PARAMS = {}
+from CGATCore.Pipeline.Parameters import get_params
 
 
 def get_temp_file(dir=None, shared=False):
@@ -39,9 +37,9 @@ def get_temp_file(dir=None, shared=False):
     '''
     if dir is None:
         if shared:
-            dir = PARAMS['shared_tmpdir']
+            dir = get_params()['shared_tmpdir']
         else:
-            dir = PARAMS['tmpdir']
+            dir = get_params()['tmpdir']
 
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -106,9 +104,9 @@ def get_temp_dir(dir=None, shared=False, clear=False):
     '''
     if dir is None:
         if shared:
-            dir = PARAMS['shared_tmpdir']
+            dir = get_params()['shared_tmpdir']
         else:
-            dir = PARAMS['tmpdir']
+            dir = get_params()['tmpdir']
 
     if not os.path.exists(dir):
         os.makedirs(dir)

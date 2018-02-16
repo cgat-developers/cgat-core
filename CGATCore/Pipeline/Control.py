@@ -46,7 +46,7 @@ except RuntimeError:
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
 import CGATCore.Requirements as Requirements
-from CGATCore.Pipeline.Parameters import input_validation
+from CGATCore.Pipeline.Parameters import input_validation, get_params
 from CGATCore.Pipeline.Utils import get_caller, get_caller_locals
 from CGATCore.Pipeline.Execution import execute, start_session,\
     close_session
@@ -86,9 +86,6 @@ def cached_os_path_relpath(filename):
 def cached_os_path_islink(filename):
     return SAVED_OS_PATH_ISLINK(filename)
 
-
-# Set from Pipeline.py
-PARAMS = {}
 
 # global options and arguments - set but currently not
 # used as relevant sections are entered into the PARAMS
@@ -159,7 +156,7 @@ def print_config_files():
         Priority 1 is the highest.
     '''
 
-    filenames = PARAMS['pipeline_ini']
+    filenames = get_params()['pipeline_ini']
     print("\n List of .ini files used to configure the pipeline")
     s = len(filenames)
     if s == 0:
@@ -266,7 +263,7 @@ def clean(files, logfile):
               'st_mode', 'st_mtime', 'st_nlink',
               'st_rdev', 'st_size', 'st_uid')
 
-    dry_run = PARAMS.get("dryrun", False)
+    dry_run = get_params().get("dryrun", False)
 
     if not dry_run:
         if not os.path.exists(logfile):
@@ -360,7 +357,7 @@ def peek_parameters(workingdir,
     # Attempt to locate directory with pipeline source code. This is a
     # patch as pipelines might be called within the repository
     # directory or from an installed location
-    dirname = PARAMS["pipelinedir"]
+    dirname = get_params()["pipelinedir"]
 
     # called without a directory, use current directory
     if dirname == "":
@@ -386,9 +383,8 @@ def peek_parameters(workingdir,
     # patch for the "config" target - use default
     # pipeline directory if directory is not specified
     # working dir is set to "?!"
-    if ("config" in sys.argv or "check" in sys.argv or "clone" in sys.argv
-        and workingdir == "?!"):
-        workingdir = os.path.join(PARAMS.get("pipelinedir"),
+    if ("config" in sys.argv or "check" in sys.argv or "clone" in sys.argv and workingdir == "?!"):
+        workingdir = os.path.join(get_params().get("pipelinedir"),
                                   IOTools.snip(pipeline, ".py"))
 
     if not os.path.exists(workingdir):
@@ -557,7 +553,7 @@ def get_version():
     # try git:
     try:
         stdout, stderr = execute(
-            "git rev-parse HEAD", cwd=PARAMS["scriptsdir"])
+            "git rev-parse HEAD", cwd=get_params()["scriptsdir"])
     except:
         stdout = "NA"
     return stdout
@@ -1065,12 +1061,12 @@ def main(options, args, pipeline=None):
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     logger = logging.getLogger("daisy.pipeline")
 
-    logger.info("started in workingdir: {}".format(PARAMS.get("workingdir")))
+    logger.info("started in workingdir: {}".format(get_params().get("workingdir")))
     # At this point, the PARAMS dictionary has already been
     # built. It now needs to be updated with selected command
     # line options as these should always take precedence over
     # configuration files.
-    update_params_with_commandline_options(PARAMS, options)
+    update_params_with_commandline_options(get_params(), options)
 
     version = get_version()
 
@@ -1090,16 +1086,16 @@ def main(options, args, pipeline=None):
     # create local scratch if it does not already exists. Note that
     # directory itself will be not deleted while its contents should
     # be cleaned up.
-    if not os.path.exists(PARAMS["tmpdir"]):
+    if not os.path.exists(get_params()["tmpdir"]):
         logger.warn("local temporary directory {} did not exist - created".format(
-            PARAMS["tmpdir"]))
+            get_params()["tmpdir"]))
         try:
-            os.makedirs(PARAMS["tmpdir"])
+            os.makedirs(get_params()["tmpdir"])
         except OSError:
             # file exists
             pass
 
-    logger.debug("temporary directory is {}".format(PARAMS["tmpdir"]))
+    logger.debug("temporary directory is {}".format(get_params()["tmpdir"]))
 
     # set multiprocess to a sensible setting if there is no cluster
     run_on_cluster = HAS_DRMAA is True and not options.without_cluster
@@ -1112,7 +1108,7 @@ def main(options, args, pipeline=None):
 
     # see inputValidation function in Parameters.py
     if options.input_validation:
-        input_validation(PARAMS, sys.argv[0])
+        input_validation(get_params(), sys.argv[0])
 
     if options.pipeline_action == "check":
         counter, requirements = Requirements.checkRequirementsFromAllModules()
@@ -1171,9 +1167,9 @@ def main(options, args, pipeline=None):
                         # create the session proxy
                         start_session()
 
-                    logger.info("code location: {}".format(PARAMS["scriptsdir"]))
+                    logger.info("code location: {}".format(get_params()["scriptsdir"]))
                     logger.info("code version: {}".format(version))
-                    logger.info("working directory is: {}".format(PARAMS["workingdir"]))
+                    logger.info("working directory is: {}".format(get_params()["workingdir"]))
                     ruffus.pipeline_run(
                         options.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
@@ -1277,12 +1273,13 @@ def main(options, args, pipeline=None):
                 raise
 
     elif options.pipeline_action == "dump":
-        options.stdout.write((json.dumps(PARAMS)) + "\n")
+        options.stdout.write((json.dumps(get_params())) + "\n")
 
     elif options.pipeline_action == "printconfig":
         E.info("printing out pipeline parameters: ")
-        for k in sorted(PARAMS):
-            print(k, "=", PARAMS[k])
+        p = get_params()
+        for k in sorted(get_params()):
+            print(k, "=", p[k])
         print_config_files()
 
     elif options.pipeline_action == "config":

@@ -170,7 +170,7 @@ def input_validation(PARAMS, pipeline_script=""):
     E.info('''input Validation starting''')
     E.info('''checking 3rd party dependencies''')
 
-    ### check 3rd party dependencies ###
+    # check 3rd party dependencies
     if len(pipeline_script) > 0:
         # this import requires the PYTHONPATH in the following order
         # PYTHONPATH=<src>/CGATPipelines:<src>/cgat
@@ -214,11 +214,7 @@ def input_validation(PARAMS, pipeline_script=""):
             num_questions += 1
 
         # validate input files listed in PARAMS
-        if (value.startswith("/") \
-           or value.endswith(".gz") \
-           or value.endswith(".gtf")) \
-           and "," not in value:
-
+        if (value.startswith("/") or value.endswith(".gz") or value.endswith(".gtf")) and "," not in value:
             if not os.access(value, os.R_OK):
                 E.warn('\n"{}": "{}" is not readable'.format(key, value))
 

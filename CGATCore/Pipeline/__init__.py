@@ -200,20 +200,8 @@ from CGATCore.Pipeline.Execution import *
 from CGATCore.Pipeline.Utils import *
 from CGATCore.Pipeline.Parameters import *
 
-
-# # import submodules
-from . import Execution as Execution
-from . import Control as Control
-from . import Files as Files
-from . import Parameters as Parameters
-
-# broadcast parameters, take from Parameters.py
-PARAMS = Parameters.PARAMS
-
-# # and drop PARAMS/CONFIG variables into the submodules
-Control.PARAMS = PARAMS
-Execution.PARAMS = PARAMS
-Files.PARAMS = PARAMS
+# PARAMS is defined in Parameters.py
+# PARAMS = get_params()
 
 # set working directory at process launch to prevent repeated calls to
 # os.getcwd failing if network is busy
