@@ -31,7 +31,7 @@ import CGATCore.IOTools as IOTools
 
 from CGATCore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
 from CGATCore.Pipeline.Files import get_temp_filename, get_temp_dir
-from CGATCore.Pipeline.Parameters import substitute_parameters
+from CGATCore.Pipeline.Parameters import substitute_parameters, get_params
 from CGATCore.Pipeline.Cluster import setup_drmaa_job_template, get_drmaa_job_stdout_stderr
 
 
@@ -43,9 +43,6 @@ except RuntimeError:
     HAS_DRMAA = False
 except ImportError:
     HAS_DRMAA = False
-
-# Set from Pipeline.py
-PARAMS = {}
 
 # global drmaa session
 GLOBAL_SESSION = None
@@ -128,8 +125,8 @@ def file_is_mounted(filename):
     A file is likely to be mounted if it is located
     inside a subdirectory of the local scratch directory.
     """
-    if PARAMS["mount_point"]:
-        return os.path.abspath(filename).startswith(PARAMS["mount_point"])
+    if get_params()["mount_point"]:
+        return os.path.abspath(filename).startswith(get_params()["mount_point"])
     else:
         return False
 
@@ -138,7 +135,7 @@ def get_mounted_location(filename):
     """return location of filename within mounted directory
 
     """
-    return os.path.abspath(filename)[len(PARAMS["mount_point"]):]
+    return os.path.abspath(filename)[len(get_params()["mount_point"]):]
 
 
 @E.cached_function
@@ -181,13 +178,13 @@ def execute(statement, **kwargs):
     if not kwargs:
         kwargs = get_caller_locals()
 
-    kwargs = dict(list(PARAMS.items()) + list(kwargs.items()))
+    kwargs = dict(list(get_params().items()) + list(kwargs.items()))
 
     logger = get_logger()
     logger.debug("running %s" % (statement % kwargs))
 
     if "cwd" not in kwargs:
-        cwd = PARAMS["workingdir"]
+        cwd = get_params()["workingdir"]
     else:
         cwd = kwargs["cwd"]
 
@@ -266,8 +263,8 @@ def interpolate_statement(statement, kwargs):
         statement = statement[:-1]
 
     # mark arvados mount points in statement
-    if PARAMS.get("mount_point", None):
-        statement = re.sub(PARAMS["mount_point"], "arv=", statement)
+    if get_params().get("mount_point", None):
+        statement = re.sub(get_params()["mount_point"], "arv=", statement)
 
     return statement
 
@@ -442,7 +439,7 @@ class Executor(object):
             self.job_memory = kwargs['job_memory']
             self.job_total_memory = self.job_memory * self.job_threads
         else:
-            self.job_memory = PARAMS["cluster"].get("memory_default", "4G")
+            self.job_memory = get_params()["cluster"].get("memory_default", "4G")
             self.job_total_memory = self.job_memory * self.job_threads
 
         self.ignore_pipe_errors = kwargs.get('ignore_pipe_errors', False)
@@ -464,7 +461,7 @@ class Executor(object):
 
         self.options = kwargs
 
-        self.workingdir = PARAMS["workingdir"]
+        self.workingdir = get_params()["workingdir"]
 
         self.shellfile = kwargs.get("shell_logfile", "shell.log")
         if self.shellfile:
@@ -504,7 +501,7 @@ class Executor(object):
         # directory itself will be not deleted while its contents should
         # be cleaned up.
         setup_cmds.append("umask 002")
-        setup_cmds.append("mkdir -p {}".format(PARAMS["tmpdir"]))
+        setup_cmds.append("mkdir -p {}".format(get_params()["tmpdir"]))
 
         if "arv=" in statement:
 
@@ -1233,7 +1230,7 @@ def run(statement, **kwargs):
     logger = get_logger()
 
     # combine options using priority
-    options = dict(list(PARAMS.items()))
+    options = dict(list(get_params().items()))
     caller_options = get_caller_locals()
 
     options.update(list(caller_options.items()))
@@ -1339,7 +1336,7 @@ def submit(module,
     '''
 
     if not job_memory:
-        job_memory = PARAMS.get("cluster_memory_default", "2G")
+        job_memory = get_params().get("cluster_memory_default", "2G")
 
     if type(infiles) in (list, tuple):
         infiles = " ".join(["--input=%s" % x for x in infiles])

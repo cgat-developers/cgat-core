@@ -62,7 +62,7 @@ setup(
     keywords="computational genomics",
     long_description='CGAT : the Computational Genomics Analysis Toolkit',
     classifiers=[_f for _f in classifiers.split("\n") if _f],
-    url="http://www.cgat.org/cgat/Tools/",
+    url="https://github.com/cgat-developers/cgat-core",
     # package contents
     packages=cgat_packages,
     package_dir=cgat_package_dirs,
