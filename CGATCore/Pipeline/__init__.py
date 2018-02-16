@@ -190,13 +190,10 @@ Reference
 
 '''
 import os
-import sys
-import pickle
 
 # import submodules into namespace
 from CGATCore.Pipeline.Control import *
 from CGATCore.Pipeline.Database import *
-from CGATCore.Pipeline.Local import *
 from CGATCore.Pipeline.Files import *
 from CGATCore.Pipeline.Cluster import *
 from CGATCore.Pipeline.Execution import *
@@ -204,29 +201,16 @@ from CGATCore.Pipeline.Utils import *
 from CGATCore.Pipeline.Parameters import *
 
 
-from CGATCore import Experiment as E
-
-# import into namespace for backwards compatibility
-from CGATCore.IOTools import cloneFile as clone
-from CGATCore.IOTools import touchFile as touch
-from CGATCore.IOTools import snip as snip
-
-# import submodules
-from . import Local as Local
+# # import submodules
 from . import Execution as Execution
 from . import Control as Control
-from . import Database as Database
 from . import Files as Files
 from . import Parameters as Parameters
 
-# broadcast parameters and config object, take from
-# Parameters.py
+# broadcast parameters, take from Parameters.py
 PARAMS = Parameters.PARAMS
-CONFIG = Parameters.CONFIG
 
-# and drop PARAMS/CONFIG variables into the submodules
-Local.CONFIG = CONFIG
-Local.PARAMS = PARAMS
+# # and drop PARAMS/CONFIG variables into the submodules
 Control.PARAMS = PARAMS
 Execution.PARAMS = PARAMS
 Files.PARAMS = PARAMS
@@ -236,179 +220,62 @@ Files.PARAMS = PARAMS
 PARAMS["workingdir"] = os.getcwd()
 
 
-def run_report(clean=True,
-               with_pipeline_status=True,
-               pipeline_status_format="svg"):
-    '''run CGATreport.
-
-    This will also run ruffus to create an svg image of the pipeline
-    status unless *with_pipeline_status* is set to False. The image
-    will be saved into the export directory.
-
-    '''
-
-    if with_pipeline_status:
-        targetdir = PARAMS["exportdir"]
-        if not os.path.exists(targetdir):
-            os.mkdir(targetdir)
-
-        pipeline_printout_graph(
-            os.path.join(
-                targetdir,
-                "pipeline.%s" % pipeline_status_format),
-            pipeline_status_format,
-            ["full"],
-            checksum_level=PARAMS["ruffus_checksums_level"]
-        )
-
-    dirname, basename = os.path.split(getCaller().__file__)
-
-    report_engine = PARAMS.get("report_engine", "cgatreport")
-    assert report_engine in ('sphinxreport', 'cgatreport')
-
-    docdir = os.path.join(dirname, "pipeline_docs", snip(basename, ".py"))
-    themedir = os.path.join(dirname, "pipeline_docs", "themes")
-    relpath = os.path.relpath(docdir)
-    trackerdir = os.path.join(docdir, "trackers")
-
-    # warning: memory gets multiplied by threads, so set it not too
-    # high
-    job_memory = "1G"
-    job_threads = PARAMS["report_threads"]
-
-    # use a fake X display in order to avoid windows popping up
-    # from R plots.
-    xvfb_command = IOTools.which("xvfb-run")
-
-    # permit multiple servers using -a option
-    if xvfb_command:
-        xvfb_command += " -a "
-    else:
-        xvfb_command = ""
-
-    # if there is no DISPLAY variable set, xvfb runs, but
-    # exits with error when killing process. Thus, ignore return
-    # value.
-    # print os.getenv("DISPLAY"), "command=", xvfb_command
-    if not os.getenv("DISPLAY"):
-        erase_return = "|| true"
-    else:
-        erase_return = ""
-
-    # in the current version, xvfb always returns with an error, thus
-    # ignore these.
-    erase_return = "|| true"
-
-    if clean:
-        clean = """rm -rf report _cache _static;"""
-    else:
-        clean = ""
-
-    # with sphinx >1.3.1 the PYTHONPATH needs to be set explicitely as
-    # the virtual environment seems to be stripped. It is thus set to
-    # the contents of the current sys.path
-    syspath = ":".join(sys.path)
-
-    statement = '''
-    %(clean)s
-    (export SPHINX_DOCSDIR=%(docdir)s;
-    export SPHINX_THEMEDIR=%(themedir)s;
-    export PYTHONPATH=%(syspath)s;
-    %(xvfb_command)s
-    %(report_engine)s-build
-    --num-jobs=%(report_threads)s
-    sphinx-build
-    -b html
-    -d %(report_doctrees)s
-    -c .
-    -j %(report_threads)s
-    %(docdir)s %(report_html)s
-    >& report.log %(erase_return)s )
-    '''
-
-    run()
-
-    E.info('the report is available at %s' % os.path.abspath(
-        os.path.join(PARAMS['report_html'], "contents.html")))
-
-
-def publish_notebooks():
-    '''publish report into web directory.'''
-
-    dirs = getProjectDirectories()
-
-    notebookdir = dirs['notebookdir']
-    exportdir = dirs['exportdir']
-    exportnotebookdir = os.path.join(exportdir, "notebooks")
-
-    if not os.path.exists(exportnotebookdir):
-        os.makedirs(exportnotebookdir)
-
-    statement = '''
-    cd %(exportnotebookdir)s;
-    ipython nbconvert
-    %(notebookdir)s/*.ipynb
-    --to html
-    ''' % locals()
-
-    E.run(statement)
-
-__all__ = [
-    # backwards incompatibility
-    "clone",
-    "touch",
-    "snip",
-    # Execution.py
-    "run",
-    "execute",
-    "shellquote",
-    "buildStatement",
-    "submit",
-    "joinStatements",
-    "cluster_runnable",
-    "run_pickled",
-    # Database.py
-    "tablequote",
-    "toTable",
-    "build_load_statement",
-    "load",
-    "concatenateAndLoad",
-    "mergeAndLoad",
-    "connect",
-    "createView",
-    "getDatabaseName",
-    "importFromIterator",
-    # Utils.py
-    "add_doc",
-    "isTest",
-    "getCallerLocals",
-    "getCaller",
-    # Control.py
-    "main",
-    "peekParameters",
-    # Files.py
-    "getTempFile",
-    "getTempDir",
-    "getTempFilename",
-    "checkScripts",
-    "checkExecutables",
-    # Local.py
-    "run_report",
-    "publish_report",
-    "publish_notebooks",
-    "publish_tracks",
-    "getProjectDirectories",
-    "getPipelineName",
-    "getProjectId",
-    "getProjectName",
-    "isCGAT",
-    # Parameters.py
-    "getParameters",
-    "loadParameters",
-    "matchParameter",
-    "substituteParameters",
-    "asList",
-    "checkParameter",
-    "isTrue",
-    "configToDictionary",
-]
+# __all__ = [
+#     # backwards incompatibility
+#     "clone",
+#     "touch",
+#     "snip",
+#     # Execution.py
+#     "run",
+#     "execute",
+#     "shellquote",
+#     "buildStatement",
+#     "submit",
+#     "joinStatements",
+#     "cluster_runnable",
+#     "run_pickled",
+#     # Database.py
+#     "tablequote",
+#     "toTable",
+#     "build_load_statement",
+#     "load",
+#     "concatenateAndLoad",
+#     "mergeAndLoad",
+#     "connect",
+#     "createView",
+#     "getDatabaseName",
+#     "importFromIterator",
+#     # Utils.py
+#     "add_doc",
+#     "isTest",
+#     "getCallerLocals",
+#     "getCaller",
+#     # Control.py
+#     "main",
+#     "peekParameters",
+#     # Files.py
+#     "getTempFile",
+#     "getTempDir",
+#     "getTempFilename",
+#     "checkScripts",
+#     "checkExecutables",
+#     # Local.py
+#     "run_report",
+#     "publish_report",
+#     "publish_notebooks",
+#     "publish_tracks",
+#     "getProjectDirectories",
+#     "getPipelineName",
+#     "getProjectId",
+#     "getProjectName",
+#     "isCGAT",
+#     # Parameters.py
+#     "getParameters",
+#     "loadParameters",
+#     "matchParameter",
+#     "substituteParameters",
+#     "asList",
+#     "checkParameter",
+#     "isTrue",
+#     "configToDictionary",
+# ]

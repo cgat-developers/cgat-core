@@ -40,8 +40,6 @@ import yaml
 from distutils.version import LooseVersion
 import CGATCore.IOTools as IOTools
 import CGATCore.Experiment as E
-from rpy2.robjects import r as R
-import rpy2.rinterface
 
 DEFINITIONS_FILE = "external_dependencies.txt"
 
@@ -134,74 +132,6 @@ class ToolChecker(RequirementChecker):
         return installed_version
 
 
-@E.cachedfunction
-def getRPackageList():
-    '''return a dictionary of installed R packages
-    mapping to their version.'''
-
-    a = R('''installed.packages(
-    fields=c("Package", "Version"))[,c("Package", "Version")]
-    ''')
-    b = R('''installed.packages(
-    fields=c("Package", "Version"))[,c("Version")]
-    ''')
-    return dict(list(zip(a, b)))
-
-
-class RPackageChecker(RequirementChecker):
-    '''checks if an R-package is installed and can
-    be loaded::
-
-       library(...)
-       packageVersion(...)
-
-    '''
-
-    def __init__(self, tool_definition):
-        self.tool_definition = tool_definition
-        self.checkinstalled = False
-
-    def isInstalled(self):
-        if self.checkinstalled is False:
-            try:
-                R('''suppressMessages(library(%s))''' %
-                  self.tool_definition['rpackage'])
-            except rpy2.rinterface.RRuntimeError:
-                return False
-        self.checkinstalled = True
-        return True
-
-    def getVersion(self):
-
-        self.isInstalled()
-        r = R('''packageVersion(%s)''' % self.tool_definition['rpackage'])
-        return r
-
-
-class RPackageQuickChecker(RequirementChecker):
-    '''check for an R package by simply testing the list of
-    installed packages using the following R snippet::
-
-       packinfo <- installed.packages (fields = c ("Package", "Version"))
-       packinfo["graphics",c("Package", "Version")]
-
-    This checker will not check if a package can be loaded
-    successfully.
-
-    '''
-
-    def __init__(self, tool_definition):
-        self.tool_definition = tool_definition
-
-    def isInstalled(self):
-        pl = getRPackageList()
-        return self.tool_definition['rpackage'] in pl
-
-    def getVersion(self):
-        pl = getRPackageList()
-        return pl[self.tool_definition['rpackage']]
-
-
 def checkRequirementsFromBlock(requirements, counter=None, location=""):
     """check if requirements for a script are satisfied
 
@@ -242,8 +172,6 @@ def checkRequirementsFromBlock(requirements, counter=None, location=""):
 
         if "executable" in tool_definition:
             checker = ToolChecker(tool_definition)
-        elif "rpackage" in tool_definition:
-            checker = RPackageQuickChecker(tool_definition)
         else:
             E.warn("%s: tool %s: invalid definition" % (location, tool))
             counter.invalid_definition += 1

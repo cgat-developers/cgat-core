@@ -1,52 +1,52 @@
-'''IOTools - tools for I/O operations
-==================================
+'''IOTools.py - Tools for I/O operations
+========================================
 
 This module contains utility functions for reading/writing from files.
 These include methods for
 
-* inspecting files, such as :func:`getFirstLine`, :func:`getLastLine`
-  and :func:`isEmpty`,
+* inspecting files, such as :func:`get_first_line`, :func:`get_last_line`
+  and :func:`is_empty`,
 
 * working with filenames, such as :func:`which` and :func:`snip`,
-  :func:`checkPresenceOfFiles`
+  :func:`check_presence_of_files`
 
-* manipulating file, such as :func:`openFile`, :func:`zapFile`,
-  :func:`cloneFile`, :func:`touchFile`, :func:`shadowFile`.
+* manipulating file, such as :func:`open_file`, :func:`zap_file`,
+  :func:`clone_file`, :func:`touch_file`.
 
 * converting values for input/output, such as :func:`val2str`,
-  :func:`str2val`, :func:`prettyPercent`, :func:`human2bytes`,
-  :func:`convertDictionary`.
+  :func:`str2val`, :func:`pretty_percent`, :func:`human2bytes`,
+  :func:`convert_dictionary_values`.
 
 * iterating over file contents, such as :func:`iterate`,
   :func:`iterator_split`,
 
 * creating lists/dictionaries from files, such as :func:`readMap` and
-  :func:`readList`, and
+  :func:`read_list`, and
 
 * working with file collections (see :class:`FilePool`).
 
-Reference
----------
+API
+---
 
 '''
 
+import contextlib
+import getpass
+import re
+import os
+import shutil
 import collections
 import glob
-import gzip
-import itertools
-import numpy
-import numpy.ma
-import os
-import re
-import shutil
 import stat
-import string
+import gzip
 import subprocess
-import sys
-import time
+import itertools
+import tempfile
+import paramiko
+import CGATCore.Experiment as E
 
 
-def getFirstLine(filename, nlines=1):
+def get_first_line(filename, nlines=1):
     """return the first line of a file.
 
     Arguments
@@ -68,7 +68,7 @@ def getFirstLine(filename, nlines=1):
     return line
 
 
-def getLastLine(filename, nlines=1, read_size=1024, encoding="utf-8"):
+def get_last_line(filename, nlines=1, read_size=1024, encoding="utf-8"):
     """return the last line of a file.
 
     This method works by working back in blocks of `read_size` until
@@ -112,7 +112,7 @@ def getLastLine(filename, nlines=1, read_size=1024, encoding="utf-8"):
     f.close()
 
 
-def getNumLines(filename, ignore_comments=True):
+def get_num_lines(filename, ignore_comments=True):
     """count number of lines in filename.
 
     Arguments
@@ -151,7 +151,7 @@ def getNumLines(filename, ignore_comments=True):
     return int(out.partition(b' ')[0])
 
 
-def isEmpty(filename):
+def is_empty(filename):
     """return True if file exists and is empty.
 
     Raises
@@ -165,7 +165,7 @@ def isEmpty(filename):
     return os.stat(filename)[stat.ST_SIZE] == 0
 
 
-def isComplete(filename):
+def is_complete(filename):
     '''return True if file exists and is complete.
 
     A file is complete if its last line starts
@@ -173,35 +173,43 @@ def isComplete(filename):
     '''
     if filename.endswith(".gz"):
         raise NotImplementedError(
-            'isComplete not implemented for compressed files')
-    if isEmpty(filename):
+            'is_complete not implemented for compressed files')
+    if is_empty(filename):
         return False
-    lastline = getLastLine(filename)
+    lastline = get_last_line(filename)
     return lastline.startswith("# job finished")
 
 
-def touchFile(filename, times=None):
+def touch_file(filename, mode=0o666, times=None, dir_fd=None, ref=None, **kwargs):
     '''update/create a sentinel file.
 
-    Compressed files (ending in .gz) are created
-    as empty 'gzip' files, i.e., with a header.
+    modified from: https://stackoverflow.com/questions/1158076/implement-touch-using-python
+
+    Compressed files (ending in .gz) are created as empty 'gzip'
+    files, i.e., with a header.
+
     '''
+    flags = os.O_CREAT | os.O_APPEND
     existed = os.path.exists(filename)
 
     if filename.endswith(".gz") and not existed:
         # this will automatically add a gzip header
-        fhandle = open(filename, 'a+b')
-        fhandle = gzip.GzipFile(filename, fileobj=fhandle)
-    else:
-        fhandle = open(filename, 'a')
+        with gzip.GzipFile(filename, "w") as fhandle:
+            pass
 
-    try:
-        os.utime(filename, times)
-    finally:
-        fhandle.close()
+    if ref:
+        stattime = os.stat(ref)
+        times = (stattime.st_atime, stattime.st_mtime)
+
+    with os.fdopen(os.open(
+            filename, flags=flags, mode=mode, dir_fd=dir_fd)) as fhandle:
+        os.utime(
+            fhandle.fileno() if os.utime in os.supports_fd else filename,
+            dir_fd=None if os.supports_fd else dir_fd,
+            **kwargs)
 
 
-def openFile(filename, mode="r", create_dir=False, encoding="utf-8"):
+def open_file(filename, mode="r", create_dir=False, encoding="utf-8"):
     '''open file called *filename* with mode *mode*.
 
     gzip - compressed files are recognized by the
@@ -233,40 +241,23 @@ def openFile(filename, mode="r", create_dir=False, encoding="utf-8"):
             os.makedirs(dirname)
 
     if ext.lower() in (".gz", ".z"):
-        if sys.version_info.major >= 3:
-            if mode == "r":
-                return gzip.open(filename, 'rt', encoding=encoding)
-            elif mode == "w":
-                return gzip.open(filename, 'wt', encoding=encoding)
-            elif mode == "a":
-                return gzip.open(filename, 'wt', encoding=encoding)
-        else:
-            return gzip.open(filename, mode)
+        if mode == "r":
+            return gzip.open(filename, 'rt', encoding=encoding)
+        elif mode == "w":
+            return gzip.open(filename, 'wt', encoding=encoding)
+        elif mode == "a":
+            return gzip.open(filename, 'wt', encoding=encoding)
     else:
         return open(filename, mode, encoding=encoding)
 
 
-def force_str(iterator, encoding="ascii"):
-    """iterate over lines in iterator and force to string"""
-    if sys.version_info.major >= 3:
-        for line in iterator:
-            yield line.decode(encoding)
-    else:
-        for line in iterator:
-            yield line
-
-
-def zapFile(filename, outfile=None):
+def zap_file(filename):
     '''replace *filename* with empty file.
 
     File attributes such as accession times are preserved.
 
     If the file is a link, the link will be broken and replaced with
     an empty file having the same attributes as the file linked to.
-
-    It also takes an optional outfile. If the outfile has zero byte,
-        it usually means there's an error in generating the outfile,
-        and it will throw an error and stop.
 
     Returns
     -------
@@ -276,10 +267,6 @@ def zapFile(filename, outfile=None):
        If the file was a link, the file being linked to.
 
     '''
-    # outfile as zero byte? Let's throw an error and stop
-    if outfile and os.path.getsize(outfile) == 0:
-        raise ValueError('%s has size zero!' % outfile)
-
     # stat follows times to links
     original = os.stat(filename)
 
@@ -305,7 +292,7 @@ def zapFile(filename, outfile=None):
     return original, linkdest
 
 
-def cloneFile(infile, outfile):
+def clone_file(infile, outfile):
     '''create a clone of ``infile`` named ``outfile``
     by creating a soft-link.
     '''
@@ -325,22 +312,13 @@ def cloneFile(infile, outfile):
         pass
 
 
-def shadowFile(infile, outfile):
-    '''move ```infile``` as ```outfile```, and
-    touch ```infile```.
-    This could be useful when one wants to skip
-    some steps in a pipeline.
-    Note that zapFile is not needed when shadowFile
-    is used
-    '''
-    if outfile != infile:
-        shutil.move(infile, outfile)
-        touchFile(infile)
-        # reset outfile's timestamp
-        time.sleep(1)
-        touchFile(outfile)
+def val2list(val):
+    '''ensure that val is a list.'''
+
+    if not isinstance(val, list):
+        return [val]
     else:
-        raise ValueError('Panic: infile and outfile names cannot be the same')
+        return val
 
 
 def val2str(val, format="%5.2f", na="na"):
@@ -348,9 +326,9 @@ def val2str(val, format="%5.2f", na="na"):
 
     If value does not fit format string, return "na"
     '''
-    if type(val) == int:
+    if isinstance(val, int):
         return format % val
-    elif type(val) == float:
+    elif isinstance(val, float):
         return format % val
 
     try:
@@ -360,7 +338,7 @@ def val2str(val, format="%5.2f", na="na"):
     return x
 
 
-def str2val(val, format="%5.2f", na="na", list_detection=False):
+def str2val(val, na="na", list_detection=False):
     """guess type (int, float) of value.
 
     If `val` is neither int nor float, the value
@@ -377,7 +355,12 @@ def str2val(val, format="%5.2f", na="na", list_detection=False):
             try:
                 x = float(v)
             except ValueError:
-                return v
+                if v.lower() == "true":
+                    return True
+                elif v.lower() == "false":
+                    return False
+                else:
+                    return v
         return x
 
     if list_detection and "," in val:
@@ -386,16 +369,16 @@ def str2val(val, format="%5.2f", na="na", list_detection=False):
         return _convert(val)
 
 
-def prettyPercent(numerator, denominator, format="%5.2f", na="na"):
+def pretty_percent(numerator, denominator, format="%5.2f", na="na"):
     """output a percent value or "na" if not defined"""
     try:
         x = format % (100.0 * numerator / denominator)
-    except (ValueError, ZeroDivisionError):
-        x = "na"
+    except (ValueError, ZeroDivisionError, TypeError):
+        x = na
     return x
 
 
-def prettyString(val):
+def pretty_string(val):
     '''output val or na if val is None'''
     if val is not None:
         return val
@@ -412,8 +395,8 @@ def which(program):
        The full path to the program. Returns None if not found.
 
     """
-    # see http://stackoverflow.com/questions/377017/test-if-
-    #  executable-exists-in-python
+    # see http://stackoverflow.com/questions/377017/
+    #            test-if-executable-exists-in-python
 
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -505,20 +488,32 @@ def snip(filename, extension=None, alt_extension=None,
     extension.
 
     If `extension` is given, make sure that filename has the
-    extension (or `alt_extension`).
+    extension (or `alt_extension`). Both extension or alt_extension
+    can be list of extensions.
 
     If `strip_path` is set to true, the path is stripped from the file
     name.
 
     '''
+    if extension is None:
+        extension = []
+    elif isinstance(extension, str):
+        extension = [extension]
+
+    if alt_extension is None:
+        alt_extension = []
+    elif isinstance(alt_extension, str):
+        alt_extension = [alt_extension]
+
     if extension:
-        if filename.endswith(extension):
-            root = filename[:-len(extension)]
-        elif alt_extension and filename.endswith(alt_extension):
-            root = filename[:-len(alt_extension)]
+        for ext in extension + alt_extension:
+            if filename.endswith(ext):
+                root = filename[:-len(ext)]
+                break
         else:
             raise ValueError("'%s' expected to end in '%s'" %
-                             (filename, extension))
+                             (filename, ",".join(
+                                 extension + alt_extension)))
     else:
         root, ext = os.path.splitext(filename)
 
@@ -530,7 +525,7 @@ def snip(filename, extension=None, alt_extension=None,
     return snipped
 
 
-def checkPresenceOfFiles(filenames):
+def check_presence_of_files(filenames):
     """check for the presence/absence of files
 
     Parameters
@@ -549,6 +544,71 @@ def checkPresenceOfFiles(filenames):
         if not os.path.exists(filename):
             missing.append(filename)
     return missing
+
+SYMBOLS = {
+    'customary': ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'),
+    'customary_ext': ('byte', 'kilo', 'mega', 'giga',
+                      'tera', 'peta', 'exa',
+                      'zetta', 'iotta'),
+    'iec': ('Bi', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi'),
+    'iec_ext': ('byte', 'kibi', 'mebi', 'gibi', 'tebi', 'pebi', 'exbi',
+                'zebi', 'yobi'),
+}
+
+
+def bytes2human(n, format='%(value).1f%(symbol)s', symbols='customary'):
+    """
+    Convert n bytes into a human readable string based on format.
+    symbols can be either "customary", "customary_ext", "iec" or "iec_ext",
+    see: http://goo.gl/kTQMs
+
+      >>> bytes2human(0)
+      '0.0B'
+      >>> bytes2human(0.9)
+      '0.0B'
+      >>> bytes2human(1)
+      '1.0B'
+      >>> bytes2human(1.9)
+      '1.0B'
+      >>> bytes2human(1024)
+      '1.0K'
+      >>> bytes2human(1048576)
+      '1.0M'
+      >>> bytes2human(1099511627776127398123789121)
+      '909.5Y'
+
+      >>> bytes2human(9856, symbols="customary")
+      '9.6K'
+      >>> bytes2human(9856, symbols="customary_ext")
+      '9.6kilo'
+      >>> bytes2human(9856, symbols="iec")
+      '9.6Ki'
+      >>> bytes2human(9856, symbols="iec_ext")
+      '9.6kibi'
+
+      >>> bytes2human(10000, "%(value).1f %(symbol)s/sec")
+      '9.8 K/sec'
+
+      >>> # precision can be adjusted by playing with %f operator
+      >>> bytes2human(10000, format="%(value).5f %(symbol)s")
+      '9.76562 K'
+
+    Author: Giampaolo Rodola' <g.rodola [AT] gmail [DOT] com>
+    License: MIT
+    https://gist.github.com/leepro/9694638
+    """
+    n = int(n)
+    if n < 0:
+        raise ValueError("n < 0")
+    symbols = SYMBOLS[symbols]
+    prefix = {}
+    for i, s in enumerate(symbols[1:]):
+        prefix[s] = 1 << (i+1)*10
+    for symbol in reversed(symbols[1:]):
+        if n >= prefix[symbol]:
+            value = float(n) / prefix[symbol]
+            return format % locals()
+    return format % dict(symbol=symbols[0], value=n)
 
 
 def human2bytes(s):
@@ -581,19 +641,8 @@ def human2bytes(s):
 
     Author: Giampaolo Rodola' <g.rodola [AT] gmail [DOT] com>
     License: MIT
-
     https://gist.github.com/leepro/9694638
     """
-    SYMBOLS = {
-        'customary': ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'),
-        'customary_ext': ('byte', 'kilo', 'mega', 'giga',
-                          'tera', 'peta', 'exa',
-                          'zetta', 'iotta'),
-        'iec': ('Bi', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi'),
-        'iec_ext': ('byte', 'kibi', 'mebi', 'gibi', 'tebi', 'pebi', 'exbi',
-                    'zebi', 'yobi'),
-    }
-
     init = s
     num = ""
     while s and s[0:1].isdigit() or s[0:1] == '.':
@@ -613,12 +662,12 @@ def human2bytes(s):
             raise ValueError("can't interpret %r" % init)
     prefix = {sset[0]: 1}
     for i, s in enumerate(sset[1:]):
-        prefix[s] = 1 << (i + 1) * 10
+        prefix[s] = 1 << (i+1)*10
 
     return int(num * prefix[letter])
 
 
-def convertDictionary(d, map={}):
+def convert_dictionary_values(d, map={}):
     """convert string values in a dictionary to numeric types.
 
     Arguments
@@ -705,6 +754,52 @@ class nested_dict(collections.defaultdict):
                     yield (key,) + keykey, value
             else:
                 yield (key,), value
+
+
+def is_nested(container):
+    """return true if container is a nested data structure.
+
+    A nested data structure is a dict of dicts or a list of list,
+    but not a dict of list or a list of dicts.
+    """
+    for t in [collections.Mapping, list, tuple]:
+        if isinstance(container, t):
+            return any([isinstance(v, t) for v in container.values()])
+    return False
+
+
+def nested_iter(nested):
+    """iterate over the contents of a nested data structure.
+
+    The nesting can be done both as lists or as dictionaries.
+
+    Arguments
+    ---------
+    nested : dict
+        A nested dictionary
+
+    Yields
+    ------
+    pair: tuple
+        A container/key/value triple
+    """
+
+    if isinstance(nested, collections.Mapping):
+        for key, value in nested.items():
+            if not isinstance(value, collections.Mapping) and \
+               not isinstance(value, list):
+                yield nested, key, value
+            else:
+                for x in nested_iter(value):
+                    yield x
+    elif isinstance(nested, list):
+        for key, value in enumerate(nested):
+            if not isinstance(value, collections.Mapping) and \
+               not isinstance(value, list):
+                yield nested, key, value
+            else:
+                for x in nested_iter(value):
+                    yield x
 
 
 def flatten(l, ltypes=(list, tuple)):
@@ -811,6 +906,14 @@ class FilePool:
 
         self.mFiles = {}
         self.mOutputPattern = output_pattern
+
+        self.open = open
+
+        if output_pattern:
+            _, ext = os.path.splitext(output_pattern)
+            if ext.lower() in (".gz", ".z"):
+                self.open = gzip.open
+
         self.mCounts = collections.defaultdict(int)
         self.mHeader = header
         if force and output_pattern:
@@ -862,7 +965,7 @@ class FilePool:
 
         self.mHeader = header
 
-    def openFile(self, filename, mode="w"):
+    def open_file(self, filename, mode="w"):
         """open file.
 
         If file is in a new directory, create directories.
@@ -872,7 +975,7 @@ class FilePool:
             if dirname and not os.path.exists(dirname):
                 os.makedirs(dirname)
 
-        return openFile(filename, mode)
+        return self.open(filename, mode)
 
     def write(self, identifier, line):
         """write `line` to file specified by `identifier`"""
@@ -885,7 +988,7 @@ class FilePool:
                     f.close()
                 self.mFiles = {}
 
-            self.mFiles[filename] = openFile(filename, "a")
+            self.mFiles[filename] = self.open_file(filename, "a")
             if self.mHeader:
                 self.mFiles[filename].write(self.mHeader)
 
@@ -938,7 +1041,7 @@ class FilePoolMemory(FilePool):
             raise IOError("write on closed FilePool in close()")
 
         for filename, data in self.data.items():
-            f = openFile(filename, "a")
+            f = self.open_file(filename, "a")
             if self.mHeader:
                 f.write(self.mHeader)
             f.write("".join(data))
@@ -953,12 +1056,12 @@ class FilePoolMemory(FilePool):
         self.mCounts[filename] += 1
 
 
-def readMap(infile,
-            columns=(0, 1),
-            map_functions=(str, str),
-            both_directions=False,
-            has_header=False,
-            dtype=dict):
+def read_map(infile,
+             columns=(0, 1),
+             map_functions=(str, str),
+             both_directions=False,
+             has_header=True,
+             dtype=dict):
     """read a map (key, value pairs) from infile.
 
     If there are multiple entries for the same key, only the
@@ -1036,11 +1139,11 @@ def readMap(infile,
         return m
 
 
-def readList(infile,
-             column=0,
-             map_function=str,
-             map_category={},
-             with_title=False):
+def read_list(infile,
+              column=0,
+              map_function=str,
+              map_category={},
+              with_title=False):
     """read a list of values from infile.
 
     Arguments
@@ -1152,144 +1255,7 @@ def readMultiMap(infile,
         return m
 
 
-def readMatrix(infile, dtype=numpy.float):
-    '''read a numpy matrix from infile.
-
-    return tuple of matrix, row_headers, col_headers
-    '''
-
-    lines = [l for l in infile.readlines() if not l.startswith("#")]
-    nrows = len(lines) - 1
-    col_headers = lines[0][:-1].split("\t")[1:]
-    ncols = len(col_headers)
-    matrix = numpy.zeros((nrows, ncols), dtype=dtype)
-    row_headers = []
-
-    for row, l in enumerate(lines[1:]):
-        data = l[:-1].split("\t")
-        row_headers.append(data[0])
-        matrix[row] = numpy.array(data[1:], dtype=dtype)
-
-    return matrix, row_headers, col_headers
-
-
-def writeMatrix(outfile, matrix, row_headers, col_headers, row_header=""):
-    '''write a numpy matrix to outfile.
-
-    *row_header* gives the title of the rows
-    '''
-
-    outfile.write("%s\t%s\n" % (row_header, "\t".join(col_headers)))
-    for x, row in enumerate(matrix):
-        assert len(row) == len(col_headers)
-        outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))))
-
-
-def readTable(file,
-              separator="\t",
-              numeric_type=numpy.float,
-              take="all",
-              headers=True,
-              truncate=None,
-              cumulate_out_of_range=True,
-              ):
-    """read a table of values.
-
-    If cumulate_out_of_range is set to true, the terminal bins will
-    contain the cumulative values of bins out of range.
-
-    .. note:: Deprecated
-       use pandas dataframes instead
-
-    """
-
-    lines = [x for x in file.readlines() if x[0] != "#"]
-
-    if len(lines) == 0:
-        return None, []
-
-    if take == "all":
-        num_cols = len(string.split(lines[0][:-1], "\t"))
-        take = list(range(0, num_cols))
-    else:
-        num_cols = len(take)
-
-    if headers:
-        headers = lines[0][:-1].split("\t")
-        headers = [headers[x] for x in take]
-        del lines[0]
-
-    num_rows = len(lines)
-    matrix = numpy.ma.masked_array(
-        numpy.zeros((num_rows, num_cols), numeric_type))
-
-    if truncate:
-        min_row, max_row = truncate
-
-    nrow = 0
-    min_data = [0] * num_cols
-    max_data = None
-    for l in lines:
-        data = l[:-1].split("\t")
-        data = [data[x] for x in take]
-
-        # try conversion. Unparseable fields set to missing_value
-        for x in range(len(data)):
-            try:
-                data[x] = float(data[x])
-            except ValueError:
-                data[x] = numpy.ma.masked
-
-        if truncate is not None:
-            if data[0] < min_row:
-                if cumulate_out_of_range:
-                    for x in range(1, num_cols):
-                        min_data[x] += data[x]
-                continue
-            elif data[0] >= max_row:
-                if max_data is None:
-                    max_data = [0] * num_cols
-                    max_data[0] = max_row
-                for x in range(1, num_cols):
-                    try:
-                        max_data[x] += data[x]
-                    except TypeError:
-                        # missing values cause type errors
-                        continue
-                continue
-            elif min_row is not None:
-                if cumulate_out_of_range:
-                    for x in range(0, num_cols):
-                        try:
-                            min_data[x] += data[x]
-                        except TypeError:
-                            # missing values cause type errors
-                            continue
-                    else:
-                        min_data = data
-                data = min_data
-                min_row = None
-
-        # copy values into matrix
-        # this is a bit clumsy, but missing values
-        # cause an error otherwise
-        for x in range(len(data)):
-            matrix[nrow, x] = data[x]
-
-        nrow += 1
-
-    if truncate is not None:
-        if cumulate_out_of_range:
-            if max_data is not None:
-                matrix[nrow] = max_data
-
-        # truncate matrix
-        matrix = matrix[0:nrow + 1, 0:num_cols]
-
-    return matrix, headers
-
-
-def writeTable(outfile, table, columns=None, fillvalue=""):
+def write_table(outfile, table, columns=None, fillvalue=""):
     '''write a table to outfile.
 
     If table is a dictionary, output columnwise. If *columns* is a list,
@@ -1316,19 +1282,9 @@ def writeTable(outfile, table, columns=None, fillvalue=""):
         raise NotImplementedError
 
 
-def ReadMap(*args, **kwargs):
-    """deprecated, use readMap."""
-    return readMap(*args, **kwargs)
-
-
-def ReadList(*args, **kwargs):
-    """deprecated, use readList()"""
-    return readList(*args, **kwargs)
-
-
-def writeLines(outfile, lines, header=False):
+def write_lines(outfile, lines, header=False):
     ''' expects [[[line1-field1],[line1-field2 ] ],... ]'''
-    handle = openFile(outfile, "w")
+    handle = open_file(outfile, "w")
 
     if header:
         handle.write("\t".join([str(title) for title in header]) + "\n")
@@ -1339,7 +1295,7 @@ def writeLines(outfile, lines, header=False):
     handle.close()
 
 
-def txtToDict(filename, key=None, sep="\t"):
+def text_to_dict(filename, key=None, sep="\t"):
     '''make a dictionary from a text file keyed
     on the specified column.'''
 
@@ -1396,3 +1352,50 @@ def unpickle(file_name):
     with open(file_name, "r") as pkl_file:
         data = pickle.load(pkl_file)
     return data
+
+
+def find_mount_point(path):
+    path = os.path.realpath(path)
+    while not os.path.ismount(path):
+        path = os.path.dirname(path)
+    return path
+
+
+def is_local(path):
+    return find_mount_point(path) == "/"
+
+
+@contextlib.contextmanager
+def mount_file(fn):
+
+    arvados_options = "--disable-event-listening --read-only"
+    arvados_options = "--read-only"
+
+    # TODO: exception-safe clean-up?
+    if fn.startswith("arv="):
+        mountpoint = tempfile.mkdtemp(suffix="_arvados_keep")
+        E.debug("mount_file: mounting arvados at {}".format(mountpoint))
+        E.run("arv-mount {} {}".format(arvados_options, mountpoint))
+        yield mountpoint + "/" + fn[4:]
+        E.run("fusermount -u {}".format(mountpoint))
+        E.debug("mount_file: unmounted arvados at {}".format(mountpoint))
+        try:
+            shutil.rmtree(mountpoint)
+        except OSError as ex:
+            E.warn("could not delete mountpoint {}: {}".format(mountpoint, str(ex)))
+    else:
+        yield fn
+
+
+def remote_file_exists(filename, hostname=None, expect=False):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(hostname, username=getpass.getuser())
+    except paramiko.SSHException as ex:
+        # disable test on VM, key issues.
+        return expect
+
+    stdin, stdout, ssh_stderr = ssh.exec_command("ls -d {}".format(filename))
+    out = stdout.read().decode("utf-8")
+    return out.strip() == filename

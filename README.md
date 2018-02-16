@@ -1,2 +1,2 @@
 # cgat-core
-Core functionality of the CGAT code
+Core functionality of the CGAT code.
