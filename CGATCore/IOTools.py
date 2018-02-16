@@ -46,6 +46,12 @@ import paramiko
 import CGATCore.Experiment as E
 
 
+def force_str(iterator, encoding="ascii"):
+    """iterate over lines in iterator and force to string"""
+    for line in iterator:
+        yield line.decode(encoding)
+
+
 def get_first_line(filename, nlines=1):
     """return the first line of a file.
 
@@ -1295,6 +1301,18 @@ def write_table(outfile, table, columns=None, fillvalue=""):
 
     else:
         raise NotImplementedError
+
+
+def write_matrix(outfile, matrix, row_headers, col_headers,
+                 row_header=""):
+    '''write a numpy matrix to outfile.
+    *row_header* gives the title of the rows
+    '''
+
+    outfile.write("%s\t%s\n" % (row_header, "\t".join(col_headers)))
+    for x, row in enumerate(matrix):
+        assert len(row) == len(col_headers)
+        outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))))
 
 
 def write_lines(outfile, lines, header=False):

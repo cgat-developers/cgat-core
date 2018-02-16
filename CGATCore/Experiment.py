@@ -509,7 +509,7 @@ def open_file(filename, mode="r", create_dir=False, encoding="utf-8"):
     _, ext = os.path.splitext(filename)
 
     if create_dir:
-        dirname = os.path.dirname(filename)
+        dirname = os.path.abspath(os.path.dirname(filename))
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
 
@@ -1071,27 +1071,15 @@ def open_output_file(section, mode="w", encoding="utf-8"):
 
     fn = get_output_file(section)
 
-    dirname = os.path.dirname(fn)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-    try:
-        if fn == "-":
-            return global_options.stdout
-        else:
-            if not global_options.output_force and os.path.exists(fn):
-                raise OSError(
-                    ("file %s already exists, use --force-output to "
-                     "overwrite existing files.") % fn)
-            if fn.endswith(".gz"):
-                return gzip.open(fn, mode, encoding=encoding)
-            else:
-                if "b" in mode:
-                    return open(fn, mode, encoding=None)
-                else:
-                    return open(fn, mode, encoding=encoding)
-    except AttributeError:
+    if fn == "-":
         return global_options.stdout
+
+    if not global_options.output_force and os.path.exists(fn):
+        raise OSError(
+            "file %s already exists, use --force-output to "
+            "overwrite existing files.".format(fn))
+
+    return open_file(fn, mode=mode, create_dir=True, encoding=encoding)
 
 
 def run(statement,
