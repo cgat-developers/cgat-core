@@ -14,63 +14,75 @@ import re
 import os
 import stat
 import time
+import logging
 import CGATCore.Experiment as E
 
 try:
     import drmaa
     HAS_DRMAA = True
+except ImportError:
+    HAS_DRMAA = False
 except RuntimeError:
     HAS_DRMAA = False
 
 
-def setupDrmaaJobTemplate(drmaa_session, options, job_name, job_memory):
+def get_logger():
+    return logging.getLogger("CGATCore.pipeline")
+
+
+def setup_drmaa_job_template(drmaa_session,
+                             queue_manager,
+                             job_name,
+                             job_memory,
+                             job_threads,
+                             working_directory,
+                             **kwargs):
     '''Sets up a Drmma job template. Currently SGE, SLURM, Torque and PBSPro are
        supported'''
-
     if not job_memory:
         raise ValueError("Job memory must be specified when running"
                          "DRMAA jobs")
 
+    # if process has multiple threads, use a parallel environment
+    multithread = job_threads > 1
+
     jt = drmaa_session.createJobTemplate()
-    jt.workingDirectory = options["workingdir"]
+    jt.workingDirectory = working_directory
     jt.jobEnvironment = {'BASH_ENV': '~/.bashrc'}
     jt.args = []
     if not re.match("[a-zA-Z]", job_name[0]):
         job_name = "_" + job_name
 
     # queue manager specific configuration options
-    queue_manager = options["cluster_queue_manager"]
-
     if queue_manager.lower() == "sge":
 
         # see: ? cannot find documentation on the SGE native spec
 
         spec = ["-V",
+                "-notify",  # required for signal handling
                 "-N %s" % job_name]
 
-        if options["cluster_priority"]:
-            spec.append("-p %(cluster_priority)i")
+        spec.append("-p {}".format(kwargs.get("priority", 0)))
 
-        if options["cluster_options"]:
-            spec.append("%(cluster_options)s")
+        spec.append(kwargs.get("options", ""))
 
-        if not options["cluster_memory_resource"]:
-            raise ValueError("The cluster memory resource must be specified")
+        if not kwargs["memory_resource"]:
+            raise ValueError("cluster memory resource not specified")
 
-        for resource in options["cluster_memory_resource"].split(","):
-            spec.append("-l %s=%s" % (resource, job_memory))
+        if job_memory != "unlimited":
+            for resource in kwargs.get("memory_resource", "").split(","):
+                spec.append("-l {}={}".format(resource, job_memory))
 
-        # if process has multiple threads, use a parallel environment
-        multithread = 'job_threads' in options and options['job_threads'] > 1
         if multithread:
-            spec.append(
-                "-pe %(cluster_parallel_environment)s %(job_threads)i -R y")
+            if not kwargs["parallel_environment"]:
+                raise ValueError("parallel environment not specified")
+            spec.append("-pe {} {} -R y".format(
+                kwargs.get("parallel_environment", "smp"), job_threads))
 
-        if "cluster_pe_queue" in options and multithread:
-            spec.append(
-                "-q %(cluster_pe_queue)s")
-        elif options['cluster_queue'] != "NONE":
-            spec.append("-q %(cluster_queue)s")
+        if "pe_queue" in kwargs and multithread:
+            spec.append("-q {}".format(kwargs["pe_queue"]))
+        elif kwargs['queue'] != "NONE":
+            spec.append("-q {}".format(kwargs["queue"]))
 
     elif queue_manager.lower() == "slurm":
 
@@ -99,15 +111,8 @@ def setupDrmaaJobTemplate(drmaa_session, options, job_name, job_memory):
 
         spec = ["-J %s" % job_name]
 
-        if options["cluster_options"]:
-            spec.append("%(cluster_options)s")
-
-        if 'job_threads' in options:
-            job_threads = options["job_threads"]
-        else:
-            job_threads = 1  # probably should come from a config option
-
-        spec.append("--cpus-per-task=%s" % job_threads)
+        spec.append(kwargs.get("options", ""))
+        spec.append("--cpus-per-task={}".format(job_threads))
 
         # Note the that the specified memory must be per CPU
         # for consistency with the implemented SGE approach
@@ -121,27 +126,25 @@ def setupDrmaaJobTemplate(drmaa_session, options, job_name, job_memory):
                              'must be either "M" (for Mb) or "G" (for Gb),'
                              ' e.g. 1G or 1000M for 1 Gigabyte of memory')
 
-        spec.append("--mem-per-cpu=%s" % job_memory_per_cpu)
+        spec.append("--mem-per-cpu={}".format(job_memory_per_cpu))
 
         # set the partition to use (equivalent of SGE queue)
-        spec.append("--partition=%(cluster_queue)s")
+        spec.append("--partition={}".format(kwargs["queue"]))
 
     elif queue_manager.lower() == "torque":
 
         # PBS Torque native specifictation:
         # http://apps.man.poznan.pl/trac/pbs-drmaa
 
-        spec = ["-N %s" % job_name,
-                "-l mem=%s" % job_memory, ]
+        spec = ["-N {}".format(job_name),
+                "-l mem={}".format(job_memory), ]
 
-        if options["cluster_options"]:
-            spec.append("%(cluster_options)s")
+        spec.append(kwargs.get("options", ""))
 
         # There is no equivalent to sge -V option for pbs-drmaa
         # recreating this...
         jt.jobEnvironment = os.environ
-        jt.jobEnvironment.update({'BASH_ENV': os.path.join(os.environ['HOME'],
-                                                           '.bashrc')})
+        jt.jobEnvironment.update({'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
 
     elif queue_manager.lower() == "pbspro":
 
@@ -162,67 +165,46 @@ def setupDrmaaJobTemplate(drmaa_session, options, job_name, job_memory):
             # PBS_DRMAA_CONF to eg ~/.pbs_drmaa.conf
             # DRMAA_LIBRARY_PATH to eg /xxx/libdrmaa.so
 
-        # PBSPro only takes the first 15 characters, throws uninformative error if longer.
-        # mem is maximum amount of RAM used by job; mem_free doesn't seem to be available.
-        spec = ["-N %s" % job_name[0:15],
-                "-l mem=%s" % job_memory]
+        # PBSPro only takes the first 15 characters, throws
+        # uninformative error if longer.  mem is maximum amount of RAM
+        # used by job; mem_free doesn't seem to be available.
+        spec = ["-N {}".format(job_name[0:15])]
 
-        # Leaving walltime to be specified by user as difficult to set dynamically and
-        # depends on site/admin configuration of default values. Likely means setting for
-        # longest job with trade-off of longer waiting times for resources to be
+        if "mem" not in kwargs["options"]:
+            spec.append("-l mem={}".format(job_memory))
+
+        # Leaving walltime to be specified by user as difficult to set
+        # dynamically and depends on site/admin configuration of
+        # default values. Likely means setting for longest job with
+        # trade-off of longer waiting times for resources to be
         # available for other jobs.
-        if options["cluster_options"]:
-            if "mem" not in options["cluster_options"]:
-                spec.append("%(cluster_options)s")
-            elif "mem" in options["cluster_options"]:
-                spec = ["-N %s" % job_name[0:15]]
-                spec.append("%(cluster_options)s")
+        spec.append(kwargs["options"], "")
 
-        # if process has multiple threads, use a parallel environment:
-        # TO DO: error in fastqc build_report, var referenced before assignment.
-        # For now adding to workaround:
-        if 'job_threads' in options:
-            job_threads = options["job_threads"]
-        else:
-            job_threads = 1
-
-        multithread = 'job_threads' in options and options['job_threads'] > 1
         if multithread:
-            # TO DO 'select=1' determines de number of nodes. Should go in a config file.
-            # mem is per node and maximum memory
-            # Site dependent but in general setting '#PBS -l select=NN:ncpus=NN:mem=NN{gb|mb}'
-            # is sufficient for parallel jobs (OpenMP, MPI).
-            # Also architecture dependent, jobs could be hanging if resource doesn't exist.
-            # TO DO: Kill if long waiting time?
-            spec = ["-N %s" % job_name[0:15],
-                    "-l select=1:ncpus=%s:mem=%s" % (job_threads, job_memory)]
+            # TO DO 'select=1' determines de number of nodes. Should
+            # go in a config file.  mem is per node and maximum memory
+            # Site dependent but in general setting '#PBS -l
+            # select=NN:ncpus=NN:mem=NN{gb|mb}' is sufficient for
+            # parallel jobs (OpenMP, MPI).  Also architecture
+            # dependent, jobs could be hanging if resource doesn't
+            # exist.  TO DO: Kill if long waiting time?
+            spec = ["-N {}".format(job_name[0:15]),
+                    "-l select=1:ncpus=%s:mem=%s".format(job_threads, job_memory)]
 
-        if options["cluster_options"]:
-            if "mem" not in options["cluster_options"]:
-                spec.append("%(cluster_options)s")
-
-            elif "mem" in options["cluster_options"]:
-                raise ValueError('''mem resource specified twice, check ~/.cgat config file,
-                ini files, command line options, etc.''')
-
-        if "cluster_pe_queue" in options and multithread:
-            spec.append(
-                "-q %(cluster_pe_queue)s")
-        elif options['cluster_queue'] != "NONE":
-            spec.append("-q %(cluster_queue)s")
-            # TO DO: sort out in Parameters.py to allow none values for configparser:
-        elif options['cluster_queue'] == "NONE":
-            pass
+        if "pe_queue" in kwargs and multithread:
+            spec.append("-q {}".format(kwargs["pe_queue"]))
+        elif kwargs['queue'] != "NONE":
+            spec.append("-q {}".format(kwargs["queue"]))
 
         # As for torque, there is no equivalent to sge -V option for pbs-drmaa:
         jt.jobEnvironment = os.environ
-        jt.jobEnvironment.update({'BASH_ENV': os.path.join(os.environ['HOME'],
-                                                           '.bashrc')})
+        jt.jobEnvironment.update(
+            {'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
 
     else:
         raise ValueError("Queue manager %s not supported" % queue_manager)
 
-    jt.nativeSpecification = " ".join(spec) % options
+    jt.nativeSpecification = " ".join(spec)
 
     # keep stdout and stderr separate
     jt.joinFiles = False
@@ -230,7 +212,7 @@ def setupDrmaaJobTemplate(drmaa_session, options, job_name, job_memory):
     return jt
 
 
-def setDrmaaJobPaths(job_template, job_path):
+def set_drmaa_job_paths(job_template, job_path):
     '''Adds the job_path, stdout_path and stderr_paths
        to the job_template.
     '''
@@ -245,103 +227,17 @@ def setDrmaaJobPaths(job_template, job_path):
     job_template.outputPath = ":" + stdout_path
     job_template.errorPath = ":" + stderr_path
 
-    return job_template, stdout_path, stderr_path
+    return stdout_path, stderr_path
 
 
-def expandStatement(statement, ignore_pipe_errors=False):
-    '''add generic commands before and after statement.
-
-    The prefixes and suffixes added are defined in :data:`exec_prefix`
-    and :data:`exec_suffix`. The main purpose of these prefixs is to
-    provide error detection code to detect errors at early steps in a
-    series of unix commands within a pipe.
-
-    Arguments
-    ---------
-    statement : string
-        Command line statement to expand
-    ignore_pipe_errors : bool
-        If False, do not modify statement.
-
-    Returns
-    -------
-    statement : string
-        The expanded statement.
-
-    '''
-
-    _exec_prefix = '''detect_pipe_error_helper()
-        {
-        while [ "$#" != 0 ] ; do
-            # there was an error in at least one program of the pipe
-            if [ "$1" != 0 ] ; then return 1 ; fi
-            shift 1
-        done
-        return 0
-        }
-        detect_pipe_error() {
-        detect_pipe_error_helper "${PIPESTATUS[@]}"
-        return $?
-        }
-        checkpoint() {
-            detect_pipe_error;
-            if [ $? != 0 ]; then exit 1; fi;
-        }
-        '''
-
-    _exec_suffix = "; detect_pipe_error"
-
-    if ignore_pipe_errors:
-        return statement
-    else:
-        return " ".join((_exec_prefix, statement, _exec_suffix))
-
-
-def collectSingleJobFromCluster(session, job_id,
-                                statement,
-                                stdout_path, stderr_path,
-                                job_path,
-                                ignore_errors=False):
-    '''runs a single job on the cluster.'''
-    try:
-        retval = session.wait(
-            job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-    except Exception as msg:
-        # ignore message 24 in PBS code 24: drmaa: Job
-        # finished but resource usage information and/or
-        # termination status could not be provided.":
-
-        if not msg.message.startswith("code 24"):
-            raise
-        retval = None
-
-    stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
-
-    if retval and retval.exitStatus != 0 and not ignore_errors:
-        raise OSError(
-            "---------------------------------------\n"
-            "Child was terminated by signal %i: \n"
-            "The stderr was: \n%s\n%s\n"
-            "-----------------------------------------" %
-            (retval.exitStatus,
-             "".join(stderr), statement))
-
-    try:
-        os.unlink(job_path)
-    except OSError:
-        E.warn(
-            ("temporary job file %s not present for "
-             "clean-up - ignored") % job_path)
-
-
-def getStdoutStderr(stdout_path, stderr_path, tries=5):
-    '''get stdout/stderr allowing for same lag.
+def get_drmaa_job_stdout_stderr(stdout_path, stderr_path, tries=5, encoding="utf-8"):
+    '''get stdout/stderr allowing for some lag.
 
     Try at most *tries* times. If unsuccessfull, throw OSError
 
     Removes the files once they are read.
 
-    Returns tuple of stdout and stderr.
+    Returns tuple of stdout and stderr as unicode strings.
     '''
     x = tries
     while x >= 0:
@@ -358,15 +254,17 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
         x -= 1
 
     try:
-        stdout = open(stdout_path, "r").readlines()
+        with open(stdout_path, "r", encoding=encoding) as inf:
+            stdout = inf.readlines()
     except IOError as msg:
-        E.warn("could not open stdout: %s" % msg)
+        get_logger().warn("could not open stdout: %s" % msg)
         stdout = []
 
     try:
-        stderr = open(stderr_path, "r").readlines()
+        with open(stderr_path, "r", encoding=encoding) as inf:
+            stderr = inf.readlines()
     except IOError as msg:
-        E.warn("could not open stdout: %s" % msg)
+        get_logger().warn("could not open stdout: %s" % msg)
         stderr = []
 
     try:

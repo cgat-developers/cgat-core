@@ -9,7 +9,14 @@ import inspect
 import sys
 
 
-def isTest():
+class EmptyRunner(object):
+    def __init__(self, name):
+        self.__name__ = name
+    def __call__(self, *args, **kwargs):
+        pass
+
+
+def is_test():
     """return True if the pipeline is run in a "testing" mode.
 
     This method checks if ``-is-test`` has been given as a
@@ -18,10 +25,11 @@ def isTest():
     return "--is-test" in sys.argv
 
 
-def getCallerLocals(decorators=0):
+def get_caller_locals(decorators=0):
     '''returns the locals of the calling function.
 
-    from http://pylab.blogspot.com/2009/02/python-accessing-caller-locals-from.html
+    from http://pylab.blogspot.com/2009/02/
+         python-accessing-caller-locals-from.html
 
     Arguments
     ---------
@@ -40,8 +48,27 @@ def getCallerLocals(decorators=0):
     return args[3]
 
 
-def getCaller(decorators=0):
-    """return the name of the calling module.
+def get_caller(decorators=0):
+    """return the name of the calling class/module
+
+    Arguments
+    ---------
+    decorators : int
+        Number of contexts to go up to reach calling function
+        of interest.
+
+    Returns
+    -------
+    mod : object
+        The calling module/class
+    """
+
+    frm = inspect.stack()
+    return inspect.getmodule(frm[2 + decorators].frame)
+
+
+def get_calling_function(decorators=0):
+    """return the name of the calling function
 
     Arguments
     ---------
@@ -55,9 +82,8 @@ def getCaller(decorators=0):
         The calling module
     """
 
-    frm = inspect.stack()[2 + decorators]
-    mod = inspect.getmodule(frm[0])
-    return mod
+    frm = inspect.stack()
+    return frm[2 + decorators].function
 
 
 def add_doc(value, replace=False):

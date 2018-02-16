@@ -1,37 +1,7 @@
-import glob
 import sys
 import os
-import subprocess
 import re
-
-########################################################################
-#######################################################################
-# Check for dependencies
-#
-# Is there a way to do this more elegantly?
-#     1. Run "pip install numpy"
-#     2. Wrap inside functions (works for numpy/pysam, but not cython)
-try:
-    import numpy
-except ImportError:
-    raise ImportError(
-        "the CGAT code collection requires numpy to be installed "
-        "before running setup.py (pip install numpy)")
-
-########################################################################
-########################################################################
-# Import setuptools
-# Use existing setuptools, otherwise try ez_setup.
-try:
-    import setuptools
-except ImportError:
-    # try to get via ez_setup
-    # ez_setup did not work on all machines tested as
-    # it uses curl with https protocol, which is not
-    # enabled in ScientificLinux
-    import ez_setup
-    ez_setup.use_setuptools()
-
+import setuptools
 from setuptools import setup, find_packages, Extension
 
 from distutils.version import LooseVersion
@@ -58,72 +28,8 @@ version = version.__version__
 #
 major, minor1, minor2, s, tmp = sys.version_info
 
-if (major == 2 and minor1 < 7) or major < 2:
-    raise SystemExit("""CGAT requires Python 2.7 or later.""")
-
-
-#####################################################################
-#####################################################################
-# Code to install dependencies from a repository
-#####################################################################
-# Modified from http://stackoverflow.com/a/9125399
-#####################################################################
-def which(program):
-    """
-    Detect whether or not a program is installed.
-    Thanks to http://stackoverflow.com/a/377028/70191
-    """
-    def is_exe(fpath):
-        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, _ = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ['PATH'].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-    return None
-
-REPO_REQUIREMENT = re.compile(
-    r'^-e (?P<link>(?P<vcs>git|svn|hg|bzr).+#egg=(?P<package>.+)-(?P<version>\d(?:\.\d)*))$')
-HTTPS_REQUIREMENT = re.compile(
-    r'^-e (?P<link>.*).+#(?P<package>.+)-(?P<version>\d(?:\.\d)*)$')
-install_requires = []
-dependency_links = []
-
-for requirement in (
-        l.strip() for l in open('requires.txt') if not l.startswith("#")):
-    match = REPO_REQUIREMENT.match(requirement)
-    if match:
-        assert which(match.group('vcs')) is not None, \
-            ("VCS '%(vcs)s' must be installed in order to "
-             "install %(link)s" % match.groupdict())
-        install_requires.append("%(package)s==%(version)s" % match.groupdict())
-        dependency_links.append(match.group('link'))
-        continue
-
-    if requirement.startswith("https"):
-        install_requires.append(requirement)
-        continue
-
-    match = HTTPS_REQUIREMENT.match(requirement)
-    if match:
-        install_requires.append("%(package)s>=%(version)s" % match.groupdict())
-        dependency_links.append(match.group('link'))
-        continue
-
-    install_requires.append(requirement)
-
-if major == 2:
-    install_requires.extend(['web.py>=0.37',
-                             'xlwt>=0.7.4',
-                             'matplotlib-venn>=0.5'])
-elif major == 3:
-    pass
+if major < 3:
+    raise SystemExit("""CGAT requires Python 3 or later.""")
 
 cgat_packages = find_packages()
 cgat_package_dirs = {'CGATCore': 'CGATCore'}
@@ -161,12 +67,6 @@ setup(
     packages=cgat_packages,
     package_dir=cgat_package_dirs,
     include_package_data=True,
-#    entry_points={
-#        'console_scripts': ['cgat = CGAT.cgat:main']
-#    },
-    # dependencies
-    install_requires=install_requires,
-    dependency_links=dependency_links,
     # other options
     zip_safe=False,
     test_suite="tests",

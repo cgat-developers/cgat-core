@@ -1,24 +1,25 @@
 """Control.py - Command line control for ruffus pipelines
 =========================================================
 
-The functions :func:`writeConfigFiles`, :func:`clean`,
-:func:`clonePipeline` and :func:`peekParameters` provide the
+The functions :func:`write_config_files`, :func:`clean`,
+:func:`clone_pipeline` and :func:`peek_parameters` provide the
 functionality for particular pipeline commands.
 
 :class:`MultiLineFormatter` improves the formatting
 of long log messages, while
-:class:`LoggingFilterRabbitMQ` intercepts ruffus log
-messages and sends event information to a rabbitMQ message exchange
-for task process monitoring.
 
 Reference
 ---------
 
 """
 
-import inspect
+from io import StringIO
+from multiprocessing.pool import ThreadPool
+import multiprocessing
+import contextlib
 import json
 import logging
+import math
 import os
 import re
 import shutil
@@ -26,37 +27,66 @@ import subprocess
 import sys
 import tempfile
 import time
-import io
+import gevent.pool
+import gevent.queue
+from ruffus.task import _pipeline_prepare_to_run, topologically_sorted_nodes, \
+    is_node_up_to_date, t_verbose_logger
 
-from multiprocessing.pool import ThreadPool
-
-# talking to RabbitMQ
-try:
-    import pika
-    HAS_PIKA = True
-except ImportError:
-    HAS_PIKA = False
+import ruffus
 
 # talking to a cluster
 try:
     import drmaa
     HAS_DRMAA = True
+except ImportError:
+    HAS_DRMAA = False
 except RuntimeError:
     HAS_DRMAA = False
 
-from ruffus import pipeline_printout_graph, pipeline_printout, \
-    pipeline_run, ruffus_exceptions, task
-
-
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
-from CGATCore import Requirements as Requirements
+import CGATCore.Requirements as Requirements
+from CGATCore.Pipeline.Parameters import input_validation
+from CGATCore.Pipeline.Utils import get_caller, get_caller_locals
+from CGATCore.Pipeline.Execution import execute, start_session,\
+    close_session
 
-from CGATCore.Pipeline.Utils import isTest, getCaller, getCallerLocals
-from CGATCore.Pipeline.Execution import execute, startSession,\
-    closeSession
-from CGATCore.Pipeline.Local import getProjectName, getPipelineName
-from CGATCore.Pipeline.Parameters import inputValidation
+
+# redirect os.stat and other OS utilities to cached versions to speed
+# up ruffus. Be careful not to use os.stat in task functions.
+# Does ruffus rely on os.stat for completed tasks?
+SAVED_OS_STAT = os.stat
+SAVED_OS_PATH_ABSPATH = os.path.abspath
+SAVED_OS_PATH_REALPATH = os.path.realpath
+SAVED_OS_PATH_RELPATH = os.path.relpath
+SAVED_OS_PATH_ISLINK = os.path.islink
+
+
+@E.cached_function
+def cached_os_stat(filename, *args, **kwargs):
+    return SAVED_OS_STAT(filename, *args, **kwargs)
+
+
+@E.cached_function
+def cached_os_path_abspath(filename):
+    return SAVED_OS_PATH_ABSPATH(filename)
+
+
+@E.cached_function
+def cached_os_path_realpath(filename):
+    return SAVED_OS_PATH_REALPATH(filename)
+
+
+@E.cached_function
+def cached_os_path_relpath(filename):
+    return SAVED_OS_PATH_RELPATH(filename)
+
+
+@E.cached_function
+def cached_os_path_islink(filename):
+    return SAVED_OS_PATH_ISLINK(filename)
+
+
 # Set from Pipeline.py
 PARAMS = {}
 
@@ -66,7 +96,39 @@ PARAMS = {}
 GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
 
 
-def writeConfigFiles(pipeline_path, general_path):
+# Monkey patching to make Gevent.pool compatible with
+# ruffus.
+OLD_NEXT = gevent.pool.IMapUnordered.next
+
+
+class EventPool(gevent.pool.Pool):
+
+    def __len__(self):
+        """make sure that pool always evaluates to true."""
+        l = gevent.pool.Pool.__len__(self)
+        if not l:
+            return 1
+        return l
+
+    def close(self):
+        pass
+
+    def terminate(self):
+        self.kill()
+
+    @staticmethod
+    def next_with_timeout(instance, timeout=None):
+        """ignore timeout parameter."""
+        return OLD_NEXT(instance)
+
+gevent.pool.IMapUnordered.next = EventPool.next_with_timeout
+
+
+def get_logger():
+    return logging.getLogger("daisy.pipeline")
+
+
+def write_config_files(pipeline_path, general_path):
     '''create default configuration files in `path`.
     '''
 
@@ -90,7 +152,7 @@ def writeConfigFiles(pipeline_path, general_path):
                 (config_files, paths))
 
 
-def printConfigFiles():
+def print_config_files():
     '''
         Print the list of .ini files used to configure the pipeline
         along with their associated priorities.
@@ -112,7 +174,7 @@ def printConfigFiles():
             s -= 1
 
 
-def clonePipeline(srcdir, destdir=None):
+def clone_pipeline(srcdir, destdir=None):
     '''clone a pipeline.
 
     Cloning entails creating a mirror of the source pipeline.
@@ -139,12 +201,13 @@ def clonePipeline(srcdir, destdir=None):
     if destdir is None:
         destdir = os.path.curdir
 
-    E.info("cloning pipeline from %s to %s" % (srcdir, destdir))
+    get_logger().info("cloning pipeline from %s to %s" % (srcdir, destdir))
 
-    copy_files = ("conf.py", "pipeline.ini", "csvdb")
+    copy_files = ("conf.py", "pipeline.ini", "benchmark.yml", "csvdb")
     ignore_prefix = (
         "report", "_cache", "export", "tmp", "ctmp",
-        "_static", "_templates")
+        "_static", "_templates", "shell.log", "pipeline.log",
+        "results.commit")
 
     def _ignore(p):
         for x in ignore_prefix:
@@ -207,17 +270,17 @@ def clean(files, logfile):
 
     if not dry_run:
         if not os.path.exists(logfile):
-            outfile = IOTools.openFile(logfile, "w")
+            outfile = IOTools.open_file(logfile, "w")
             outfile.write("filename\tzapped\tlinkdest\t%s\n" %
                           "\t".join(fields))
         else:
-            outfile = IOTools.openFile(logfile, "a")
+            outfile = IOTools.open_file(logfile, "a")
 
     c = E.Counter()
     for fn in files:
         c.files += 1
         if not dry_run:
-            stat, linkdest = IOTools.zapFile(fn)
+            stat, linkdest = IOTools.zap_file(fn)
             if stat is not None:
                 c.zapped += 1
                 if linkdest is not None:
@@ -228,18 +291,18 @@ def clean(files, logfile):
                     linkdest,
                     "\t".join([str(getattr(stat, x)) for x in fields])))
 
-    E.info("zapped: %s" % (c))
+    get_logger().info("zapped: %s" % (c))
     outfile.close()
 
     return c
 
 
-def peekParameters(workingdir,
-                   pipeline,
-                   on_error_raise=None,
-                   prefix=None,
-                   update_interface=False,
-                   restrict_interface=False):
+def peek_parameters(workingdir,
+                    pipeline,
+                    on_error_raise=None,
+                    prefix=None,
+                    update_interface=False,
+                    restrict_interface=False):
     '''peek configuration parameters from external pipeline.
 
     As the paramater dictionary is built at runtime, this method
@@ -281,7 +344,7 @@ def peekParameters(workingdir,
         Dictionary of configuration values.
 
     '''
-    caller_locals = getCallerLocals()
+    caller_locals = get_caller_locals()
 
     # check if we should raise errors
     if on_error_raise is None:
@@ -323,7 +386,8 @@ def peekParameters(workingdir,
     # patch for the "config" target - use default
     # pipeline directory if directory is not specified
     # working dir is set to "?!"
-    if "config" in sys.argv or "check" in sys.argv or "clone" in sys.argv and workingdir == "?!":
+    if ("config" in sys.argv or "check" in sys.argv or "clone" in sys.argv
+        and workingdir == "?!"):
         workingdir = os.path.join(PARAMS.get("pipelinedir"),
                                   IOTools.snip(pipeline, ".py"))
 
@@ -379,231 +443,124 @@ def peekParameters(workingdir,
     return dump
 
 
-class MultiLineFormatter(logging.Formatter):
-    """add identation for multi-line entries.
+class LoggingFilterPipelineName(logging.Filter):
+    """add pipeline name to log message.
+
+    With this filter, %(app_name)s can be used in log formats.
     """
 
-    def format(self, record):
-        s = logging.Formatter.format(self, record)
-        if record.message:
-            header, footer = s.split(record.message)
-            s = s.replace('\n', '\n' + ' ' * len(header))
-        return s
-
-
-class LoggingFilterRabbitMQ(logging.Filter):
-    """pass event information to a rabbitMQ message queue.
-
-    This is a log filter which detects messages from ruffus_ and sends
-    them to a rabbitMQ message queue.
-
-    A :term:`task` is a ruffus_ decorated function, which will execute
-    one or more :term:`jobs`.
-
-    Valid task/job status:
-
-    update
-       task/job needs updating
-    completed
-       task/job completed successfully
-    failed
-       task/job failed
-    running
-       task/job is running
-    ignore
-       ignore task/job (is up-to-date)
-
-    Arguments
-    ---------
-    ruffus_text : string
-        Log messages from ruffus.pipeline_printout. These are used
-        to collect all tasks that will be executed during pipeline
-        executation.
-    project_name : string
-        Name of the project
-    pipeline_name : string
-        Name of the pipeline
-    host : string
-        RabbitMQ host name
-    exchange : string
-        RabbitMQ exchange name
-
-    """
-
-    def __init__(self, ruffus_text,
-                 project_name,
-                 pipeline_name,
-                 host="localhost",
-                 exchange="ruffus_pipelines"):
-
-        self.project_name = project_name
-        self.pipeline_name = pipeline_name
-        self.exchange = exchange
-
-        # dictionary of jobs to run
-        self.jobs = {}
-        self.tasks = {}
-
-        if not HAS_PIKA:
-            self.connected = False
-            return
-
-        def split_by_job(text):
-            text = "".join(text)
-            job_message = ""
-            # ignore first entry which is the docstring
-            for line in text.split(" Job  = ")[1:]:
-                try:
-                    # long file names cause additional wrapping and
-                    # additional white-space characters
-                    job_name = re.search(
-                        "\[.*-> ([^\]]+)\]", line).groups()
-                except AttributeError:
-                    raise AttributeError("could not parse '%s'" % line)
-                job_status = "ignore"
-                if "Job needs update" in line:
-                    job_status = "update"
-
-                yield job_name, job_status, job_message
-
-        def split_by_task(text):
-            block, task_name = [], None
-            task_status = None
-            for line in text.split("\n"):
-                line = line.strip()
-
-                if line.startswith("Tasks which will be run"):
-                    task_status = "update"
-                elif line.startswith("Tasks which are up-to-date"):
-                    task_status = "ignore"
-
-                if line.startswith("Task = "):
-                    if task_name:
-                        yield task_name, task_status, list(split_by_job(block))
-                    block = []
-                    task_name = re.match("Task = (.*)", line).groups()[0]
-                    continue
-                if line:
-                    block.append(line)
-            if task_name:
-                yield task_name, task_status, list(split_by_job(block))
-
-        # create connection
-        try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(
-                host=host))
-            self.connected = True
-        except pika.exceptions.AMQPConnectionError:
-            self.connected = False
-            return
-
-        self.channel = connection.channel()
-        self.channel.exchange_declare(
-            exchange=self.exchange,
-            type='topic')
-
-        # populate with initial messages
-        for task_name, task_status, jobs in split_by_task(ruffus_text):
-            if task_name.startswith("(mkdir"):
-                continue
-
-            to_run = 0
-            for job_name, job_status, job_message in jobs:
-                self.jobs[job_name] = (task_name, job_name)
-                if job_status == "update":
-                    to_run += 1
-
-            self.tasks[task_name] = [task_status, len(jobs),
-                                     len(jobs) - to_run]
-            self.send_task(task_name)
-
-    def send_task(self, task_name):
-        '''send task status.'''
-
-        if not self.connected:
-            return
-
-        task_status, task_total, task_completed = self.tasks[task_name]
-
-        data = {}
-        data['created_at'] = time.time()
-        data['pipeline'] = self.pipeline_name
-        data['task_name'] = task_name
-        data['task_status'] = task_status
-        data['task_total'] = task_total
-        data['task_completed'] = task_completed
-
-        key = "%s.%s.%s" % (self.project_name, self.pipeline_name, task_name)
-        try:
-            self.channel.basic_publish(exchange=self.exchange,
-                                       routing_key=key,
-                                       body=json.dumps(data))
-        except pika.exceptions.ConnectionClosed:
-            E.warn("could not send message - connection closed")
-        except Exception as e:
-            E.warn("could not send message: %s" % str(e))
-
-    def send_error(self, task_name, job, error=None, msg=None):
-
-        if not self.connected:
-            return
-
-        try:
-            task_status, task_total, task_completed = self.tasks[task_name]
-        except KeyError:
-            E.warn("could not get task information for %s, no message sent" %
-                   task_name)
-            return
-
-        data = {}
-        data['created_at'] = time.time()
-        data['pipeline'] = self.pipeline_name
-        data['task_name'] = task_name
-        data['task_status'] = 'failed'
-        data['task_total'] = task_total
-        data['task_completed'] = task_completed
-
-        key = "%s.%s.%s" % (self.project_name, self.pipeline_name, task_name)
-
-        try:
-            self.channel.basic_publish(exchange=self.exchange,
-                                       routing_key=key,
-                                       body=json.dumps(data))
-        except pika.exceptions.ConnectionClosed:
-            E.warn("could not send message - connection closed")
-        except Exception as e:
-            E.warn("could not send message: %s" % str(e))
+    def __init__(self, name, *args, **kwargs):
+        logging.Filter.__init__(self, *args, **kwargs)
+        self.app_name = name
 
     def filter(self, record):
-
-        if not self.connected:
-            return True
-
-        # filter ruffus logging messages
-        if record.filename.endswith("task.py"):
-            try:
-                before, task_name = record.msg.strip().split(" = ")
-            except ValueError:
-                return True
-
-            # ignore the mkdir, etc tasks
-            if task_name not in self.tasks:
-                return True
-
-            if before == "Task enters queue":
-                self.tasks[task_name][0] = "running"
-            elif before == "Completed Task":
-                self.tasks[task_name][0] = "completed"
-            elif before == "Uptodate Task":
-                self.tasks[task_name][0] = "uptodate"
-            else:
-                return True
-
-            # send new task status out
-            self.send_task(task_name)
+        record.app_name = self.app_name
+        message = record.getMessage()
+        if message.startswith("- {"):
+            json_message = json.loads(message[2:])
+        elif message.startswith("{"):
+            json_message = json.loads(message)
+        else:
+            json_message = None
+        if json_message:
+            for k, v in list(json_message.items()):
+                setattr(record, k, v)
 
         return True
 
+
+def ruffus_return_dag(stream,
+                      target_tasks=[],
+                      forcedtorun_tasks=[],
+                      verbose=None,
+                      gnu_make_maximal_rebuild_mode=True,
+                      wrap_width=100,
+                      runtime_data=None,
+                      checksum_level=None,
+                      history_file=None,
+                      verbose_abbreviated_path=None,
+                      pipeline=None):
+
+    (checksum_level,
+     job_history,
+     pipeline,
+     runtime_data,
+     target_tasks,
+     forcedtorun_tasks) = _pipeline_prepare_to_run(
+         checksum_level,
+         history_file,
+         pipeline,
+         runtime_data,
+         target_tasks,
+         forcedtorun_tasks)
+
+    (incomplete_tasks,
+     self_terminated_nodes,
+     dag_violating_edges,
+     dag_violating_nodes) = \
+        topologically_sorted_nodes(
+            target_tasks, forcedtorun_tasks,
+            gnu_make_maximal_rebuild_mode,
+            extra_data_for_signal=[
+                t_verbose_logger(0, 0, None, runtime_data), job_history],
+            signal_callback=is_node_up_to_date)
+
+    # ignore circular dependencies
+    stream.write("function\tactive\toutput_files\tparents\n")
+    stack = target_tasks + forcedtorun_tasks
+    visited = set()
+    while stack:
+        t = stack.pop(0)
+        visited.add(t)
+        stream.write("\t".join(
+            map(str, [t.func_name,
+                      t.is_active,
+                      ",".join(t.output_filenames) if t.output_filenames else "",
+                      ",".join(x.func_name for x in t._get_inward())])) + "\n")
+        for tt in t._get_inward():
+            if tt not in visited:
+                stack.append(tt)
+
+
+def setup_logging(options, pipeline=None):
+
+    logger = logging.getLogger("daisy.pipeline")
+
+    if options.log_config_filename is None:
+
+        # set up default file logger
+        handler = logging.FileHandler(
+            filename=options.pipeline_logfile,
+            mode="a")
+
+        if pipeline is not None:
+            pipeline_name = pipeline.name
+        else:
+            pipeline_name = "main"
+
+        handler.setFormatter(
+            E.MultiLineFormatter(
+                "%(asctime)s %(levelname)s "
+                "%(app_name)s %(module)s "
+                "- %(message)s"))
+
+        logger.addFilter(LoggingFilterPipelineName(name=pipeline_name))
+        logger.addHandler(handler)
+
+        logger.info("pipeline log is {}".format(
+            options.pipeline_logfile))
+
+    return logger
+
+
+def get_version():
+    # try git:
+    try:
+        stdout, stderr = execute(
+            "git rev-parse HEAD", cwd=PARAMS["scriptsdir"])
+    except:
+        stdout = "NA"
+    return stdout
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
@@ -632,10 +589,6 @@ config
 dump
    write pipeline configuration to stdout
 
-printconfig
-   write pipeline configuration to stdout in a user-friendly way so
-   it is easier to debug pipeline parameters
-
 touch
    touch files only, do not run
 
@@ -655,34 +608,31 @@ clone <source>
 '''
 
 
-def main(args=sys.argv):
-    """command line control function for a pipeline.
+def parse_commandline(argv=None, **kwargs):
+    """parse command line.
 
-    This method defines command line options for the pipeline and
-    updates the global configuration dictionary correspondingly.
-
-    It then provides a command parser to execute particular tasks
-    using the ruffus pipeline control functions. See the generated
-    command line help for usage.
-
-    To use it, add::
-
-        import CGAT.Pipeline as P
-
-        if __name__ == "__main__":
-            sys.exit(P.main(sys.argv))
-
-    to your pipeline script.
+    Create option parser and parse command line.
 
     Arguments
     ---------
+    argv : list
+        List of command line options to parse. If None, use sys.argv.
+
+    **kwargs: dict
+        Additional arguments overwrite default option settings.
+
+    Returns
+    -------
+
+    options: object
+       Command line options container
+
     args : list
-        List of command line arguments.
+       List of command line arguments
 
     """
-
-    global GLOBAL_OPTIONS
-    global GLOBAL_ARGS
+    if argv is None:
+        argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=USAGE)
@@ -691,7 +641,7 @@ def main(args=sys.argv):
                       type="choice",
                       choices=(
                           "make", "show", "plot", "dump", "config", "clone",
-                          "check", "regenerate", "printconfig"),
+                          "check", "regenerate", "state", "printconfig"),
                       help="action to take [default=%default].")
 
     parser.add_option("--pipeline-format", dest="pipeline_format",
@@ -704,11 +654,17 @@ def main(args=sys.argv):
                       help="perform a dry run (do not execute any shell "
                       "commands) [default=%default].")
 
-    parser.add_option("-f", "--force-output", dest="force",
-                      action="store_true",
-                      help="force running the pipeline even if there "
-                      "are uncommited changes "
-                      "in the repository [default=%default].")
+    parser.add_option("-c", "--config-file", dest="config_file",
+                      help="benchmark configuration file "
+                      "[default=%default].")
+
+    parser.add_option("-f", "--force-run", dest="force_run",
+                      type="string",
+                      help="force running the pipeline even if there are "
+                      "up-to-date tasks. If option is 'all', all tasks "
+                      "will be rerun. Otherwise, only the tasks given as "
+                      "arguments will be rerun. "
+                      "[default=%default].")
 
     parser.add_option("-p", "--multiprocess", dest="multiprocess", type="int",
                       help="number of parallel processes to use on "
@@ -735,10 +691,10 @@ def main(args=sys.argv):
 
     parser.add_option("-s", "--set", dest="variables_to_set",
                       type="string", action="append",
-                      help="explicitly set paramater values "
+                      help="explicitely set paramater values "
                       "[default=%default].")
 
-    parser.add_option("-c", "--checksums", dest="ruffus_checksums_level",
+    parser.add_option("--checksums", dest="ruffus_checksums_level",
                       type="int",
                       help="set the level of ruffus checksums"
                       "[default=%default].")
@@ -748,223 +704,550 @@ def main(args=sys.argv):
                       help="this is a test run"
                       "[default=%default].")
 
-    parser.add_option("--rabbitmq-exchange", dest="rabbitmq_exchange",
-                      type="string",
-                      help="RabbitMQ exchange to send log messages to "
+    parser.add_option("--engine", dest="engine",
+                      choices=("local", "arvados"),
+                      help="engine to use."
                       "[default=%default].")
 
-    parser.add_option("--rabbitmq-host", dest="rabbitmq_host",
-                      type="string",
-                      help="RabbitMQ host to send log messages to "
+    parser.add_option(
+        "--always-mount", dest="always_mount",
+        action="store_true",
+        help="force mounting of arvados keep [%default]")
+
+    parser.add_option("--only-info", dest="only_info",
+                      action="store_true",
+                      help="only update meta information, do not run "
                       "[default=%default].")
+
+    parser.add_option("--work-dir", dest="work_dir",
+                      type="string",
+                      help="working directory. Will be created if it does not exist "
+                      "[default=%default].")
+
+    group = E.OptionGroup(parser, "Pipeline logging configuration")
+
+    group.add_option("--pipeline-logfile", dest="pipeline_logfile",
+                     type="string",
+                     help="primary logging destination."
+                     "[default=%default].")
+
+    group.add_option("--shell-logfile", dest="shell_logfile",
+                     type="string",
+                     help="filename for shell debugging information. "
+                     "If it is not an absolute path, "
+                     "the output will be written into the current working "
+                     "directory. If unset, no logging will be output. "
+                     "[default=%default].")
 
     parser.add_option("--input-validation", dest="input_validation",
                       action="store_true",
                       help="perform input validation before starting "
                       "[default=%default].")
 
+    parser.add_option_group(group)
+
     parser.set_defaults(
         pipeline_action=None,
         pipeline_format="svg",
         pipeline_targets=[],
-        multiprocess=40,
-        logfile="pipeline.log",
+        force_run=False,
+        multiprocess=None,
+        pipeline_logfile="pipeline.log",
+        shell_logfile=None,
         dry_run=False,
-        force=False,
-        log_exceptions=False,
-        exceptions_terminate_immediately=False,
+        log_exceptions=True,
+        engine="local",
+        exceptions_terminate_immediately=None,
         debug=False,
         variables_to_set=[],
         is_test=False,
         ruffus_checksums_level=0,
-        rabbitmq_host="saruman",
-        rabbitmq_exchange="ruffus_pipelines",
+        config_file="benchmark.yml",
+        work_dir=None,
+        always_mount=False,
+        only_info=False,
         input_validation=False)
 
-    (options, args) = E.Start(parser,
-                              add_cluster_options=True)
+    parser.set_defaults(**kwargs)
+
+    if "callback" in kwargs:
+        kwargs["callback"](parser)
+
+    logger_callback = setup_logging
+
+    (options, args) = E.start(
+        parser,
+        add_cluster_options=True,
+        argv=argv,
+        logger_callback=logger_callback)
+
+    return options, args
+
+
+def update_params_with_commandline_options(params, options):
+    """add and update selected parameters in the parameter
+    dictionary with command line options.
+    """
+
+    params["dryrun"] = options.dry_run
+    if options.cluster_queue is not None:
+        params["cluster_queue"] = options.cluster_queue
+    if options.cluster_priority is not None:
+        params["cluster_priority"] = options.cluster_priority
+    if options.cluster_num_jobs is not None:
+        params["cluster_num_jobs"] = options.cluster_num_jobs
+    if options.cluster_options is not None:
+        params["cluster_options"] = options.cluster_options
+    if options.cluster_parallel_environment is not None:
+        params["cluster_parallel_environment"] =\
+            options.cluster_parallel_environment
+    if options.without_cluster:
+        params["without_cluster"] = True
+
+    params["shell_logfile"] = options.shell_logfile
+
+    params["ruffus_checksums_level"] = options.ruffus_checksums_level
+
+    for variables in options.variables_to_set:
+        variable, value = variables.split("=")
+        value = IOTools.str2val(value.strip())
+        # enter old style
+        params[variable.strip()] = value
+        # enter new style
+        parts = variable.split("_")
+        for x in range(1, len(parts)):
+            prefix = "_".join(parts[:x])
+            if prefix in params:
+                suffix = "_".join(parts[x:])
+                params[prefix][suffix] = value
+
+
+@contextlib.contextmanager
+def cache_os_functions():
+    os.stat = cached_os_stat
+    os.path.abspath = cached_os_path_abspath
+    os.path.realpath = cached_os_path_realpath
+    os.path.relpath = cached_os_path_relpath
+    os.path.islink = cached_os_path_islink
+
+    yield
+
+    os.stat = SAVED_OS_STAT
+    os.path.abspath = SAVED_OS_PATH_ABSPATH
+    os.path.realpath = SAVED_OS_PATH_REALPATH
+    os.path.relpath = SAVED_OS_PATH_RELPATH
+    os.path.islink = SAVED_OS_PATH_ISLINK
+
+
+class LoggingFilterProgress(logging.Filter):
+    """add progress information to the log-stream.
+
+    A :term:`task` is a ruffus_ decorated function, which will execute
+    one or more :term:`jobs`.
+
+    Valid task/job status:
+    update
+       task/job needs updating
+    completed
+       task/job completed successfully
+    failed
+       task/job failed
+    running
+       task/job is running
+    ignore
+       ignore task/job (is up-to-date)
+
+    This filter adds the following context to a log record:
+
+    task
+       task_name
+
+    task_status
+       task status
+
+    task_total
+       number of jobs in task
+
+    task_completed
+       number of jobs in task completed
+
+    task_completed_percent
+       percentage of task completed
+
+    The filter will also generate an additional log message in json format
+    with the fields above.
+
+    Arguments
+    ---------
+    ruffus_text : string
+        Log messages from ruffus.pipeline_printout. These are used
+        to collect all tasks that will be executed during pipeline
+        execution.
+
+    """
+    def __init__(self,
+                 ruffus_text):
+
+        # dictionary of jobs to run
+        self.jobs = {}
+        self.tasks = {}
+        self.map_job2task = {}
+        self.logger = get_logger()
+
+        def split_by_job(text):
+            # ignore optional docstring at beginning (is bracketed by '"')
+            text = re.sub('^\"[^"]+\"', "", "".join(text))
+            for line in re.split("Job\s+=", text):
+                if not line.strip():
+                    continue
+                if "Make missing directories" in line:
+                    continue
+                try:
+                    # long file names cause additional wrapping and
+                    # additional white-space characters
+                    job_name = re.search(
+                        r"\[.*-> ([^\]]+)\]", line).groups()[0]
+                except AttributeError:
+                    continue
+                    # raise AttributeError("could not parse '%s'" % line)
+                job_status = "ignore"
+                if "Job needs update" in line:
+                    job_status = "update"
+
+                yield job_name, job_status
+
+        def split_by_task(text):
+            block, task_name = [], None
+            task_status = None
+            for line in text.splitlines():
+                line = line.strip()
+
+                if line.startswith("Tasks which will be run"):
+                    task_status = "update"
+                    block = []
+                    continue
+                elif line.startswith("Tasks which are up-to-date"):
+                    task_status = "ignore"
+                    block = []
+                    continue
+
+                if line.startswith("Task = "):
+                    if task_name:
+                        yield task_name, task_status, list(split_by_job(block))
+                    block = []
+                    task_name = re.match("Task = (.*)", line).groups()[0]
+                    continue
+                if line:
+                    block.append(line)
+            if task_name:
+                yield task_name, task_status, list(split_by_job(block))
+
+        # populate with initial messages
+        for task_name, task_status, jobs in split_by_task(ruffus_text):
+            if task_name.startswith("(mkdir"):
+                continue
+
+            to_run = 0
+            for job_name, job_status in jobs:
+                self.jobs[job_name] = (task_name, job_name)
+                if job_status == "update":
+                    to_run += 1
+                self.map_job2task[re.sub("\s", "", job_name)] = task_name
+
+            self.tasks[task_name] = [task_status,
+                                     len(jobs),
+                                     len(jobs) - to_run]
+
+    def filter(self, record):
+
+        if not record.filename.endswith("task.py"):
+            return True
+
+        # update task counts and status
+        job_name, task_name = None, None
+        if re.search(r"Job\s+=", record.msg):
+            try:
+                job_name = re.search(
+                    r"\[.*-> ([^\]]+)\]", record.msg).groups()[0]
+            except AttributeError:
+                return True
+            job_name = re.sub("\s", "", job_name)
+            task_name = self.map_job2task.get(job_name, None)
+            if task_name is None:
+                return
+            if "completed" in record.msg:
+                self.tasks[task_name][2] += 1
+
+        elif re.search(r"Task\s+=", record.msg):
+            try:
+                before, task_name = record.msg.strip().split(" = ")
+            except ValueError:
+                return True
+
+            # ignore the mkdir, etc tasks
+            if task_name not in self.tasks:
+                return True
+
+            if before == "Task enters queue":
+                self.tasks[task_name][0] = "running"
+            elif before == "Completed Task":
+                self.tasks[task_name][0] = "completed"
+            elif before == "Uptodate Task":
+                self.tasks[task_name][0] = "uptodate"
+            else:
+                return True
+        else:
+            return True
+
+        if task_name is None:
+            return
+
+        # update log record
+        task_status, task_total, task_completed = self.tasks[task_name]
+        if task_total > 0:
+            task_completed_percent = 100.0 * task_completed / task_total
+        else:
+            task_completed_percent = 0
+
+        # ignore prefix:: in task_name for output
+        task_name = re.sub("^[^:]+::", "", task_name)
+        data = {
+            "task": task_name,
+            "task_status": task_status,
+            "task_total": task_total,
+            "task_completed": task_completed,
+            "task_completed_percent": task_completed_percent}
+
+        record.task_status = task_status
+        record.task_total = task_total
+        record.task_completed = task_completed
+        record.task_completed_percent = task_completed_percent
+
+        # log status
+        self.logger.info(json.dumps(data))
+
+        return True
+
+
+def main(options, args, pipeline=None):
+    """command line control function for a pipeline.
+
+    This method defines command line options for the pipeline and
+    updates the global configuration dictionary correspondingly.
+
+    It then provides a command parser to execute particular tasks
+    using the ruffus pipeline control functions. See the generated
+    command line help for usage.
+
+    To use it, add::
+
+        import Pipeline as P
+
+        if __name__ == "__main__":
+            sys.exit(P.main(sys.argv))
+
+    to your pipeline script.
+
+    Arguments
+    ---------
+    options: object
+        Container for command line arguments.
+    args : list
+        List of command line arguments.
+    pipeline: object
+        Pipeline to run. If not given, all ruffus pipelines are run.
+
+    """
+
+    global GLOBAL_OPTIONS
+    global GLOBAL_ARGS
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
-    E.info("Started in: %s" % PARAMS.get("workingdir"))
+    logger = logging.getLogger("daisy.pipeline")
+
+    logger.info("started in workingdir: {}".format(PARAMS.get("workingdir")))
     # At this point, the PARAMS dictionary has already been
     # built. It now needs to be updated with selected command
     # line options as these should always take precedence over
     # configuration files.
+    update_params_with_commandline_options(PARAMS, options)
 
-    PARAMS["dryrun"] = options.dry_run
-    PARAMS["input_validation"] = options.input_validation
-
-    # use cli_cluster_* keys in PARAMS to ensure highest priority
-    # of cluster_* options passed with the command-line
-    if options.cluster_memory_default is not None:
-        PARAMS["cli_cluster_memory_default"] = options.cluster_memory_default
-        PARAMS["cluster_memory_default"] = options.cluster_memory_default
-    if options.cluster_memory_resource is not None:
-        PARAMS["cli_cluster_memory_resource"] = options.cluster_memory_resource
-        PARAMS["cluster_memory_resource"] = options.cluster_memory_resource
-    if options.cluster_num_jobs is not None:
-        PARAMS["cli_cluster_num_jobs"] = options.cluster_num_jobs
-        PARAMS["cluster_num_jobs"] = options.cluster_num_jobs
-    if options.cluster_options is not None:
-        PARAMS["cli_cluster_options"] = options.cluster_options
-        PARAMS["cluster_options"] = options.cluster_options
-    if options.cluster_parallel_environment is not None:
-        PARAMS["cli_cluster_parallel_environment"] = options.cluster_parallel_environment
-        PARAMS["cluster_parallel_environment"] = options.cluster_parallel_environment
-    if options.cluster_priority is not None:
-        PARAMS["cli_cluster_priority"] = options.cluster_priority
-        PARAMS["cluster_priority"] = options.cluster_priority
-    if options.cluster_queue is not None:
-        PARAMS["cli_cluster_queue"] = options.cluster_queue
-        PARAMS["cluster_queue"] = options.cluster_queue
-    if options.cluster_queue_manager is not None:
-        PARAMS["cli_cluster_queue_manager"] = options.cluster_queue_manager
-        PARAMS["cluster_queue_manager"] = options.cluster_queue_manager
-
-    PARAMS["ruffus_checksums_level"] = options.ruffus_checksums_level
-
-    for variables in options.variables_to_set:
-        variable, value = variables.split("=")
-        PARAMS[variable.strip()] = IOTools.str2val(value.strip())
+    version = get_version()
 
     if args:
         options.pipeline_action = args[0]
         if len(args) > 1:
             options.pipeline_targets.extend(args[1:])
 
+    if options.force_run:
+        if options.force_run == "all":
+            forcedtorun_tasks = pipeline_get_task_names()
+        else:
+            forcedtorun_tasks = options.pipeline_targets
+    else:
+        forcedtorun_tasks = []
+
+    # create local scratch if it does not already exists. Note that
+    # directory itself will be not deleted while its contents should
+    # be cleaned up.
+    if not os.path.exists(PARAMS["tmpdir"]):
+        logger.warn("local temporary directory {} did not exist - created".format(
+            PARAMS["tmpdir"]))
+        try:
+            os.makedirs(PARAMS["tmpdir"])
+        except OSError:
+            # file exists
+            pass
+
+    logger.debug("temporary directory is {}".format(PARAMS["tmpdir"]))
+
+    # set multiprocess to a sensible setting if there is no cluster
+    run_on_cluster = HAS_DRMAA is True and not options.without_cluster
+    if options.multiprocess is None:
+        if not run_on_cluster:
+            options.multiprocess = int(math.ceil(
+                multiprocessing.cpu_count() / 2.0))
+        else:
+            options.multiprocess = 40
+
     # see inputValidation function in Parameters.py
     if options.input_validation:
-        inputValidation(PARAMS, sys.argv[0])
+        input_validation(PARAMS, sys.argv[0])
 
     if options.pipeline_action == "check":
         counter, requirements = Requirements.checkRequirementsFromAllModules()
         for requirement in requirements:
-            E.info("\t".join(map(str, requirement)))
-        E.info("version check summary: %s" % str(counter))
-        E.Stop()
+            logger.info("\t".join(map(str, requirement)))
+        logger.info("version check summary: %s" % str(counter))
+        E.stop()
         return
 
     elif options.pipeline_action == "debug":
         # create the session proxy
-        startSession()
+        start_session()
 
         method_name = options.pipeline_targets[0]
-        caller = getCaller()
+        caller = get_caller()
         method = getattr(caller, method_name)
         method(*options.pipeline_targets[1:])
 
-    elif options.pipeline_action in ("make", "show", "svg", "plot",
-                                     "touch", "regenerate"):
+    elif options.pipeline_action in ("make",
+                                     "show",
+                                     "state",
+                                     "svg",
+                                     "plot",
+                                     "dot",
+                                     "touch",
+                                     "regenerate"):
 
-        # set up extra file logger
-        handler = logging.FileHandler(filename=options.logfile,
-                                      mode="a")
-        handler.setFormatter(
-            MultiLineFormatter(
-                '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s'))
-        logger = logging.getLogger()
-        logger.addHandler(handler)
         messenger = None
-
         try:
-            if options.pipeline_action == "make":
+            with cache_os_functions():
+                if options.pipeline_action == "make":
 
-                # get tasks to be done. This essentially replicates
-                # the state information within ruffus.
-                stream = io.StringIO()
-                pipeline_printout(
-                    stream,
-                    options.pipeline_targets,
-                    verbose=5,
-                    checksum_level=options.ruffus_checksums_level)
+                    # get tasks to be done. This essentially replicates
+                    # the state information within ruffus.
+                    stream = StringIO()
+                    ruffus.pipeline_printout(
+                        stream,
+                        options.pipeline_targets,
+                        verbose=5,
+                        pipeline=pipeline,
+                        checksum_level=options.ruffus_checksums_level)
 
-                messenger = LoggingFilterRabbitMQ(
-                    stream.getvalue(),
-                    project_name=getProjectName(),
-                    pipeline_name=getPipelineName(),
-                    host=options.rabbitmq_host,
-                    exchange=options.rabbitmq_exchange)
+                    messenger = LoggingFilterProgress(stream.getvalue())
+                    logger.addFilter(messenger)
 
-                logger.addFilter(messenger)
-
-                if not options.without_cluster:
                     global task
-                    # use threading instead of multiprocessing in order to
-                    # limit the number of concurrent jobs by using the
-                    # GIL
-                    #
-                    # Note that threading might cause problems with rpy.
-                    task.Pool = ThreadPool
+                    if options.without_cluster:
+                        # use ThreadPool to avoid taking multiple CPU for pipeline
+                        # controller.
+                        ruffus.task.Pool = ThreadPool
+                    else:
+                        # use cooperative multitasking instead of multiprocessing.
+                        ruffus.task.Pool = EventPool
+                        ruffus.task.queue = gevent.queue
 
-                    # create the session proxy
-                    startSession()
+                        # create the session proxy
+                        start_session()
 
-                #
-                #   make sure we are not logging at the same time in
-                #   different processes
-                #
-                # session_mutex = manager.Lock()
-                E.info(E.GetHeader())
-                E.info("code location: %s" % PARAMS["pipeline_scriptsdir"])
-                E.info("Working directory is: %s" % PARAMS["workingdir"])
+                    logger.info("code location: {}".format(PARAMS["scriptsdir"]))
+                    logger.info("code version: {}".format(version))
+                    logger.info("working directory is: {}".format(PARAMS["workingdir"]))
+                    ruffus.pipeline_run(
+                        options.pipeline_targets,
+                        forcedtorun_tasks=forcedtorun_tasks,
+                        multiprocess=options.multiprocess,
+                        logger=logger,
+                        verbose=options.loglevel,
+                        log_exceptions=options.log_exceptions,
+                        exceptions_terminate_immediately=options.exceptions_terminate_immediately,
+                        checksum_level=options.ruffus_checksums_level,
+                        pipeline=pipeline,
+                        one_second_per_job=False,
+                    )
 
-                pipeline_run(
-                    options.pipeline_targets,
-                    multiprocess=options.multiprocess,
-                    logger=logger,
-                    verbose=options.loglevel,
-                    log_exceptions=options.log_exceptions,
-                    exceptions_terminate_immediately=options.exceptions_terminate_immediately,
-                    checksum_level=options.ruffus_checksums_level,
-                )
+                    close_session()
 
-                E.info(E.GetFooter())
+                elif options.pipeline_action == "show":
+                    ruffus.pipeline_printout(
+                        options.stdout,
+                        options.pipeline_targets,
+                        forcedtorun_tasks=forcedtorun_tasks,
+                        verbose=options.loglevel,
+                        pipeline=pipeline,
+                        checksum_level=options.ruffus_checksums_level)
 
-                closeSession()
+                elif options.pipeline_action == "touch":
+                    ruffus.pipeline_run(
+                        options.pipeline_targets,
+                        touch_files_only=True,
+                        verbose=options.loglevel,
+                        pipeline=pipeline,
+                        checksum_level=options.ruffus_checksums_level)
 
-            elif options.pipeline_action == "show":
-                pipeline_printout(
-                    options.stdout,
-                    options.pipeline_targets,
-                    verbose=options.loglevel,
-                    checksum_level=options.ruffus_checksums_level)
+                elif options.pipeline_action == "regenerate":
+                    ruffus.pipeline_run(
+                        options.pipeline_targets,
+                        touch_files_only=options.ruffus_checksums_level,
+                        pipeline=pipeline,
+                        verbose=options.loglevel)
 
-            elif options.pipeline_action == "touch":
-                pipeline_run(
-                    options.pipeline_targets,
-                    touch_files_only=True,
-                    verbose=options.loglevel,
-                    checksum_level=options.ruffus_checksums_level)
+                elif options.pipeline_action == "svg":
+                    ruffus.pipeline_printout_graph(
+                        options.stdout.buffer,
+                        options.pipeline_format,
+                        options.pipeline_targets,
+                        forcedtorun_tasks=forcedtorun_tasks,
+                        pipeline=pipeline,
+                        checksum_level=options.ruffus_checksums_level)
 
-            elif options.pipeline_action == "regenerate":
-                pipeline_run(
-                    options.pipeline_targets,
-                    touch_files_only=options.ruffus_checksums_level,
-                    verbose=options.loglevel)
+                elif options.pipeline_action == "state":
+                    ruffus.ruffus_return_dag(
+                        options.stdout,
+                        target_tasks=options.pipeline_targets,
+                        forcedtorun_tasks=forcedtorun_tasks,
+                        verbose=options.loglevel,
+                        pipeline=pipeline,
+                        checksum_level=options.ruffus_checksums_level)
 
-            elif options.pipeline_action == "svg":
-                pipeline_printout_graph(
-                    options.stdout.buffer,
-                    options.pipeline_format,
-                    options.pipeline_targets,
-                    checksum_level=options.ruffus_checksums_level)
+                elif options.pipeline_action == "plot":
+                    outf, filename = tempfile.mkstemp()
+                    ruffus.pipeline_printout_graph(
+                        os.fdopen(outf, "wb"),
+                        options.pipeline_format,
+                        options.pipeline_targets,
+                        pipeline=pipeline,
+                        checksum_level=options.ruffus_checksums_level)
+                    execute("inkscape %s" % filename)
+                    os.unlink(filename)
 
-            elif options.pipeline_action == "plot":
-                outf, filename = tempfile.mkstemp()
-                pipeline_printout_graph(
-                    os.fdopen(outf, "wb"),
-                    options.pipeline_format,
-                    options.pipeline_targets,
-                    checksum_level=options.ruffus_checksums_level)
-                execute("inkscape %s" % filename)
-                os.unlink(filename)
-
-        except ruffus_exceptions.RethrownJobError as value:
+        except ruffus.ruffus_exceptions.RethrownJobError as ex:
 
             if not options.debug:
                 E.error("%i tasks with errors, please see summary below:" %
-                        len(value.args))
-                for idx, e in enumerate(value.args):
+                        len(ex.args))
+                for idx, e in enumerate(ex.args):
                     task, job, error, msg, traceback = e
 
                     if task is None:
@@ -972,13 +1255,9 @@ def main(args=sys.argv):
                         # such as a missing dependency
                         # msg then contains a RethrownJobJerror
                         msg = str(msg)
-                        pass
                     else:
                         task = re.sub("__main__.", "", task)
-                        job = re.sub("\s", "", job)
-
-                    if messenger:
-                        messenger.send_error(task, job, error, msg)
+                        job = re.sub(r"\s", "", job)
 
                     # display only single line messages
                     if len([x for x in msg.split("\n") if x != ""]) > 1:
@@ -987,31 +1266,24 @@ def main(args=sys.argv):
                     E.error("%i: Task=%s Error=%s %s: %s" %
                             (idx, task, error, job, msg))
 
-                E.error("full traceback is in %s" % options.logfile)
+                E.error("full traceback is in %s" % options.pipeline_logfile)
 
-                # write full traceback to log file only by removing the stdout
-                # handler
-                lhStdout = logger.handlers[0]
-                logger.removeHandler(lhStdout)
-                logger.error("start of error messages")
-                logger.error(value)
-                logger.error("end of error messages")
-                logger.addHandler(lhStdout)
+                logger.error("start of all error messages")
+                logger.error(ex)
+                logger.error("end of all error messages")
 
-                # raise error
-                raise ValueError(
-                    "pipeline failed with %i errors" % len(value.args))
+                raise ValueError("pipeline failed with %i errors" % len(ex.args)) from ex
             else:
                 raise
 
     elif options.pipeline_action == "dump":
-        print(json.dumps(PARAMS))
+        options.stdout.write((json.dumps(PARAMS)) + "\n")
 
     elif options.pipeline_action == "printconfig":
-        print("Printing out pipeline parameters: ")
+        E.info("printing out pipeline parameters: ")
         for k in sorted(PARAMS):
             print(k, "=", PARAMS[k])
-        printConfigFiles()
+        print_config_files()
 
     elif options.pipeline_action == "config":
         f = sys._getframe(1)
@@ -1019,13 +1291,13 @@ def main(args=sys.argv):
         pipeline_path = os.path.splitext(caller)[0]
         general_path = os.path.join(os.path.dirname(pipeline_path),
                                     "configuration")
-        writeConfigFiles(pipeline_path, general_path)
+        write_config_files(pipeline_path, general_path)
 
     elif options.pipeline_action == "clone":
-        clonePipeline(options.pipeline_targets[0])
+        clone_pipeline(options.pipeline_targets[0])
 
     else:
         raise ValueError("unknown pipeline action %s" %
                          options.pipeline_action)
 
-    E.Stop()
+    E.stop(logger=get_logger())

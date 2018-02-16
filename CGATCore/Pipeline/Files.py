@@ -9,19 +9,19 @@ import os
 import tempfile
 
 import CGATCore.IOTools as IOTools
+import CGATCore.Experiment as E
 
 # Set from Pipeline.py
 PARAMS = {}
 
 
-def getTempFile(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"):
+def get_temp_file(dir=None, shared=False):
     '''get a temporary file.
 
-    The file is created and the caller needs to close and delete the
-    temporary file once it is not used any more. By default, the file
-    is opened as a text file (mode ``w+``) with encoding ``utf-8``
-    instead of the default mode ``w+b`` used in
-    :class:`tempfile.NamedTemporaryFile`
+    The file is created and the caller needs to close and delete
+    the temporary file once it is not used any more.
+
+    If dir does not exist, it will be created.
 
     Arguments
     ---------
@@ -31,14 +31,11 @@ def getTempFile(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"):
     shared : bool
         If set, the tempory file will be in a shared temporary
         location (given by the global configuration directory).
-    suffix : string
-        Filename suffix
 
     Returns
     -------
     file : File
         A file object of the temporary file.
-
     '''
     if dir is None:
         if shared:
@@ -46,19 +43,19 @@ def getTempFile(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"):
         else:
             dir = PARAMS['tmpdir']
 
-    return tempfile.NamedTemporaryFile(dir=dir,
-                                       delete=False,
-                                       prefix="ctmp",
-                                       mode=mode,
-                                       encoding=encoding,
-                                       suffix=suffix)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
 
 
-def getTempFilename(dir=None, shared=False, suffix=""):
+def get_temp_filename(dir=None, shared=False, clear=True):
     '''return a temporary filename.
 
     The file is created and the caller needs to delete the temporary
-    file once it is not used any more.
+    file once it is not used any more (unless `clear` is set`).
+
+    If dir does not exist, it will be created.
 
     Arguments
     ---------
@@ -68,8 +65,8 @@ def getTempFilename(dir=None, shared=False, suffix=""):
     shared : bool
         If set, the tempory file will be in a shared temporary
         location.
-    suffix : string
-        Filename suffix
+    clear : bool
+        If set, remove the temporary file after creation.
 
     Returns
     -------
@@ -77,16 +74,20 @@ def getTempFilename(dir=None, shared=False, suffix=""):
         Absolute pathname of temporary file.
 
     '''
-    tmpfile = getTempFile(dir=dir, shared=shared, suffix=suffix)
+    tmpfile = get_temp_file(dir=dir, shared=shared)
     tmpfile.close()
+    if clear:
+        os.unlink(tmpfile.name)
     return tmpfile.name
 
 
-def getTempDir(dir=None, shared=False):
+def get_temp_dir(dir=None, shared=False, clear=False):
     '''get a temporary directory.
 
     The directory is created and the caller needs to delete the temporary
     directory once it is not used any more.
+
+    If dir does not exist, it will be created.
 
     Arguments
     ---------
@@ -109,10 +110,16 @@ def getTempDir(dir=None, shared=False):
         else:
             dir = PARAMS['tmpdir']
 
-    return tempfile.mkdtemp(dir=dir, prefix="ctmp")
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    tmpdir = tempfile.mkdtemp(dir=dir, prefix="ctmp")
+    if clear:
+        os.rmdir(tmpdir)
+    return tmpdir
 
 
-def checkExecutables(filenames):
+def check_executables(filenames):
     """check for the presence/absence of executables"""
 
     missing = []
@@ -125,7 +132,7 @@ def checkExecutables(filenames):
         raise ValueError("missing executables: %s" % ",".join(missing))
 
 
-def checkScripts(filenames):
+def check_scripts(filenames):
     """check for the presence/absence of scripts"""
     missing = []
     for filename in filenames:
