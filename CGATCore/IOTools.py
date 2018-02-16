@@ -1188,6 +1188,21 @@ def read_list(infile,
     return m
 
 
+def writeMatrix(outfile, matrix, row_headers, col_headers,
+                row_header=""):
+    '''write a numpy matrix to outfile.
+
+    *row_header* gives the title of the rows
+    '''
+
+    outfile.write("%s\t%s\n" % (row_header,
+                                "\t".join(col_headers)))
+    for x, row in enumerate(matrix):
+        assert len(row) == len(col_headers)
+        outfile.write("%s\t%s\n" %
+                      (row_headers[x], "\t".join(map(str, row))))
+
+
 def readMultiMap(infile,
                  columns=(0, 1),
                  map_functions=(str, str),
