@@ -18,20 +18,6 @@ except ImportError:
         "the CGAT code collection requires numpy to be installed "
         "before running setup.py (pip install numpy)")
 
-try:
-    import Cython
-except ImportError:
-    raise ImportError(
-        "the CGAT code collection requires cython to "
-        "be installed before running setup.py (pip install cython)")
-
-try:
-    import pysam
-except ImportError:
-    raise ImportError(
-        "the CGAT code collection requires pysam to "
-        "be installed before running setup.py (pip install pysam)")
-
 ########################################################################
 ########################################################################
 # Import setuptools
@@ -54,8 +40,6 @@ if LooseVersion(setuptools.__version__) < LooseVersion('1.1'):
     raise ImportError(
         "the CGAT code collection requires setuptools 1.1 higher")
 
-from Cython.Distutils import build_ext
-
 ########################################################################
 ########################################################################
 IS_OSX = sys.platform == 'darwin'
@@ -67,34 +51,6 @@ sys.path.insert(0, "CGATCore")
 import version
 
 version = version.__version__
-
-###############################################################
-###############################################################
-# Check for external dependencies
-#
-# Not exhaustive, simply execute a representative tool from a toolkit.
-external_dependencies = (
-    ("wigToBigWig", "UCSC tools", 255),
-    ("bedtools", "bedtools", 0),
-    )
-
-for tool, toolkit, expected in external_dependencies:
-    try:
-        # py3k
-        from subprocess import DEVNULL
-    except ImportError:
-        DEVNULL = open(os.devnull, 'wb')
-
-    try:
-        retcode = subprocess.call(tool, shell=True,
-                                  stdout=DEVNULL, stderr=DEVNULL)
-    except OSError as msg:
-        print(("WARNING: depency check for %s failed: %s" % (toolkit, msg)))
-
-    # UCSC tools return 255 when called without arguments
-    if retcode != expected:
-        print(("WARNING: depency check for %s(%s) failed, error %i" %
-               (toolkit, tool, retcode)))
 
 ###############################################################
 ###############################################################
@@ -200,14 +156,14 @@ setup(
     keywords="computational genomics",
     long_description='CGAT : the Computational Genomics Analysis Toolkit',
     classifiers=[_f for _f in classifiers.split("\n") if _f],
-    url="http://www.cgat.org/cgat/Tools/",
+    url="https://github.com/cgat-developers/cgat-core",
     # package contents
     packages=cgat_packages,
     package_dir=cgat_package_dirs,
     include_package_data=True,
-    entry_points={
-        'console_scripts': ['cgat = CGAT.cgat:main']
-    },
+#    entry_points={
+#        'console_scripts': ['cgat = CGAT.cgat:main']
+#    },
     # dependencies
     install_requires=install_requires,
     dependency_links=dependency_links,
