@@ -10,7 +10,6 @@ include README.rst
 include KNOWN_BUGS
 include THANKS.txt
 
-include install-CGAT-tools.sh
 include requires.txt
 
 include CGATCore/*

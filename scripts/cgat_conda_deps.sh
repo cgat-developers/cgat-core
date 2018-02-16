@@ -35,12 +35,14 @@ PY_DEPS[Bio]="biopython"
 PY_DEPS[MySQLdb]="mysqlclient"
 PY_DEPS[SphinxReport]="ignore"
 PY_DEPS[alignlib_lite]="alignlib-lite"
+PY_DEPS[bashlex]="ignore"
 PY_DEPS[brewer2mpl]="brewer2mpl"
 PY_DEPS[bs4]="beautifulsoup4"
 PY_DEPS[bx]="bx-python"
 PY_DEPS[configparser]="ignore"
 PY_DEPS[drmaa]="python-drmaa"
 PY_DEPS[future]="future"
+PY_DEPS[gevent]="gevent"
 PY_DEPS[ggplot]="ggplot"
 PY_DEPS[httplib2]="httplib2"
 PY_DEPS[intermine]="intermine"
@@ -50,9 +52,12 @@ PY_DEPS[matplotlib]="matplotlib"
 PY_DEPS[metaphlan_utils]="ignore"
 PY_DEPS[mygene]="mygene"
 PY_DEPS[networkx]="networkx"
+PY_DEPS[nose]="nose"
 PY_DEPS[numpy]="numpy"
 PY_DEPS[openpyxl]="openpyxl"
 PY_DEPS[pandas]="pandas"
+PY_DEPS[paramiko]="paramiko"
+PY_DEPS[pep8]="pep8"
 PY_DEPS[pika]="pika"
 PY_DEPS[psycopg2]="psycopg2"
 PY_DEPS[pyBigWig]="pybigwig"
@@ -322,6 +327,7 @@ if [[ ${ALL} -eq 1 ]] ; then
 
    # Python
    find_python_imports "${REPO_FOLDER}/CGATCore"
+   find_python_imports "${REPO_FOLDER}/tests"
 
    # R
    find_r_imports "${REPO_FOLDER}/CGATCore"
@@ -405,8 +411,6 @@ echo "# python dependencies"
 echo "- python"
 
 # Add others manually:
-[[ ${ALL} -eq 1 ]] && echo "- nose" >> ${TMP_DEPS}
-[[ ${ALL} -eq 1 ]] && echo "- pep8" >> ${TMP_DEPS}
 echo "- setuptools" >> ${TMP_DEPS}
 
 # Print them all sorted
