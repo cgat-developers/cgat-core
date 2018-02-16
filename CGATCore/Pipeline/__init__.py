@@ -211,14 +211,6 @@ from CGATCore.IOTools import cloneFile as clone
 from CGATCore.IOTools import touchFile as touch
 from CGATCore.IOTools import snip as snip
 
-# import submodules
-from . import Local as Local
-from . import Execution as Execution
-from . import Control as Control
-from . import Database as Database
-from . import Files as Files
-from . import Parameters as Parameters
-
 # broadcast parameters and config object, take from
 # Parameters.py
 PARAMS = Parameters.PARAMS
