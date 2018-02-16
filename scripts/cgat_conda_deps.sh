@@ -411,6 +411,7 @@ echo "# python dependencies"
 echo "- python"
 
 # Add others manually:
+echo "- pytest" >> ${TMP_DEPS}
 echo "- setuptools" >> ${TMP_DEPS}
 
 # Print them all sorted
