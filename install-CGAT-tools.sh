@@ -443,9 +443,9 @@ else
       fi
      
    else
-      # in this case, the installation found was "cgat-scripts" so no need to run tests
+      # in this case a production installation was found so no need to run tests
       echo
-      echo " You installed the cgat-scripts, which has been properly tested before. "
+      echo " You installed the production release, which has been properly tested before. "
       echo " No need to test. Exiting now... "
       echo
 
