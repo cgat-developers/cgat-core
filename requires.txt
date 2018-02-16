@@ -1,4 +1,7 @@
-pyparsing>=1.5.7
-pandas>=0.20.0
-ruffus>=2.4
-pep8>=1.4.0
+gevent
+pytest
+pandas
+ruffus
+pep8
+yaml
+paramiko

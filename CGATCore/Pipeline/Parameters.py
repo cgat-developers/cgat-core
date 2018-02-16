@@ -71,22 +71,22 @@ HARDCODED_PARAMS = {
     'shared_tmpdir': os.environ.get("SHARED_TMPDIR", os.path.abspath(os.getcwd())),
     # database backend
     'database': {'url': 'sqlite3:///./csvdb'},
-    # cluster option
+    # cluster options - parameterized for CGAT cluster for testing
     'cluster': {
         # cluster queue to use
-        'queue': 'main.q',
+        'queue': 'all.q',
         # priority of jobs in cluster queue
         'priority': -10,
         # number of jobs to submit to cluster queue
         'num_jobs': 100,
         # name of consumable resource to use for requesting memory
-        'memory_resource': "h_vmem",
+        'memory_resource': "mem_free",
         # amount of memory set by default for each job
         'memory_default': "4G",
         # general cluster options
         'options': "",
         # parallel environment to use for multi-threaded jobs
-        'parallel_environment': 'smp',
+        'parallel_environment': 'dedicated',
     },
     # ruffus job limits for databases
     'jobs_limit_db': 10,
