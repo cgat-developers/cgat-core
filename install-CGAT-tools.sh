@@ -388,8 +388,7 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
    log "starting tests"
    # run nosetests
    if [[ $TEST_ALL ]] ; then
-      log "test_import.py" && nosetests -v tests/test_import.py && \
-      log "test_style.py" && nosetests -v tests/test_style.py
+      pytest tests
    elif [[ $TEST_IMPORT ]] ; then
       nosetests -v tests/test_import.py ;
    elif [[ $TEST_STYLE ]] ; then
