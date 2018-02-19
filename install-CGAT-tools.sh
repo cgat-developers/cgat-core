@@ -164,7 +164,6 @@ echo " CONDA_INSTALL_TYPE: "$CONDA_INSTALL_TYPE
 echo " CONDA_INSTALL_ENV: "$CONDA_INSTALL_ENV
 echo " PYTHONPATH: "$PYTHONPATH
 [[ ! $INSTALL_TEST ]] && echo " INSTALL_BRANCH: "$INSTALL_BRANCH
-[[ ! $INSTALL_TEST ]] && echo " CORE_BRANCH: "$CORE_BRANCH
 [[ ! $INSTALL_TEST ]] && echo " RELEASE: "$RELEASE
 [[ ! $INSTALL_TEST ]] && echo " CODE_DOWNLOAD_TYPE: "$CODE_DOWNLOAD_TYPE
 echo
@@ -565,10 +564,10 @@ test_mix_branch_release() {
 # https://stackoverflow.com/questions/12199059/how-to-check-if-an-url-exists-with-the-shell-and-probably-curl
 test_core_branch() {
    RELEASE_TEST=0
-   curl --output /dev/null --silent --head --fail https://raw.githubusercontent.com/cgat-developers/cgat-core/${CORE_BRANCH}/README.rst || RELEASE_TEST=$?
+   curl --output /dev/null --silent --head --fail https://raw.githubusercontent.com/cgat-developers/cgat-core/${INSTALL_BRANCH}/README.rst || RELEASE_TEST=$?
    if [[ ${RELEASE_TEST} -ne 0 ]] ; then
       echo
-      echo " The branch provided for cgat-core does not exist: ${CORE_BRANCH}"
+      echo " The branch provided for cgat-core does not exist: ${INSTALL_BRANCH}"
       echo
       echo " Please have a look at valid branches here: "
       echo " https://github.com/cgat-developers/cgat-core/branches"
@@ -610,7 +609,7 @@ echo " By default the master branch will be installed:"
 echo " https://github.com/cgat-developers/cgat-core"
 echo
 echo " Change that with:"
-echo " ./install-CGAT-tools.sh --devel --core-branch <name-of-branch>"
+echo " ./install-CGAT-tools.sh --devel --branch <name-of-branch>"
 echo
 echo " To test the installation:"
 echo " ./install-CGAT-tools.sh --test [--location </full/path/to/folder/without/trailing/slash>]"
@@ -658,8 +657,6 @@ CGAT_HOME=
 CODE_DOWNLOAD_TYPE=0
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
-# which github branch to use for cgat-core (default: master)
-CORE_BRANCH="master"
 # Install a released version?
 RELEASE=
 
@@ -738,12 +735,6 @@ case $key in
     --branch)
     INSTALL_BRANCH="$2"
     test_mix_branch_release
-    shift 2
-    ;;
-
-    --core-branch)
-    CORE_BRANCH="$2"
-    test_core_branch
     shift 2
     ;;
 
