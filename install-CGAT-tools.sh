@@ -761,7 +761,8 @@ if [[ $INSTALL_PRODUCTION ]] && [[ $INSTALL_DEVEL ]] ; then
 fi
 
 # sanity check 2: make sure one installation option is selected
-if [[ -z $INSTALL_PRODUCTION ]] && \
+if [[ -z $INSTALL_TEST ]] && \
+   [[ -z $INSTALL_PRODUCTION ]] && \
    [[ -z $INSTALL_DEVEL ]] && \
    [[ -z $TRAVIS_INSTALL ]] && \
    [[ -z $JENKINS_INSTALL ]] ; then
