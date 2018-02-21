@@ -388,8 +388,8 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
    sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
    python setup.py develop
 
-   log "starting tests"
-   # run nosetests
+   # run tests
+   log "running tests..."
    if [[ $TEST_ALL ]] ; then
       pytest tests
    elif [[ $TEST_IMPORT ]] ; then
@@ -416,28 +416,15 @@ else
       OUTPUT_DIR=`pwd`
 
       # run tests
-      /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+      log "running tests..."
+      /usr/bin/time -o tests.time -v pytest tests >& tests.output
       if [[ $? -eq 0 ]] ; then
          echo
-         echo " test_import.py passed successfully! "
+         echo " tests passed successfully! "
          echo
       else
          echo
-         echo " test_import.py failed. Please see $OUTPUT_DIR/test_import.out file for detailed output. "
-         echo
-
-         print_env_vars
-
-      fi
-
-      /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_style.py >& test_style.out
-      if [[ $? -eq 0 ]] ; then
-         echo
-         echo " test_style.py passed successfully! "
-         echo
-      else
-         echo
-         echo " test_style.py failed. Please see $OUTPUT_DIR/test_scripts.out file for detailed output. "
+         echo " tests failed. Please see $OUTPUT_DIR/tests.output file for detailed output. "
          echo
 
          print_env_vars
