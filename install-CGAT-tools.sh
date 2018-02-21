@@ -417,7 +417,7 @@ else
 
       # run tests
       log "running tests..."
-      /usr/bin/time -o tests.time -v pytest tests >& tests.output
+      pytest tests >& tests.output
       if [[ $? -eq 0 ]] ; then
          echo
          echo " tests passed successfully! "
