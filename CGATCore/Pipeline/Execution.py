@@ -650,18 +650,19 @@ class Executor(object):
                 # disabled - problems with quoting
                 # tmpfile.write( '''echo 'statement=%s' >> %s\n''' %
                 # (shellquote(statement), self.shellfile) )
-                tmpfile.write("set | sed 's/^/%s : /' &>> %s\n" %
+                tmpfile.write("set | sed 's/^/%s : /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                tmpfile.write("pwd | sed 's/^/%s : /' &>> %s\n" %
+                tmpfile.write("pwd | sed 's/^/%s : /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                tmpfile.write("hostname | sed 's/^/%s: /' &>> %s\n" %
+                tmpfile.write("hostname | sed 's/^/%s: /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' &>> %s\n" %
-                              (self.job_name, self.shellfile))
+                # cat /proc/meminfo is Linux specific; TO-DO
+                #tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' >> %s\n" %
+                #              (self.job_name, self.shellfile))
                 tmpfile.write(
                     'echo "%s : END -> %s" >> %s\n' %
                     (self.job_name, tmpfilename, self.shellfile))
-                tmpfile.write("ulimit | sed 's/^/%s: /' &>> %s\n" %
+                tmpfile.write("ulimit | sed 's/^/%s: /' >> %s\n" %
                               (self.job_name, self.shellfile))
 
             job_path = os.path.abspath(tmpfilename)
