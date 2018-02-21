@@ -106,22 +106,22 @@ def quoteTableName(name, quote_char="_", backend="sqlite"):
         return re.sub("[-(),\[\]]:", "_", name)
 
 
-def createTable(dbhandle,
-                error,
-                tablename,
-                options,
-                retry=True,
-                ignore_empty=True,
-                ignore_columns=[],
-                rename_columns=[],
-                lowercase=False,
-                ignore_duplicates=True,
-                indices=[],
-                rows=None,
-                headers=None,
-                first_column=None,
-                existing_tables=set(),
-                append=False):
+def create_table(dbhandle,
+                 error,
+                 tablename,
+                 options,
+                 retry=True,
+                 ignore_empty=True,
+                 ignore_columns=[],
+                 rename_columns=[],
+                 lowercase=False,
+                 ignore_duplicates=True,
+                 indices=[],
+                 rows=None,
+                 headers=None,
+                 first_column=None,
+                 existing_tables=set(),
+                 append=False):
 
     # create table by guessing column types from data type.
     if rows:
@@ -361,7 +361,7 @@ def run(infile, options, report_step=10000):
                 "undefined columns in input file at row: %s" % row)
 
         try:
-            rows.append(IOTools.convertDictionary(row, map=options.map))
+            rows.append(IOTools.convert_dictionary_values(row, map=options.map))
         except TypeError as msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
@@ -383,7 +383,7 @@ def run(infile, options, report_step=10000):
                 E.warn("no data - no table created")
             else:
                 # create empty table and exit
-                take, map_column2type, ignored = createTable(
+                take, map_column2type, ignored = create_table(
                     dbhandle,
                     error,
                     options.tablename,
@@ -404,7 +404,7 @@ def run(infile, options, report_step=10000):
         else:
             raise ValueError("empty table")
     else:
-        take, map_column2type, ignored = createTable(
+        take, map_column2type, ignored = create_table(
             dbhandle,
             error,
             options.tablename,
