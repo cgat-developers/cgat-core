@@ -222,8 +222,8 @@ if [[ `uname` == "Linux" ]] ; then
 elif [[ `uname` == "Darwin" ]] ; then
 
    # Conda 4.4 breaks everything again!
-   #MINICONDA="Miniconda3-latest-Linux-x86_64.sh"
-   MINICONDA="Miniconda3-4.3.31-Linux-x86_64.sh"
+   #MINICONDA="Miniconda3-latest-MacOSX-x86_64.sh"
+   MINICONDA="Miniconda3-4.3.31-MacOSX-x86_64.sh"
 
 else
 
