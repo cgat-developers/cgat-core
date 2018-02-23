@@ -47,7 +47,7 @@ import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
 import CGATCore.Requirements as Requirements
 from CGATCore.Pipeline.Parameters import input_validation, get_params
-from CGATCore.Pipeline.Utils import get_caller, get_caller_locals
+from CGATCore.Pipeline.Utils import get_caller, get_caller_locals, is_test
 from CGATCore.Pipeline.Execution import execute, start_session,\
     close_session
 
@@ -145,7 +145,7 @@ def write_config_files(pipeline_path, general_path):
                 break
         else:
             raise ValueError(
-                "default config file for `%s` not found in %s" %
+                "default config file `%s` not found in %s" %
                 (config_files, paths))
 
 
@@ -345,7 +345,7 @@ def peek_parameters(workingdir,
 
     # check if we should raise errors
     if on_error_raise is None:
-        on_error_raise = not isTest() and \
+        on_error_raise = not is_test() and \
             "__name__" in caller_locals and \
             caller_locals["__name__"] == "__main__"
 
@@ -1025,7 +1025,7 @@ class LoggingFilterProgress(logging.Filter):
         return True
 
 
-def main(options, args, pipeline=None):
+def run_workflow(options, args, pipeline=None):
     """command line control function for a pipeline.
 
     This method defines command line options for the pipeline and
@@ -1283,7 +1283,11 @@ def main(options, args, pipeline=None):
         print_config_files()
 
     elif options.pipeline_action == "config":
-        f = sys._getframe(1)
+        # Level needs to be 2:
+        # 0th level -> cgatflow.py
+        # 1st level -> Control.py
+        # 2nd level -> pipeline_xyz.py
+        f = sys._getframe(2)
         caller = f.f_globals["__file__"]
         pipeline_path = os.path.splitext(caller)[0]
         general_path = os.path.join(os.path.dirname(pipeline_path),
@@ -1298,3 +1302,37 @@ def main(options, args, pipeline=None):
                          options.pipeline_action)
 
     E.stop(logger=get_logger())
+
+
+def main(argv=sys.argv):
+    """command line control function for a pipeline.
+
+    This method defines command line options for the pipeline and
+    updates the global configuration dictionary correspondingly.
+
+    It then provides a command parser to execute particular tasks
+    using the ruffus pipeline control functions. See the generated
+    command line help for usage.
+
+    To use it, add::
+
+        import CGAT.Pipeline as P
+
+        if __name__ == "__main__":
+            sys.exit(P.main(sys.argv))
+
+    to your pipeline script.
+
+    Arguments
+    ---------
+    args : list
+        List of command line arguments.
+
+    """
+
+    if argv is None:
+        argv = sys.argv
+
+    options, args = parse_commandline(argv,
+                                      config_file="pipeline.ini")
+    run_workflow(options, args)

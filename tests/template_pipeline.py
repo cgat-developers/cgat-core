@@ -119,7 +119,7 @@ def main(argv=None):
         output="all")
 
     E.debug("starting workflow")
-    return P.main(options, args)
+    return P.run_workflow(options, args)
 
 
 if __name__ == "__main__":
