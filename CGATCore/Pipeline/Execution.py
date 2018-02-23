@@ -1022,7 +1022,7 @@ class LocalExecutor(Executor):
 
             # max_vmem is set to max_rss, not available by /usr/bin/time
             full_statement = (
-                "$(which time) --output=%s.times "
+                "\\time --output=%s.times "
                 "-f '"
                 "exit_status\t%%x\n"
                 "user_t\t%%U\n"
