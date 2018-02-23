@@ -11,10 +11,11 @@ Reference
 '''
 import time
 import re
+import sqlalchemy
 from pandas import DataFrame
 
 
-def executewait(dbhandle, statement, error=Exception, regex_error="locked",
+def executewait(dbhandle, statement, regex_error="locked",
                 retries=-1, wait=5):
     '''repeatedly execute an SQL statement until it succeeds.
 
@@ -41,12 +42,10 @@ def executewait(dbhandle, statement, error=Exception, regex_error="locked",
     A cursor object
 
     '''
-    cc = dbhandle.cursor()
-
     while 1:
         try:
-            cc.execute(statement)
-        except error as msg:
+            cc = dbhandle.execute(statement)
+        except Exception as msg:
             if retries == 0:
                 raise
             if not re.search("locked", str(msg)):
@@ -110,7 +109,7 @@ def db_execute(cc, statements):
         cc.execute(statement)
 
 
-def connect(dbhandle, attach=None):
+def connect(dbhandle=None, attach=None, url=None):
     """attempt to connect to database.
 
     If `dbhandle` is an existing connection to a database,
@@ -119,6 +118,8 @@ def connect(dbhandle, attach=None):
 
     Arguments
     ---------
+    url: string
+        A database url
     dbhandle : object or string
         A database handle or a connection string.
 
@@ -127,6 +128,19 @@ def connect(dbhandle, attach=None):
     dbhandle : object
         A DB-API2 conforming database handle
     """
+    if url:
+        is_sqlite3 = url.startswith("sqlite")
+
+        if is_sqlite3:
+            connect_args = {'check_same_thread': False}
+        else:
+            connect_args = {}
+
+        engine = sqlalchemy.create_engine(
+            url,
+            connect_args=connect_args)
+        return engine
+
     if isinstance(dbhandle, str):
         try:
             import sqlite3
@@ -147,6 +161,9 @@ def connect(dbhandle, attach=None):
                 db_execute(cc, attach_statement)
 
     return dbhandle
+
+
+
 
 
 def execute(queries, dbhandle=None, attach=False):

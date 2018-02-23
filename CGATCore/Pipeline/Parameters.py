@@ -70,7 +70,7 @@ HARDCODED_PARAMS = {
     # directory used for temporary files shared across machines
     'shared_tmpdir': os.environ.get("SHARED_TMPDIR", os.path.abspath(os.getcwd())),
     # database backend
-    'database': {'url': 'sqlite3:///./csvdb'},
+    'database': {'url': 'sqlite:///./csvdb'},
     # cluster options - parameterized for CGAT cluster for testing
     'cluster': {
         # cluster queue to use

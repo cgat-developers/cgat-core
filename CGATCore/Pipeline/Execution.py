@@ -434,7 +434,7 @@ class Executor(object):
             self.job_total_memory = kwargs['job_total_memory']
             self.job_memory = IOTools.bytes2human(
                 IOTools.human2bytes(self.job_total_memory) / self.job_threads)
-        elif 'job_memory' in kwargs:
+        elif 'job_memory' in kwargs and kwargs["job_memory"]:
             # job_memory takes precedence over job_total_memory
             self.job_memory = kwargs['job_memory']
             self.job_total_memory = self.job_memory * self.job_threads

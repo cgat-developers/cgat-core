@@ -342,7 +342,7 @@ def peek_parameters(workingdir,
 
     '''
     caller_locals = get_caller_locals()
-
+    
     # check if we should raise errors
     if on_error_raise is None:
         on_error_raise = not is_test() and \
@@ -353,29 +353,6 @@ def peek_parameters(workingdir,
     # do not peek as there might be no config file.
     if "--help" in sys.argv or "-h" in sys.argv:
         return {}
-
-    # Attempt to locate directory with pipeline source code. This is a
-    # patch as pipelines might be called within the repository
-    # directory or from an installed location
-    dirname = get_params()["pipelinedir"]
-
-    # called without a directory, use current directory
-    if dirname == "":
-        dirname = os.path.abspath(".")
-    else:
-        # if not exists, assume we want version located
-        # in directory of calling script.
-        if not os.path.exists(dirname):
-            # directory is path of calling script
-            dirname = os.path.dirname(caller_locals['__file__'])
-
-    pipeline = os.path.join(dirname, pipeline)
-    if not os.path.exists(pipeline):
-        if on_error_raise:
-            raise ValueError(
-                "can't find pipeline at %s" % (pipeline))
-        else:
-            return {}
 
     if workingdir == "":
         workingdir = os.path.abspath(".")
@@ -394,7 +371,7 @@ def peek_parameters(workingdir,
         else:
             return {}
 
-    statement = "python %s -f -v 0 dump" % pipeline
+    statement = "cgatflow {} -v 0 dump".format(pipeline)
     process = subprocess.Popen(statement,
                                cwd=workingdir,
                                shell=True,
