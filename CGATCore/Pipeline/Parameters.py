@@ -293,7 +293,7 @@ def get_parameters(filenames=None,
     if user:
         # read configuration from a users home directory
         fn = os.path.join(os.path.expanduser("~"),
-                          ".daisy.yml")
+                          ".cgat.yml")
         if os.path.exists(fn):
             filenames.insert(0, fn)
 
@@ -308,7 +308,9 @@ def get_parameters(filenames=None,
     # reset working directory. Set in PARAMS to prevent repeated calls to
     # os.getcwd() failing if network is busy
     PARAMS["workingdir"] = os.getcwd()
-
+    # location of pipelines - set via location of top frame (cgatflow command)
+    PARAMS["pipelinedir"] = os.path.dirname(get_caller_locals()["__file__"])
+    
     # backwards compatibility - read ini files
     ini_filenames = [x for x in filenames if x.endswith(".ini")]
     yml_filenames = [x for x in filenames if not x.endswith(".ini")]

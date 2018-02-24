@@ -361,8 +361,8 @@ def peek_parameters(workingdir,
     # pipeline directory if directory is not specified
     # working dir is set to "?!"
     if ("config" in sys.argv or "check" in sys.argv or "clone" in sys.argv and workingdir == "?!"):
-        workingdir = os.path.join(get_params().get("pipelinedir"),
-                                  IOTools.snip(pipeline, ".py"))
+        workingdir = os.path.join(get_params()["pipelinedir"],
+                                  "pipeline_" + pipeline)
 
     if not os.path.exists(workingdir):
         if on_error_raise:
