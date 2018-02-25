@@ -310,7 +310,7 @@ def get_parameters(filenames=None,
     PARAMS["workingdir"] = os.getcwd()
     # location of pipelines - set via location of top frame (cgatflow command)
     PARAMS["pipelinedir"] = os.path.dirname(get_caller_locals()["__file__"])
-    
+
     # backwards compatibility - read ini files
     ini_filenames = [x for x in filenames if x.endswith(".ini")]
     yml_filenames = [x for x in filenames if not x.endswith(".ini")]
@@ -523,3 +523,14 @@ def get_parameters_as_namedtuple(*args, **kwargs):
     """
     d = get_parameters(*args, **kwargs)
     return collections.namedtuple('GenericDict', list(d.keys()))(**d)
+
+
+def get_param_section(section):
+    """return config values in section
+
+    Sections are built by common prefixes.
+    """
+    if not section.endswith("_"):
+        section = section + "_"
+    n = len(section)
+    return [(x[n:], y) for x, y in PARAMS.items() if x.startswith(section)]
