@@ -129,6 +129,7 @@ def run(infile, options, chunk_size=10000):
             df.to_sql(tablename,
                       con=dbhandle,
                       schema=options.database_schema,
+                      index=False,
                       if_exists=if_exists)
 
             counter.input += len(df)

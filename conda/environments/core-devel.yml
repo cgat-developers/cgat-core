@@ -26,3 +26,4 @@ dependencies:
 - ruffus=2.6.3
 - setuptools=38.5.1
 - six=1.11.0
+- sqlalchemy
