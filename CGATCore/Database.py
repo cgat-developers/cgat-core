@@ -163,9 +163,6 @@ def connect(dbhandle=None, attach=None, url=None):
     return dbhandle
 
 
-
-
-
 def execute(queries, dbhandle=None, attach=False):
     '''Execute a statement or a  list of statements (sequentially)'''
 
