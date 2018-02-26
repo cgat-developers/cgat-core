@@ -855,32 +855,15 @@ def start(parser=None,
     if add_database_options:
         group = OptionGroup(parser, "Database connection options")
         group.add_option(
-            "--database-backend", dest="database_backend", type="choice",
-            choices=("sqlite", "mysql", "postgres"),
-            help="database backend [%default].")
-        group.add_option(
-            "--database-host", dest="database_host", type="string",
-            help="database host [%default].")
-        group.add_option(
-            "--database-name", dest="database_name", type="string",
-            help="name of the database [%default].")
-        group.add_option(
-            "--database-username", dest="database_username", type="string",
-            help="database username [%default].")
-        group.add_option(
-            "--database-password", dest="database_password", type="string",
-            help="database password [%default].")
-        group.add_option(
-            "--database-port", dest="database_port", type="int",
-            help="database port [%default].")
+            "--database-url", dest="database_url", type="string",
+            help="database connection url, for example sqlite:///./csvdb [%default].")
 
-        parser.set_defaults(
-            database_backend="sqlite",
-            database_name="csvdb",
-            database_host="",
-            database_port=3306,
-            database_username="",
-            database_password="")
+        group.add_option(
+            "--database-schema", dest="database_schema", type="string",
+            help="database schema [%default]")
+        
+        parser.set_defaults(database_url="sqlite:///./csvdb")
+        parser.set_defaults(database_schema=None)
         parser.add_option_group(group)
 
     # restore user defaults

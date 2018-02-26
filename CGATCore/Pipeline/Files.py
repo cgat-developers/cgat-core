@@ -13,11 +13,14 @@ import CGATCore.Experiment as E
 from CGATCore.Pipeline.Parameters import get_params
 
 
-def get_temp_file(dir=None, shared=False):
+def get_temp_file(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"):
     '''get a temporary file.
 
-    The file is created and the caller needs to close and delete
-    the temporary file once it is not used any more.
+    The file is created and the caller needs to close and delete the
+    temporary file once it is not used any more. By default, the file
+    is opened as a text file (mode ``w+``) with encoding ``utf-8``
+    instead of the default mode ``w+b`` used in
+    :class:`tempfile.NamedTemporaryFile`
 
     If dir does not exist, it will be created.
 
@@ -29,11 +32,14 @@ def get_temp_file(dir=None, shared=False):
     shared : bool
         If set, the tempory file will be in a shared temporary
         location (given by the global configuration directory).
+    suffix : string
+        Filename suffix
 
     Returns
     -------
     file : File
         A file object of the temporary file.
+
     '''
     if dir is None:
         if shared:
@@ -44,10 +50,12 @@ def get_temp_file(dir=None, shared=False):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
+    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp",
+                                       mode=mode,
+                                       encoding=encoding, suffix=suffix)
 
 
-def get_temp_filename(dir=None, shared=False, clear=True):
+def get_temp_filename(dir=None, shared=False, clear=True, suffix=""):
     '''return a temporary filename.
 
     The file is created and the caller needs to delete the temporary
@@ -65,6 +73,8 @@ def get_temp_filename(dir=None, shared=False, clear=True):
         location.
     clear : bool
         If set, remove the temporary file after creation.
+    suffix : string
+        Filename suffix
 
     Returns
     -------
@@ -72,7 +82,7 @@ def get_temp_filename(dir=None, shared=False, clear=True):
         Absolute pathname of temporary file.
 
     '''
-    tmpfile = get_temp_file(dir=dir, shared=shared)
+    tmpfile = get_temp_file(dir=dir, shared=shared, suffix=suffix)
     tmpfile.close()
     if clear:
         os.unlink(tmpfile.name)
