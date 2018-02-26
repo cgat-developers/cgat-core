@@ -312,7 +312,10 @@ def get_parameters(filenames=None,
     # os.getcwd() failing if network is busy
     PARAMS["workingdir"] = os.getcwd()
     # location of pipelines - set via location of top frame (cgatflow command)
-    PARAMS["pipelinedir"] = os.path.dirname(get_caller_locals()["__file__"])
+    if '__file__' in caller_locals:
+        PARAMS["pipelinedir"] = os.path.dirname(caller_locals["__file__"])
+    else:
+        PARAMS["pipelinedir"] = 'unknown'
 
     # backwards compatibility - read ini files
     ini_filenames = [x for x in filenames if x.endswith(".ini")]
