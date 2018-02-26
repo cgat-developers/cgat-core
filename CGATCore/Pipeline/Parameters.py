@@ -10,6 +10,7 @@ import types
 import collections
 import os
 import sys
+import platform
 import configparser
 import getpass
 import logging
@@ -92,6 +93,8 @@ HARDCODED_PARAMS = {
     'jobs_limit_db': 10,
     # ruffus job limits for R
     'jobs_limit_R': 1,
+    # operating system we are running on
+    'os': platform.system(),
 }
 
 # After all configuration files have been read, some

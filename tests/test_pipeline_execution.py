@@ -142,39 +142,46 @@ class TestExecutionRunLocal(unittest.TestCase):
 
         outfile = os.path.join(self.work_dir, "out")
 
-        self.assertRaises(
-            OSError,
-            P.run,
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
-            "out = open(\"{outfile}\", \"w\"); "
-            "out.write(str(len(a)) + \"\\n\"); "
-            "out.close()'".format(
-                memory=self.test_memory_size,
-                outfile=outfile),
-            to_cluster=self.to_cluster,
-            job_memory="{}G".format(
-                0.5 * self.test_memory_size / 10**9))
+        if P.get_parameters()['os'] == 'Linux':
+            self.assertRaises(
+                OSError,
+                P.run,
+                "python -c 'import numpy; "
+                "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
+                "out = open(\"{outfile}\", \"w\"); "
+                "out.write(str(len(a)) + \"\\n\"); "
+                "out.close()'".format(
+                    memory=self.test_memory_size,
+                    outfile=outfile),
+                to_cluster=self.to_cluster,
+                job_memory="{}G".format(
+                    0.5 * self.test_memory_size / 10**9))
+        else:
+            pass
 
     def test_job_should_fail_if_too_little_memory_required_in_second_statement(self):
 
         outfile = os.path.join(self.work_dir, "out")
         infile = "arv=by_id/glon1-4zz18-3cbje7tmr0nitut/study_list.txt"
-        self.assertRaises(
-            OSError,
-            P.run,
-            "hostname > {outfile}; "
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
-            "out = open(\"{outfile}\", \"w\"); "
-            "out.write(str(len(a)) + \"\\n\"); "
-            "out.close()'".format(
-                memory=self.test_memory_size,
-                infile=infile,
-                outfile=outfile),
-            to_cluster=self.to_cluster,
-            job_memory="{}G".format(
-                0.5 * self.test_memory_size / 10**9))
+
+        if P.get_parameters()['os'] == 'Linux':
+            self.assertRaises(
+                OSError,
+                P.run,
+                "hostname > {outfile}; "
+                "python -c 'import numpy; "
+                "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
+                "out = open(\"{outfile}\", \"w\"); "
+                "out.write(str(len(a)) + \"\\n\"); "
+                "out.close()'".format(
+                    memory=self.test_memory_size,
+                    infile=infile,
+                    outfile=outfile),
+                to_cluster=self.to_cluster,
+                job_memory="{}G".format(
+                    0.5 * self.test_memory_size / 10**9))
+        else:
+            pass
 
     def test_job_should_pass_if_enough_memory_required(self):
         outfile = os.path.join(self.work_dir, "out")
