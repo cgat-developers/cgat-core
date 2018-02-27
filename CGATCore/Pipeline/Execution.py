@@ -657,10 +657,10 @@ class Executor(object):
                 tmpfile.write("hostname | sed 's/^/%s: /' >> %s\n" %
                               (self.job_name, self.shellfile))
                 # cat /proc/meminfo is Linux specific
-                if get_params['os'] == 'Linux':
+                if get_params()['os'] == 'Linux':
                     tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' >> %s\n" %
                                   (self.job_name, self.shellfile))
-                elif get_params['os'] == 'Darwin':
+                elif get_params()['os'] == 'Darwin':
                     tmpfile.write("vm_stat | sed 's/^/%s: /' >> %s\n" %
                                   (self.job_name, self.shellfile))
                 tmpfile.write(
