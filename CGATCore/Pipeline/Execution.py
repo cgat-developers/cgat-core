@@ -1398,9 +1398,9 @@ def cluster_runnable(func):
             submit_args, args_file = _pickle_args(args, kwargs)
             module_file = os.path.abspath(
                 sys.modules[func.__module__].__file__)
-            submit(snip(__file__),
+            submit(IOTools.snip(__file__),
                    "run_pickled",
-                   params=[snip(module_file), function_name, args_file],
+                   params=[IOTools.snip(module_file), function_name, args_file],
                    **submit_args)
         else:
             # remove job contral options before running function
