@@ -656,9 +656,13 @@ class Executor(object):
                               (self.job_name, self.shellfile))
                 tmpfile.write("hostname | sed 's/^/%s: /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                # cat /proc/meminfo is Linux specific; TO-DO
-                #tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' >> %s\n" %
-                #              (self.job_name, self.shellfile))
+                # cat /proc/meminfo is Linux specific
+                if P.get_parameters()['os'] == 'Linux':
+                    tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' >> %s\n" %
+                                  (self.job_name, self.shellfile))
+                elif P.get_parameters()['os'] == 'Darwin':
+                    tmpfile.write("vm_stat | sed 's/^/%s: /' >> %s\n" %
+                                  (self.job_name, self.shellfile))
                 tmpfile.write(
                     'echo "%s : END -> %s" >> %s\n' %
                     (self.job_name, tmpfilename, self.shellfile))
