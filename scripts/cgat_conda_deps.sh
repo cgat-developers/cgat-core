@@ -411,6 +411,7 @@ echo "# python dependencies"
 echo "- python"
 
 # Add others manually:
+echo "- pytest" >> ${TMP_DEPS}
 echo "- setuptools" >> ${TMP_DEPS}
 
 # Print them all sorted
@@ -477,6 +478,7 @@ done
 # print misc section
 
 # Add these manually, as they are required but don't use the 'statement' variable to run them
+echo "- time" >> ${TMP_DEPS}
 echo "- nomkl" >> ${TMP_DEPS}
 
 echo "# Misc dependencies"

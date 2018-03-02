@@ -164,7 +164,6 @@ echo " CONDA_INSTALL_TYPE: "$CONDA_INSTALL_TYPE
 echo " CONDA_INSTALL_ENV: "$CONDA_INSTALL_ENV
 echo " PYTHONPATH: "$PYTHONPATH
 [[ ! $INSTALL_TEST ]] && echo " INSTALL_BRANCH: "$INSTALL_BRANCH
-[[ ! $INSTALL_TEST ]] && echo " CORE_BRANCH: "$CORE_BRANCH
 [[ ! $INSTALL_TEST ]] && echo " RELEASE: "$RELEASE
 [[ ! $INSTALL_TEST ]] && echo " CODE_DOWNLOAD_TYPE: "$CODE_DOWNLOAD_TYPE
 echo
@@ -389,11 +388,10 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
    sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
    python setup.py develop
 
-   log "starting tests"
-   # run nosetests
+   # run tests
+   log "running tests..."
    if [[ $TEST_ALL ]] ; then
-      log "test_import.py" && nosetests -v tests/test_import.py && \
-      log "test_style.py" && nosetests -v tests/test_style.py
+      pytest tests
    elif [[ $TEST_IMPORT ]] ; then
       nosetests -v tests/test_import.py ;
    elif [[ $TEST_STYLE ]] ; then
@@ -418,28 +416,15 @@ else
       OUTPUT_DIR=`pwd`
 
       # run tests
-      /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+      log "running tests..."
+      pytest tests >& tests.output
       if [[ $? -eq 0 ]] ; then
          echo
-         echo " test_import.py passed successfully! "
+         echo " tests passed successfully! "
          echo
       else
          echo
-         echo " test_import.py failed. Please see $OUTPUT_DIR/test_import.out file for detailed output. "
-         echo
-
-         print_env_vars
-
-      fi
-
-      /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_style.py >& test_style.out
-      if [[ $? -eq 0 ]] ; then
-         echo
-         echo " test_style.py passed successfully! "
-         echo
-      else
-         echo
-         echo " test_style.py failed. Please see $OUTPUT_DIR/test_scripts.out file for detailed output. "
+         echo " tests failed. Please see $OUTPUT_DIR/tests.output file for detailed output. "
          echo
 
          print_env_vars
@@ -570,10 +555,10 @@ test_mix_branch_release() {
 # https://stackoverflow.com/questions/12199059/how-to-check-if-an-url-exists-with-the-shell-and-probably-curl
 test_core_branch() {
    RELEASE_TEST=0
-   curl --output /dev/null --silent --head --fail https://raw.githubusercontent.com/cgat-developers/cgat-core/${CORE_BRANCH}/README.md || RELEASE_TEST=$?
+   curl --output /dev/null --silent --head --fail https://raw.githubusercontent.com/cgat-developers/cgat-core/${INSTALL_BRANCH}/README.rst || RELEASE_TEST=$?
    if [[ ${RELEASE_TEST} -ne 0 ]] ; then
       echo
-      echo " The branch provided for cgat-core does not exist: ${CORE_BRANCH}"
+      echo " The branch provided for cgat-core does not exist: ${INSTALL_BRANCH}"
       echo
       echo " Please have a look at valid branches here: "
       echo " https://github.com/cgat-developers/cgat-core/branches"
@@ -615,7 +600,7 @@ echo " By default the master branch will be installed:"
 echo " https://github.com/cgat-developers/cgat-core"
 echo
 echo " Change that with:"
-echo " ./install-CGAT-tools.sh --devel --core-branch <name-of-branch>"
+echo " ./install-CGAT-tools.sh --devel --branch <name-of-branch>"
 echo
 echo " To test the installation:"
 echo " ./install-CGAT-tools.sh --test [--location </full/path/to/folder/without/trailing/slash>]"
@@ -663,8 +648,6 @@ CGAT_HOME=
 CODE_DOWNLOAD_TYPE=0
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
-# which github branch to use for cgat-core (default: master)
-CORE_BRANCH="master"
 # Install a released version?
 RELEASE=
 
@@ -746,12 +729,6 @@ case $key in
     shift 2
     ;;
 
-    --core-branch)
-    CORE_BRANCH="$2"
-    test_core_branch
-    shift 2
-    ;;
-
     --release)
     RELEASE="$2"
     test_mix_branch_release
@@ -775,7 +752,8 @@ if [[ $INSTALL_PRODUCTION ]] && [[ $INSTALL_DEVEL ]] ; then
 fi
 
 # sanity check 2: make sure one installation option is selected
-if [[ -z $INSTALL_PRODUCTION ]] && \
+if [[ -z $INSTALL_TEST ]] && \
+   [[ -z $INSTALL_PRODUCTION ]] && \
    [[ -z $INSTALL_DEVEL ]] && \
    [[ -z $TRAVIS_INSTALL ]] && \
    [[ -z $JENKINS_INSTALL ]] ; then
@@ -784,10 +762,10 @@ if [[ -z $INSTALL_PRODUCTION ]] && \
 
 fi
 
-# sanity check 3: make sure there is space available in the destination folder (10 GB)
+# sanity check 3: make sure there is space available in the destination folder (10 GB) in 512-byte blocks
 [[ -z ${TRAVIS_INSTALL} ]] && \
 mkdir -p ${CGAT_HOME} && \
-[[ `df --block-size=1 ${CGAT_HOME} | awk '/\// {print $3}'` -lt 10737418240  ]] && \
+[[ `df -P ${CGAT_HOME} | awk '/\// {print $4}'` -lt 20971520  ]] && \
    report_error " Not enought disk space available on the installation folder: "$CGAT_HOME
 
 # perform actions according to the input parameters processed

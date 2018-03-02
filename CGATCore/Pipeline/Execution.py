@@ -616,7 +616,7 @@ class Executor(object):
 
             tmpfile.write("\ntrap clean_all EXIT\n\n")
 
-            if self.job_memory != "unlimited":
+            if self.job_memory != "unlimited" and self.job_memory != "etc":
                 # restrict virtual memory
                 # Note that there are resources in SGE which could do this directly
                 # such as v_hmem.
@@ -650,18 +650,23 @@ class Executor(object):
                 # disabled - problems with quoting
                 # tmpfile.write( '''echo 'statement=%s' >> %s\n''' %
                 # (shellquote(statement), self.shellfile) )
-                tmpfile.write("set | sed 's/^/%s : /' &>> %s\n" %
+                tmpfile.write("set | sed 's/^/%s : /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                tmpfile.write("pwd | sed 's/^/%s : /' &>> %s\n" %
+                tmpfile.write("pwd | sed 's/^/%s : /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                tmpfile.write("hostname | sed 's/^/%s: /' &>> %s\n" %
+                tmpfile.write("hostname | sed 's/^/%s: /' >> %s\n" %
                               (self.job_name, self.shellfile))
-                tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' &>> %s\n" %
-                              (self.job_name, self.shellfile))
+                # cat /proc/meminfo is Linux specific
+                if get_params()['os'] == 'Linux':
+                    tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' >> %s\n" %
+                                  (self.job_name, self.shellfile))
+                elif get_params()['os'] == 'Darwin':
+                    tmpfile.write("vm_stat | sed 's/^/%s: /' >> %s\n" %
+                                  (self.job_name, self.shellfile))
                 tmpfile.write(
                     'echo "%s : END -> %s" >> %s\n' %
                     (self.job_name, tmpfilename, self.shellfile))
-                tmpfile.write("ulimit | sed 's/^/%s: /' &>> %s\n" %
+                tmpfile.write("ulimit | sed 's/^/%s: /' >> %s\n" %
                               (self.job_name, self.shellfile))
 
             job_path = os.path.abspath(tmpfilename)
@@ -1021,7 +1026,7 @@ class LocalExecutor(Executor):
 
             # max_vmem is set to max_rss, not available by /usr/bin/time
             full_statement = (
-                "/usr/bin/time --output=%s.times "
+                "\\time --output=%s.times "
                 "-f '"
                 "exit_status\t%%x\n"
                 "user_t\t%%U\n"

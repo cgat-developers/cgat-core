@@ -10,6 +10,7 @@ import types
 import collections
 import os
 import sys
+import platform
 import configparser
 import getpass
 import logging
@@ -92,6 +93,8 @@ HARDCODED_PARAMS = {
     'jobs_limit_db': 10,
     # ruffus job limits for R
     'jobs_limit_R': 1,
+    # operating system we are running on
+    'os': platform.system(),
 }
 
 # After all configuration files have been read, some
@@ -309,7 +312,10 @@ def get_parameters(filenames=None,
     # os.getcwd() failing if network is busy
     PARAMS["workingdir"] = os.getcwd()
     # location of pipelines - set via location of top frame (cgatflow command)
-    PARAMS["pipelinedir"] = os.path.dirname(get_caller_locals()["__file__"])
+    if '__file__' in caller_locals:
+        PARAMS["pipelinedir"] = os.path.dirname(caller_locals["__file__"])
+    else:
+        PARAMS["pipelinedir"] = 'unknown'
 
     # backwards compatibility - read ini files
     ini_filenames = [x for x in filenames if x.endswith(".ini")]
