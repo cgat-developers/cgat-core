@@ -81,7 +81,6 @@ from multiprocessing.pool import Pool, ThreadPool
 
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
-import CGAT.Blat as Blat
 
 import CGATCore.Pipeline as P
 
@@ -252,58 +251,6 @@ def chunk_iterator_regex_split(infile, args, prefix, use_header=False):
     yield filename
 
 
-def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
-    """iterate over overlapping entries in a psl file."""
-
-    iterator = Blat.BlatIterator(sys.stdin)
-
-    processed_contigs = set()
-
-    merge_distance = args[0]
-    last_sbjct_id = None
-    sbjct_end = 0
-    outfile = None
-    filename = None
-    while 1:
-
-        match = next(iterator)
-
-        if match is None:
-            break
-
-        if match.mSbjctId != last_sbjct_id or \
-           match.mSbjctFrom >= (sbjct_end + merge_distance):
-            if last_sbjct_id:
-                outfile.close()
-                yield filename
-
-            if last_sbjct_id != match.mSbjctId and \
-               match.mSbjctId in processed_contigs:
-                raise ValueError(
-                    "input not sorted correctly (contig,start): "
-                    "already encountered %s\n%s" %
-                    (match.mSbjctId, str(match)))
-
-            last_sbjct_id = match.mSbjctId
-            processed_contigs.add(last_sbjct_id)
-
-            sbjct_start = match.mSbjctFrom
-            sbjct_end = match.mSbjctTo
-
-        if match.mSbjctFrom < sbjct_start:
-            raise ValueError(
-                "input not sorted correctly (contig,start): "
-                "%i < %i\n%s" %
-                (match.mSbjctFrom, sbjct_start, str(match)))
-
-        sbjct_end = max(match.mSbjctTo, sbjct_end)
-        outfile.write(str(match) + "\n")
-
-    if outfile:
-        outfile.close()
-        yield filename
-
-
 class MapperGlobal:
 
     def __init__(self, pattern="%06i"):
@@ -434,37 +381,6 @@ class ResultBuilder:
 
                     outfile.write(l)
             infile.close()
-
-
-class ResultBuilderPSL(ResultBuilder):
-
-    """Result builder for psl tables. Here, column 9,
-    the query id, is substituted."""
-
-    def __init__(self, *args, **kwargs):
-        ResultBuilder.__init__(self, *args, **kwargs)
-        self.mFieldIndex = 9
-        self.mFirst = True
-
-    def parseHeader(self, infile, outfile, options):
-        """parse header in infile."""
-        # skip comments until header
-        while 1:
-            l = infile.readline()
-            if not l or l[0] != "#":
-                break
-            options.stdlog.write(l)
-
-        if l.startswith("psLayout version 3"):
-            if self.mFirst:
-                outfile.write(l)
-                for x in range(0, 4):
-                    l = infile.readline()
-                    outfile.write(l)
-                self.mFirst = False
-            else:
-                for x in range(0, 4):
-                    l = infile.readline()
 
 
 class ResultBuilderFasta(ResultBuilder):
@@ -914,11 +830,6 @@ def main(argv=None):
                     builder = ResultBuilderFasta(mapper=mapper)
                 elif filetype in (".mali", ):
                     builder = ResultBuilderFasta(mapper=MapperEmpty())
-                elif filetype in (".psl"):
-                    builder = ResultBuilderPSL(mapper=mapper)
-                elif filetype in (".gtf", ".gff"):
-                    builder = ResultBuilderGFF(
-                        mapper=mapper, field_index=index, field_name=name)
                 elif filetype in (".png"):
                     builder = ResultBuilderCopies(mapper=mapper)
                 else:
