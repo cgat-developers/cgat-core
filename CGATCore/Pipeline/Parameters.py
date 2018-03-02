@@ -88,6 +88,8 @@ HARDCODED_PARAMS = {
         'options': "",
         # parallel environment to use for multi-threaded jobs
         'parallel_environment': 'dedicated',
+        # the cluster queue manager
+        'queue_manager': "sge"
     },
     # ruffus job limits for databases
     'jobs_limit_db': 10,
@@ -304,7 +306,6 @@ def get_parameters(filenames=None,
 
     # update with hard-coded PARAMS
     PARAMS.update(HARDCODED_PARAMS)
-
     if defaults:
         PARAMS.update(defaults)
 
@@ -352,6 +353,14 @@ def get_parameters(filenames=None,
                 if p:
                     PARAMS.update(p)
 
+    # for backwards compatibility - normalize dictionaries
+    p = {}
+    for k, v in PARAMS.items():
+        if isinstance(v, collections.Mapping):
+            for kk, vv in v.items():
+                p["{}_{}".format(k, kk)] = vv
+    PARAMS.update(p)
+                
     # interpolate some params with other parameters
     for param in INTERPOLATE_PARAMS:
         try:

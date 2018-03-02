@@ -801,13 +801,32 @@ def start(parser=None,
                          type="string",
                          help="additional options for cluster jobs, passed "
                          "on to queuing system [%default].")
+        group.add_option("--cluster-queue-manager",
+                         dest="cluster_queue_manager",
+                         type="choice",
+                         choices=("sge", "slurm", "torque", "pbspro"),
+                         help="cluster queuing system "
+                         "[%default].")
+        group.add_option("--cluster-memory-resource",
+                         dest="cluster_memory_resource",
+                         type="string",
+                         help="resource name to allocate memory with "
+                         "[%default].")
+        group.add_option("--cluster-memory-default",
+                         dest="cluster_memory_default",
+                         type="string",
+                         help="default amount of memory to allocate "
+                         "[%default].")
 
         parser.set_defaults(without_cluster=False,
                             cluster_queue=None,
                             cluster_priority=None,
                             cluster_num_jobs=None,
                             cluster_parallel_environment=None,
-                            cluster_options=None)
+                            cluster_options=None,
+                            cluster_memory_resource=None,
+                            cluster_memory_default="unlimited",
+                            cluster_queue_manager="sge")
         parser.add_option_group(group)
 
     if add_output_options or add_pipe_options:

@@ -27,16 +27,11 @@ Code
 ----
 
 '''
-import os
+
 import pandas
-import string
 import re
-import time
-import tempfile
 
 from CGATCore import Experiment as E
-from CGATCore import CSV as CSV
-from CGATCore import IOTools as IOTools
 from CGATCore import Database as Database
 
 

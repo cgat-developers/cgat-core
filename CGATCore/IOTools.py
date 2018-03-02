@@ -913,12 +913,7 @@ class FilePool:
         self.mFiles = {}
         self.mOutputPattern = output_pattern
 
-        self.open = open
-
-        if output_pattern:
-            _, ext = os.path.splitext(output_pattern)
-            if ext.lower() in (".gz", ".z"):
-                self.open = gzip.open
+        self.open = open_file
 
         self.mCounts = collections.defaultdict(int)
         self.mHeader = header

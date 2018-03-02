@@ -128,6 +128,7 @@ def connect(dbhandle=None, attach=None, url=None):
     dbhandle : object
         A DB-API2 conforming database handle
     """
+
     if url:
         is_sqlite3 = url.startswith("sqlite")
 

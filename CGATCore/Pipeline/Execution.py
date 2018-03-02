@@ -1304,7 +1304,7 @@ def run(statement, **kwargs):
 
 def submit(module,
            function,
-           params=None,
+           args=None,
            infiles=None,
            outfiles=None,
            to_cluster=True,
@@ -1358,19 +1358,19 @@ def submit(module,
     else:
         logfile = ""
 
-    if params:
-        params = "--params=%s" % ",".join(params)
+    if args:
+        args = "--args=%s" % ",".join(args)
     else:
-        params = ""
+        args = ""
 
-    statement = '''python %(pipeline_scriptsdir)s/run_function.py
-                          --module=%(module)s
-                          --function=%(function)s
-                          %(logfile)s
-                          %(infiles)s
-                          %(outfiles)s
-                          %(params)s
-                '''
+    statement = (
+        "python -m CGATCore.Pipeline.run_function "
+        "--module=%(module)s "
+        "--function=%(function)s "
+        "%(logfile)s "
+        "%(infiles)s "
+        "%(outfiles)s "
+        "%(args)s")
     run(statement)
 
 
@@ -1405,7 +1405,7 @@ def cluster_runnable(func):
                 sys.modules[func.__module__].__file__)
             submit(IOTools.snip(__file__),
                    "run_pickled",
-                   params=[IOTools.snip(module_file), function_name, args_file],
+                   args=[IOTools.snip(module_file), function_name, args_file],
                    **submit_args)
         else:
             # remove job contral options before running function
