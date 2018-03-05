@@ -25,9 +25,34 @@ Quick example
 CGATCore functios can be used to build computational workflows. 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: Getting started
+   :name: getting_started
+   :hidden: 
+   :maxdepth: 1
 
+   getting_started/Installation
+   getting_started/Examples
+   getting_started/Tutorial
+
+.. toctree::
+   :caption: Build a workflow
+   :name: build
+   :hidden:
+   :maxdepth: 1
+
+   defining_workflow/Configuration
+   defining_workflow/Writing_workflow
+
+.. toctree::
+   :caption: Project Info
+   :name: project-info
+   :hidden:
+   :maxdepth: 1
+
+   project_info/Contributing
+   project_info/citations
+   project_info/FAQ
+   project_info/Licence
 
 
 Indices and tables
