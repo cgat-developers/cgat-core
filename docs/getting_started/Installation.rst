@@ -23,7 +23,7 @@ Here are the steps::
    Add steps here...........
 
 The installation script will put everything under the specified location. It needs
-? GB of disk space and it takes about ? minutes to complete. The aim of the
+? GB of disk space and it takes about 7 minutes to complete. The aim of the
 script is to provide a portable installation that does not interfere with the existing
 software. As a result, you will have a conda environment working with the CGAT Pipelines
 which can be enabled on demand according to your needs.
@@ -44,5 +44,18 @@ Once checked-out, you can get the latest changes via pulling::
 
    git pull 
 
+
+
+Installing additonal software
+-----------------------------
+
+When building your own workflows we recomend using conda to install software into your environment where possible.
+
+This can easily be performed by::
+
+   conda search <package>
+   conda install <package>
+
+
+
 .. _conda: https://conda.io
-.. _git: https://git-scm.com/
