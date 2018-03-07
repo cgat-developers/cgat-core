@@ -1,8 +1,8 @@
 .. _manual-main:
 
-=======================
-CGATCore documentation!
-=======================
+========================
+CGAT-core documentation!
+========================
 
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
