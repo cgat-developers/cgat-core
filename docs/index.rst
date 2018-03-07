@@ -1,8 +1,8 @@
 .. _manual-main:
 
-=======================
-CGATCore documentation!
-=======================
+========================
+CGAT-core documentation!
+========================
 
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
@@ -24,10 +24,6 @@ Quick example
 
 CGATCore functios can be used to build computational workflows. 
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
 
 
 Indices and tables
@@ -36,3 +32,42 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. toctree::
+   :caption: Getting started
+   :name: getting_started
+   :maxdepth: 1
+   :hidden:
+
+   getting_started/Installation.rst
+   getting_started/Examples.rst
+   getting_started/Tutorial.rst
+
+.. toctree::
+   :caption: Build a workflow
+   :name: build
+   :maxdepth: 1
+   :hidden:
+
+   defining_workflow/Configuration.rst
+   defining_workflow/Writing_workflow.rst
+
+.. toctree::
+   :caption: CGATCore functions
+   :name: function_doc
+   :maxdepth: 1
+   :hidden:
+
+   function_doc/Pipeline.rst
+
+.. toctree::
+   :caption: Project Info
+   :name: project-info
+   :maxdepth: 1
+   :hidden:
+
+   project_info/Contributing.rst
+   project_info/citations.rst
+   project_info/FAQ.rst
+   project_info/Licence.rst

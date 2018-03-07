@@ -17,9 +17,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+
+sys.path.extend(os.path.abspath('../CGATCore'))
 
 
 # -- General configuration ------------------------------------------------
@@ -31,7 +32,16 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.imgmath',
+              'sphinx.ext.ifconfig',
+              'sphinx.ext.inheritance_diagram',
+              'sphinxcontrib.programoutput',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.napoleon',
+              'CGATReport.report_directive']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -82,8 +92,7 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'alabaster'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -108,7 +117,39 @@ html_sidebars = {
     ]
 }
 
-
+# Included at the end of each rst file
+rst_epilog = '''
+.. _CGAT Training Programme: http://www.cgat.org
+.. _CGAT Pipeline Collection: https://www.cgat.org/downloads/public/CGATPipelines/documentation/
+.. _CGAT Code Collection: https://www.cgat.org/downloads/public/cgat/documentation/
+.. _pysam: https://github.com/pysam-developers/pysam
+.. _samtools: http://samtools.sourceforge.net/
+.. _htslib: http://www.htslib.org/
+.. _tabix: http://samtools.sourceforge.net/tabix.shtml/
+.. _Galaxy: https://main.g2.bx.psu.edu/
+.. _cython: http://cython.org/
+.. _python: http://python.org/
+.. _ipython: http://ipython.org/
+.. _pyximport: http://www.prescod.net/pyximport/
+.. _sphinx: http://sphinx-doc.org/
+.. _ruffus: http://www.ruffus.org.uk/
+.. _cgatreport: https://github.com/AndreasHeger/CGATReport/
+.. _sqlite: http://www.sqlite.org/
+.. _make: http://www.gnu.org/software/make
+.. _UCSC: http://genome.ucsc.edu
+.. _ENSEMBL: http://www.ensembl.org
+.. _GO: http://www.geneontology.org
+.. _gwascatalog: http://www.genome.gov/gwastudies/
+.. _distlid: http://distild.jensenlab.org/
+.. _mysql: https://mariadb.org/
+.. _postgres: http://www.postgresql.org/
+.. _bedtools: http://bedtools.readthedocs.org/en/latest/
+.. _UCSC Tools: http://genome.ucsc.edu/admin/git.html
+.. _git: http://git-scm.com/
+.. _sge: http://wiki.gridengine.info/wiki/index.php/Main_Page
+.. _alignlib: https://github.com/AndreasHeger/alignlib
+.. _iGenomes: https://support.illumina.com/sequencing/sequencing_software/igenome.html
+'''
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
@@ -164,6 +205,3 @@ texinfo_documents = [
      author, 'CGATCore', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-
