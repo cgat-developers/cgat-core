@@ -104,6 +104,21 @@ indexed with tabix to allow random access.
 
 .. _PipelineCommands:
 
+
+Import statements
+-----------------
+
+In order to run our pipelines you will need to import the CGATCore python
+modules into your pipeline. For every CGAT pipeline we recommend importing the
+basic modules as follows.
+
+.. code-block:: python
+
+   import CGATCore.Experiment as E
+   from CGATCore import Pipeline as P
+   import CGATCore.IOTools as IOTools
+
+
 Running commands within tasks
 -----------------------------
 
@@ -315,6 +330,35 @@ The following example illustrates how to use the connection::
 
 Reports
 -------
+
+MultiQC
+=======
+
+When using CGAT-core to build pipelines we recomend using `MultiQC <http://multiqc.info/>`_ 
+as the default reporting tool for generic thrid party computational biology software.
+
+To run multiQC in our pipelines you only need to run a statement as a commanline
+task. For example we impliment this in our pipelines as::
+
+    @follows(mkdir("MultiQC_report.dir"))
+    @originate("MultiQC_report.dir/multiqc_report.html")
+    def renderMultiqc(infile):
+    '''build mulitqc report'''
+
+    statement = '''LANG=en_GB.UTF-8 multiqc . -f;
+                   mv multiqc_report.html MultiQC_report.dir/'''
+
+    P.run(statement) 
+
+
+CGATReport
+==========
+
+In additon to multiQC we also have CGATReports implimented in most of our pipelines. However,
+we are currently phasing this out and replacing workflow specific reports with Jupyter notebook
+or Rmarkdown implimentations.
+
+For CGATReport:
 
 The :meth:`Pipeline.run_report` method builds or updates reports using
 CGATreport_. Usually, a pipeline will simply contain the following::
