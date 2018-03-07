@@ -28,7 +28,6 @@ CGATCore functios can be used to build computational workflows.
 
 Indices and tables
 ==================
-
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
@@ -37,29 +36,26 @@ Indices and tables
 .. toctree::
    :caption: Getting started
    :name: getting_started
-   :hidden:
    :maxdepth: 1
 
-   getting_started/Installation
-   getting_started/Examples
-   getting_started/Tutorial
+   Installation
+   Examples
+   Tutorial
 
 .. toctree::
    :caption: Build a workflow
    :name: build
-   :hidden:
    :maxdepth: 1
 
-   defining_workflow/Configuration
-   defining_workflow/Writing_workflow
+   defining_workflow/Configuration.rst
+   defining_workflow/Writing_workflow.rst
 
 .. toctree::
    :caption: Project Info
    :name: project-info
-   :hidden:
    :maxdepth: 1
 
-   project_info/Contributing
-   project_info/citations
-   project_info/FAQ
-   project_info/Licence
+   project_info/Contributing.rst
+   project_info/citations.rst
+   project_info/FAQ.rst
+   project_info/Licence.rst
