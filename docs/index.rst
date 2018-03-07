@@ -37,29 +37,29 @@ Indices and tables
 .. toctree::
    :caption: Getting started
    :name: getting_started
-   :hidden:
    :maxdepth: 1
+   :hidden:
 
-   getting_started/Installation
-   getting_started/Examples
-   getting_started/Tutorial
+   getting_started/Installation.rst
+   getting_started/Examples.rst
+   getting_started/Tutorial.rst
 
 .. toctree::
    :caption: Build a workflow
    :name: build
-   :hidden:
    :maxdepth: 1
+   :hidden:
 
-   defining_workflow/Configuration
-   defining_workflow/Writing_workflow
+   defining_workflow/Configuration.rst
+   defining_workflow/Writing_workflow.rst
 
 .. toctree::
    :caption: Project Info
    :name: project-info
-   :hidden:
    :maxdepth: 1
+   :hidden:
 
-   project_info/Contributing
-   project_info/citations
-   project_info/FAQ
-   project_info/Licence
+   project_info/Contributing.rst
+   project_info/citations.rst
+   project_info/FAQ.rst
+   project_info/Licence.rst
