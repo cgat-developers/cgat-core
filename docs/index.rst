@@ -40,7 +40,6 @@ Indices and tables
    :maxdepth: 1
    :hidden:
 
-   function_doc/Overview.rst
    getting_started/Installation.rst
    getting_started/Examples.rst
    getting_started/Tutorial.rst
@@ -53,6 +52,14 @@ Indices and tables
 
    defining_workflow/Configuration.rst
    defining_workflow/Writing_workflow.rst
+
+.. toctree::
+   :caption: CGATCore functions
+   :name: function_doc
+   :maxdepth: 1
+   :hidden:
+
+   function_doc/Pipeline.rst
 
 .. toctree::
    :caption: Project Info
