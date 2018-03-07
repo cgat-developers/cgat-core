@@ -40,7 +40,7 @@ Indices and tables
    :maxdepth: 1
    :hidden:
 
-   Overview.rst
+   function_doc/Overview.rst
    getting_started/Installation.rst
    getting_started/Examples.rst
    getting_started/Tutorial.rst
