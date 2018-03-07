@@ -38,11 +38,11 @@ To obtain the latest code, check it out from the public git_ repository and acti
    python setup.py develop
 
 The CGAT-core depends on the CGAT scripts, which can be installed by following the
-installation instructions `here
-<http://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html>`_.
+`installation <http://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html>`_ instructions.
 
 Once checked-out, you can get the latest changes via pulling::
 
    git pull 
 
 .. _conda: https://conda.io
+.. _git: https://git-scm.com/
