@@ -63,8 +63,8 @@ CGATCore functios can be used to build computational workflows.
    :maxdepth: 1
    :hidden:
 
-   defining_workflow/Configuration.rst
    defining_workflow/Writing_workflow.rst
+   defining_workflow/Tutorial.rst
 
 .. toctree::
    :caption: CGATCore functions
