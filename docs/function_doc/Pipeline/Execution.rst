@@ -1,4 +1,4 @@
 
-.. automodule:: CGATCore.Pipeline.Execution
+.. automodule:: Pipeline.Execution
    :members:
    :show-inheritance:

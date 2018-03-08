@@ -1,4 +1,4 @@
 
-.. automodule:: CGATCore.Pipeline.Files
+.. automodule:: Pipeline.Files
    :members:
    :show-inheritance:
