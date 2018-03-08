@@ -1,9 +1,11 @@
-.. defining_workflow-Writing_workflow
+.. _defining_workflow-Writing_workflow:
 
 ==================
 Writing a workflow
 ==================
 
+
+.. _defining_workflow-philosophy:
 
 Our workflow philosophy
 -----------------------
@@ -22,6 +24,8 @@ Reusability
     The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (Pipeline.ini).
 Archivability
     Once finished, the whole project should be able to archived without too many major dependencies on external data. This should be a simple process and hence all project data should be self-contained. It should not involve going through various directories or databases to figure out which files and tables belong to a project or a project depends on.
+
+.. _defining_workflow-building:
 
 Building a Pipeline
 -------------------
@@ -59,6 +63,7 @@ This section describes how pipelines can be constructed using the
 :mod:`Pipeline` module in CGAT-core. The Pipeline.py module contains a variety of
 useful functions for pipeline construction.
 
+.. _defining_workflow-p-input:
 
 Pipeline input
 --------------
@@ -79,6 +84,8 @@ directory, usually identified by their suffix. For example, a
 mapping pipeline might look for any ``*.fastq.gz`` files in the
 directory, run QC on these and map the reads to a genome sequence etc.
 
+.. _defining_workflow-p-output:
+
 Pipeline output 
 ----------------
 
@@ -86,6 +93,8 @@ The pipeline will create files and database tables in the
 working directory.  When building a pipeline, you can choose
 any file/directory layout that suits your needs. Some prefer flat
 hierarchies with many files, while others prefer deep directories.
+
+.. _defining_workflow-guidelines:
 
 Guidelines
 ----------
@@ -247,8 +256,7 @@ The job submission files are files called `tmp*` in the :term:`working
 directory`.  These files will be deleted automatically. However, the
 files will remain after aborted runs to be cleaned up manually.
 
-.. _PipelineTracks:
-
+.. _defining_workflow-databases:
 
 Databases
 ---------

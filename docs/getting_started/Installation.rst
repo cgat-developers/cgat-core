@@ -1,4 +1,4 @@
-.. getting_started-Installation
+.. _getting_started-Installation:
 
 
 ============
@@ -11,6 +11,8 @@ Please note that installing the apps and flow will also install CGATCore as part
 
 We distinguish between two different installation types: production and development. The former refers to a well tested subset of pipelines, and is the recommended installation.
 The latter refers to the whole collection of pipelines developed at CGAT, which may contain code under active development.
+
+.. _getting_started-Automated:
 
 Automated installation
 ----------------------
@@ -27,6 +29,8 @@ The installation script will put everything under the specified location. It nee
 script is to provide a portable installation that does not interfere with the existing
 software. As a result, you will have a conda environment working with the CGAT Pipelines
 which can be enabled on demand according to your needs.
+
+.. _getting_started-Manual:
 
 Manual installation
 -------------------
@@ -45,6 +49,7 @@ Once checked-out, you can get the latest changes via pulling::
    git pull 
 
 
+.. _getting_started-Additional:
 
 Installing additonal software
 -----------------------------

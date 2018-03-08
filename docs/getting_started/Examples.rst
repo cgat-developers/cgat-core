@@ -1,4 +1,4 @@
-.. getting_started-Examples
+.. _getting_started-Examples:
 
 
 ==================
@@ -6,8 +6,10 @@ Running a pipeline
 ==================
 
 
-This section provides a tutorial-like introduction of how to run CGAT workflows/pipelines. As an example of how to 
-use CGATCore please refer to the code detailed in our cgat-flow repository here_ .
+This section provides a tutorial-like introduction of how to run CGAT workflows/pipelines. As an example of how we use CGATCore to 
+build computational pipelines, please refer to the code detailed in our cgat-flow repository here_ .
+
+.. _getting_started-Intro:
 
 Introduction
 =============
@@ -25,6 +27,7 @@ It really helps if you are familiar with:
    * sge_ in order to monitor your jobs
    * git_ in order to up-to-date code
 
+.. _getting_started-setting-up-pipeline:
 
 Setting up a pipeline
 ======================
@@ -87,7 +90,7 @@ R packages are satisfied by running::
 
       cgatflow <name> check
 
-.. _PipelineRunning:
+.. _getting_started-PipelineRunning:
 
 Running a pipeline
 ===================
@@ -188,6 +191,8 @@ when running the pipelines. These will modify the way the pipeline in ran.
 
     Set the level of ruffus checksums.
 
+.. _getting_started-Building-reports:
+
 Building pipeline reports
 ================================
 
@@ -256,6 +261,7 @@ this process, there are some advanced features that CGATReport offers:
 
 Please see the CGATReport_ documentation for more information.
 
+.. _getting_started-Troubleshooting:
 
 Troubleshooting
 ===============
