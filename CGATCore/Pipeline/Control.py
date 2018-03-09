@@ -45,7 +45,6 @@ except RuntimeError:
 
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
-import CGATCore.Requirements as Requirements
 from CGATCore.Pipeline.Parameters import input_validation, get_params
 from CGATCore.Pipeline.Utils import get_caller, get_caller_locals, is_test
 from CGATCore.Pipeline.Execution import execute, start_session,\
@@ -1086,14 +1085,6 @@ def run_workflow(options, args, pipeline=None):
     # see inputValidation function in Parameters.py
     if options.input_validation:
         input_validation(get_params(), sys.argv[0])
-
-    if options.pipeline_action == "check":
-        counter, requirements = Requirements.checkRequirementsFromAllModules()
-        for requirement in requirements:
-            logger.info("\t".join(map(str, requirement)))
-        logger.info("version check summary: %s" % str(counter))
-        E.stop()
-        return
 
     elif options.pipeline_action == "debug":
         # create the session proxy
