@@ -36,6 +36,7 @@ import os
 import importlib
 
 import CGATCore.Experiment as E
+import CGATCore.Pipeline as P
 
 
 def main(argv=None):
@@ -70,6 +71,9 @@ def main(argv=None):
     # Check a module and function have been specified
     if not options.module or not options.function:
         raise ValueError("Both a function and Module must be specified")
+
+    # initialize defaults
+    P.get_parameters()
 
     # If a full path was given, add this path to the system path
     location = os.path.dirname(options.module)
