@@ -73,6 +73,7 @@ CGATCore functios can be used to build computational workflows.
    :hidden:
 
    function_doc/Pipeline.rst
+   function_doc/Core.rst
 
 .. toctree::
    :caption: Project Info
