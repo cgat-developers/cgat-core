@@ -27,7 +27,7 @@ Here are the steps::
 The installation script will put everything under the specified location. It needs
 ? GB of disk space and it takes about 7 minutes to complete. The aim of the
 script is to provide a portable installation that does not interfere with the existing
-software. As a result, you will have a conda environment working with the CGAT Pipelines
+software. As a result, you will have a conda environment working with the CGAT-core
 which can be enabled on demand according to your needs.
 
 .. _getting_started-Manual:
