@@ -1,5 +1,5 @@
 =========
-cgat-core
+CGAT-core
 =========
 
 .. image:: https://readthedocs.org/projects/cgat-core/badge/?version=latest
@@ -21,9 +21,11 @@ CGAT-core is a workflow management system that allows users to quickly and repro
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis. 
 
-Used in combination with CGAT-apps, we have deomonstrated the functionality of functionality of our
+Documentation for CGAT-core can be accessed at `read the docs <http://cgat-core.readthedocs.io/en/latest/>`_ 
+
+Used in combination with CGAT-apps, we have deomonstrated the functionality of our
 flexible implementation using a set of well documented, easy to install and easy to use workflows, 
-called CGAT-flow.
+called `CGAT-flow <https://github.com/cgat-developers/cgat-flow>`_ (`Documentation <https://www.cgat.org/downloads/public/cgatpipelines/documentation/>`_).
 
 CGAT-core is open-sourced, powerful and user-friendly, and has been continually developed 
 as a Next Generation Sequencing (NGS) workflow management system over the past 10 years.

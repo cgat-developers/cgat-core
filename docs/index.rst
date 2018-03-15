@@ -28,7 +28,7 @@ CGAT-core is a workflow management system that allows users to quickly and repro
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis. 
 
-Used in combination with CGAT-apps, we have deomonstrated the functionality of functionality of our
+Used in combination with CGAT-apps, we have deomonstrated the functionality of our
 flexible implementation using a set of well documented, easy to install and easy to use workflows, 
 called CGAT-flow.
 
