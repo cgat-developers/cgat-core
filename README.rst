@@ -36,7 +36,7 @@ The following sections describe how to install the CGATCore framework. For instr
 the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html>`_ .
 
 The preferred method to install the CGATCore is using the installation script,
-which uses conda_.
+which uses `conda <https://conda.io/docs/>`_.
 
 Here are the steps::
 
