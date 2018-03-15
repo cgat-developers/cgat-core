@@ -7,6 +7,7 @@ Reference
 """
 import re
 import os
+import sqlite3
 import sqlalchemy
 from CGATCore import Database as Database
 import CGATCore.Experiment as E
@@ -436,20 +437,25 @@ def connect():
         connect_args = {'check_same_thread': False}
     else:
         connect_args = {}
-
+        
+    creator = None
+    if is_sqlite3 and "annotations_dir" in get_params():
+        # not sure what the correct way is for url
+        # sqlite:///./csvdb -> ./csvdb
+        # sqlite:////path/to/csvdb -> /path/to/csvdb
+        filename = os.path.abspath(url[len("sqlite:///"):])
+        
+        def creator():
+            conn = sqlite3.connect(filename)
+            conn.execute("ATTACH DATABASE '{}' as annotations".format(
+                os.path.join(get_params()["annotations_dir"], "csvdb")))
+            return conn
+        
     engine = sqlalchemy.create_engine(
         url,
-        connect_args=connect_args)
-    
-    if is_sqlite3 and "annotations_dir" in get_params():
-        # 'annotations_database' is overloaded by the typical
-        # PARAMS.update pattern to sqlite:\\\.\csvdb due to reading in
-        # the defaults from the pipeline refered to in
-        # 'annotations_dir'. As a hack, build path explicitely
-        # here.
-        statement = '''ATTACH DATABASE '%s/csvdb' as annotations''' % \
-                    (get_params()["annotations_dir"])
-        engine.execute(statement)
+        connect_args=connect_args,
+        creator=creator)
+
     return engine
 
 
