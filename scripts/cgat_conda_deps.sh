@@ -322,55 +322,15 @@ cat /dev/null > ${TMP_GREP}
 cat /dev/null > ${TMP_MISC}
 cat /dev/null > ${TMP_DEPS}
 
-# find deps depending on given input
-if [[ ${ALL} -eq 1 ]] ; then
+# Python
+find_python_imports "${REPO_FOLDER}/CGATCore"
+[[ ${ALL} -eq 1 ]] && find_python_imports "${REPO_FOLDER}/tests"
 
-   # Python
-   find_python_imports "${REPO_FOLDER}/CGATCore"
-   find_python_imports "${REPO_FOLDER}/tests"
+# R
+find_r_imports "${REPO_FOLDER}/CGATCore"
 
-   # R
-   find_r_imports "${REPO_FOLDER}/CGATCore"
-
-   # Misc
-   find_misc_programs "${REPO_FOLDER}/CGATCore"
-
-else
-   # Use tmp folder
-   TMP_D=$(mktemp -d)/cgat
-   mkdir -p ${TMP_D}
-
-   # Bring production scripts to tmp folder
-   grep CGAT ${REPO_FOLDER}/MANIFEST.in \
-    | egrep -v '#|install|exclude|h$|c$|cpp$|pxd$|pyx' \
-    | awk '{print $2;}' \
-    > ${TMP_D}/grep-patterns
-
-   for f in `find ${REPO_FOLDER}/CGATCore | grep -f ${TMP_D}/grep-patterns` ; do cp $f ${TMP_D}/ ; done
-   find ${REPO_FOLDER}/CGATCore -regex '.*pyx.*' -exec cp {} ${TMP_D}/ \;
-
-   # Also bring associated module files
-   for f in `find ${TMP_D}` ; do awk '/^import CGAT/ {print $2}' $f 2>/dev/null ; done \
-    | sort -u \
-    | egrep -v 'scripts|NCL|GeneModelAnalysis' \
-    | sed 's/\./\//g' \
-    > ${TMP_D}/imported-modules
-
-   for m in `cat ${TMP_D}/imported-modules` ; do cp ${REPO_FOLDER}/$m.py ${TMP_D}/ ; done
-
-   # Python
-   find_python_imports "${TMP_D}"
-
-   # R
-   find_r_imports "${TMP_D}"
-
-   # Misc
-   find_misc_programs "${TMP_D}"
-
-   # clean up
-   [[ -n "${TMP_D}" ]] && rm -rf "${TMP_D}"
-
-fi
+# Misc
+find_misc_programs "${REPO_FOLDER}/CGATCore"
 
 
 ### create header of env file ###
@@ -411,8 +371,10 @@ echo "# python dependencies"
 echo "- python"
 
 # Add others manually:
-echo "- pytest" >> ${TMP_DEPS}
+[[ ${ALL} -eq 1 ]] && echo "- pytest" >> ${TMP_DEPS}
 echo "- setuptools" >> ${TMP_DEPS}
+# TO-DO: sfood syntax error in Control.py
+echo "- ruffus" >> ${TMP_DEPS}
 
 # Print them all sorted
 sed 's/^- bx-python/# WARNING: bx-python is Py2 only but "pip install bx-python" works with Py3/g' ${TMP_DEPS} \
