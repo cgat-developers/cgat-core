@@ -195,12 +195,14 @@ def execute(statement, **kwargs):
         statement = statement[:-1]
 
     # always use bash
+    os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'],'.bashrc')})
     process = subprocess.Popen(statement % kwargs,
                                cwd=cwd,
                                shell=True,
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
+                               env=os.environ.copy(),
                                executable="/bin/bash")
 
     # process.stdin.close()
@@ -1055,6 +1057,7 @@ class LocalExecutor(Executor):
             while 1:
                 start_time = time.time()
 
+                os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'],'.bashrc')})
                 process = subprocess.Popen(
                     full_statement,
                     cwd=self.workingdir,
@@ -1062,6 +1065,7 @@ class LocalExecutor(Executor):
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
+                    env=os.environ.copy(),
                     close_fds=True,
                     executable="/bin/bash")
 

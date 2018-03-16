@@ -341,7 +341,7 @@ def peek_parameters(workingdir,
 
     '''
     caller_locals = get_caller_locals()
-    
+
     # check if we should raise errors
     if on_error_raise is None:
         on_error_raise = not is_test() and \
@@ -371,12 +371,15 @@ def peek_parameters(workingdir,
             return {}
 
     statement = "cgatflow {} -v 0 dump".format(pipeline)
+
+    os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'],'.bashrc')})
     process = subprocess.Popen(statement,
                                cwd=workingdir,
                                shell=True,
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+                               stderr=subprocess.PIPE,
+                               env=os.environ.copy())
 
     # process.stdin.close()
     stdout, stderr = process.communicate()
