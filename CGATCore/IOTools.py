@@ -174,8 +174,8 @@ def is_empty(filename):
 def is_complete(filename):
     '''return True if file exists and is complete.
 
-    A file is complete if its last line starts
-    with ``# job finished``.
+    A file is complete if its last line contains
+    ``job finished``.
     '''
     if filename.endswith(".gz"):
         raise NotImplementedError(
@@ -183,7 +183,7 @@ def is_complete(filename):
     if is_empty(filename):
         return False
     lastline = get_last_line(filename)
-    return lastline.startswith("# job finished")
+    return "job finished" in lastline
 
 
 def touch_file(filename, mode=0o666, times=None, dir_fd=None, ref=None, **kwargs):
