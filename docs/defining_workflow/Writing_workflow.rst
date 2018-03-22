@@ -34,7 +34,7 @@ The best way to build a pipeline is to start from an example. In the `cgat-devel
 we have a number of our production workflows in the `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ sub-repository. There are several 
 pipelines available, however the easiest way to build your own pipeline is to use `pipeline_quickstart.py <https://github.com/cgat-developers/cgat-flow/blob/master/CGATPipelines/pipeline_quickstart.py>`_. 
 
-For a step by step tutorial on how to run the pipeline_quickstart.py pipeline please refer to `here <>`_.
+For a step by step tutorial on how to run the pipeline_quickstart.py pipeline please refer to our `tutorials <>`_.
 
 For help on how our pipelines are constructed please continue reading for more information.
 

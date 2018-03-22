@@ -1,4 +1,4 @@
-.. project_info-citations
+.. _project_info-citations:
 
 ====================
 Citing and Citations
