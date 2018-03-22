@@ -18,9 +18,9 @@ Bugs can be reported using the issue section in `github <https://github.com/cgat
 
 When reporting issues, please include:
 
-- Steps in your code/command that led to the bug so it can be reporduced.
+- Steps in your code/command that led to the bug so it can be reproduced.
 - The error message from the log message.
-- Any other helpful info, such as the system/clsuter engine or version information.
+- Any other helpful info, such as the system/cluster engine or version information.
 
 -----------------------------------
 Proposing a new feature/enhancement
@@ -31,14 +31,14 @@ If you wish to contribute a new feature to the CGAT-core repository then the bes
 If you propose a new feature then please:
 
 - Explain how your enhancement will work
-- Describe as best as you can how you plan to impliment this.
-- If you dont think you have the necessary skills to impliment this on your own then please say and we will try our best to help (or impliment this for you). However, please be aware that this is a community developed software and our volunteers have other jobs. Therefore, we may not be able to  work as fast as you hoped.
+- Describe as best as you can how you plan to implement this.
+- If you dont think you have the necessary skills to implement this on your own then please say and we will try our best to help (or implement this for you). However, please be aware that this is a community developed software and our volunteers have other jobs. Therefore, we may not be able to  work as fast as you hoped.
 
 -----------------------
 Pull Request Guidelines
 -----------------------
 
-Why not contribute to our project, its a great way of making the project better, your help is always welcome. To update our documentation, fix bugs or add extra enhancements you will need to create a pull request through github. 
+Why not contribute to our project, its a great way of making the project better, your help is always welcome. We follow the fork/pull request `model <https://guides.github.com/activities/forking>`_. To update our documentation, fix bugs or add extra enhancements you will need to create a pull request through github.
 
 To create a pull request perform these steps:
 
