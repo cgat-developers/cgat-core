@@ -22,7 +22,7 @@ CGAT-core documentation!
 
 
 other shields:
-Conda, Conda(channel), Conda downloads, Conda platform, Twitter
+Conda
 
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
@@ -50,7 +50,7 @@ To be added....
 Support
 -------
 
-- Please refer to our :FAQ:`project_info-FAQ` section 
+- Please refer to our :ref:`FAQ` section 
 - In case of questions, please add these to `stack overflow <https://stackoverflow.com/search?q=cgat>`_
 - For bugs and issues, please raise an issue on `github <https://github.com/cgat-developers/cgat-core>`_
 - For contributions, please refer to our contributor section and `github <https://github.com/cgat-developers/cgat-core>`_ source code. 
@@ -71,7 +71,7 @@ Selected publications using CGAT-core
 
 CGAT-core has been developed over the past 10 years and as such has been used in many previously published articles
 
-For a non-comprehensive list of citations please see our :citing and citation section:`project_info-citations`
+For a non-comprehensive list of citations please see our :citing and :ref:`project_info-citations`
 
 
 
@@ -111,6 +111,7 @@ For a non-comprehensive list of citations please see our :citing and citation se
    :hidden:
 
    project_info/Contributing.rst
+   project_info/how_to_contribute.rst
    project_info/citations.rst
    project_info/FAQ.rst
    project_info/Licence.rst

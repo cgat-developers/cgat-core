@@ -1,4 +1,4 @@
-.. _project_info-FAQ:
+.. _FAQ:
 
 ====
 FAQs
