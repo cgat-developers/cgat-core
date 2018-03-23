@@ -580,7 +580,7 @@ test_release() {
       echo " Please have a look at valid releases here: "
       echo " https://github.com/cgat-developers/cgat-core/releases"
       echo
-      echo " An example of valid release is: --release v0.3.1"
+      echo " An example of valid release is: --release v0.4.0"
       report_error " Please use a valid release and try again."
    fi
 }
