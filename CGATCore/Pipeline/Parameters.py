@@ -15,6 +15,8 @@ import configparser
 import getpass
 import logging
 import yaml
+import re
+from collections import defaultdict
 
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
@@ -51,7 +53,7 @@ class TriggeredDefaultFactory:
 # Global variable for parameter interpolation in commands
 # This is a dictionary that can be switched between defaultdict
 # and normal dict behaviour.
-PARAMS = collections.defaultdict(TriggeredDefaultFactory())
+PARAMS = defaultdict(TriggeredDefaultFactory())
 
 # patch - if --help or -h in command line arguments,
 # switch to a default dict to avoid missing paramater
@@ -135,7 +137,7 @@ def config_to_dictionary(config):
         A dictionary of configuration values
 
     """
-    p = {}
+    p = defaultdict(lambda: defaultdict(TriggeredDefaultFactory()))
     for section in config.sections():
         for key, value in config.items(section):
             try:
@@ -147,6 +149,10 @@ def config_to_dictionary(config):
                 raise
 
             p["%s_%s" % (section, key)] = v
+
+            # IMS: new heirarchical format
+            p[section][key] = v
+
             if section in ("general", "DEFAULT"):
                 p["%s" % (key)] = v
 
@@ -154,6 +160,19 @@ def config_to_dictionary(config):
         p["%s" % (key)] = IOTools.str2val(value)
 
     return p
+
+
+def nested_update(old, new):
+    '''Update potentially nested dictionaries. If both old[x] and new[x]
+    inherit from collections.Mapping, then update old[x] with entries from
+    new[x], otherwise set old[x] to new[x]'''
+
+    for key, value in new.items():
+        if isinstance(value, collections.Mapping) and \
+           isinstance(old.get(key, str()), collections.Mapping):
+            old[key].update(new[key])
+        else:
+            old[key] = new[key]
 
 
 def input_validation(PARAMS, pipeline_script=""):
@@ -305,9 +324,9 @@ def get_parameters(filenames=None,
     filenames = [x.strip() for x in filenames]
 
     # update with hard-coded PARAMS
-    PARAMS.update(HARDCODED_PARAMS)
+    nested_update(PARAMS, HARDCODED_PARAMS)
     if defaults:
-        PARAMS.update(defaults)
+        nested_update(PARAMS, defaults)
 
     # reset working directory. Set in PARAMS to prevent repeated calls to
     # os.getcwd() failing if network is busy
@@ -323,6 +342,7 @@ def get_parameters(filenames=None,
     yml_filenames = [x for x in filenames if not x.endswith(".ini")]
 
     if ini_filenames:
+
         conf = configparser.SafeConfigParser()
         try:
             conf.read(ini_filenames)
@@ -338,8 +358,9 @@ def get_parameters(filenames=None,
             config = configparser.RawConfigParser()
             config.read(ini_filenames)
             p = config_to_dictionary(config)
+
         if p:
-            PARAMS.update(p)
+            nested_update(PARAMS, p)
 
     if yml_filenames:
         for filename in yml_filenames:
@@ -351,7 +372,7 @@ def get_parameters(filenames=None,
             with open(filename) as inf:
                 p = yaml.load(inf)
                 if p:
-                    PARAMS.update(p)
+                    nested_update(PARAMS, p)
 
     # for backwards compatibility - normalize dictionaries
     p = {}
@@ -359,7 +380,7 @@ def get_parameters(filenames=None,
         if isinstance(v, collections.Mapping):
             for kk, vv in v.items():
                 p["{}_{}".format(k, kk)] = vv
-    PARAMS.update(p)
+    nested_update(PARAMS, p)
                 
     # interpolate some params with other parameters
     for param in INTERPOLATE_PARAMS:
