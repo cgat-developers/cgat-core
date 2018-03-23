@@ -15,6 +15,7 @@ import configparser
 import getpass
 import logging
 import yaml
+import re
 from collections import defaultdict
 
 import CGATCore.Experiment as E
@@ -151,7 +152,7 @@ def config_to_dictionary(config):
 
             # IMS: new heirarchical format
             p[section][key] = v
-            
+
             if section in ("general", "DEFAULT"):
                 p["%s" % (key)] = v
 
@@ -171,9 +172,9 @@ def nested_update(old, new):
            isinstance(old.get(key, str()), collections.Mapping):
             old[key].update(new[key])
         else:
-            old[key]=new[key]
+            old[key] = new[key]
 
-            
+
 def input_validation(PARAMS, pipeline_script=""):
     '''Inspects the PARAMS dictionary looking for problematic input values.
 
@@ -360,7 +361,7 @@ def get_parameters(filenames=None,
 
         if p:
             nested_update(PARAMS, p)
-            
+
     if yml_filenames:
         for filename in yml_filenames:
             if not os.path.exists(filename):
