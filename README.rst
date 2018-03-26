@@ -53,7 +53,7 @@ Here are the steps::
 
    # the code is downloaded in zip format by default. If you want to get a git clone, use:
    --git # for an HTTPS clone
-   --git-ssh # for a SSH clone (you need to be a CGATOXford contributor on GitHub to do this)
+   --git-ssh # for a SSH clone (you need to be a cgat-developer contributor on GitHub to do this)
 
    # once the installation is finished, enable the conda environment as requested by the installation script:
    source </full/path/to/folder/without/trailing/slash>/conda-install/bin/activate cgat-c

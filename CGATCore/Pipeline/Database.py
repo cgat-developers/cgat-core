@@ -179,6 +179,7 @@ def load(infile,
 
     statement = " | ".join(statement) + " > %(outfile)s"
 
+    to_cluster = False
     run(statement)
 
 
@@ -275,6 +276,7 @@ def concatenateAndLoad(infiles,
     | %(load_statement)s
     > %(outfile)s'''
 
+    to_cluster = False
     run(statement)
 
 
@@ -407,6 +409,7 @@ def mergeAndLoad(infiles,
     | %(load_statement)s
     > %(outfile)s
     """
+    to_cluster = False
     run(statement)
 
 
