@@ -342,7 +342,6 @@ def get_parameters(filenames=None,
     yml_filenames = [x for x in filenames if not x.endswith(".ini")]
 
     if ini_filenames:
-
         conf = configparser.SafeConfigParser()
         try:
             conf.read(ini_filenames)
