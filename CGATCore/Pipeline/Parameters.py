@@ -302,7 +302,7 @@ def get_parameters(filenames=None,
         if os.path.exists(fn):
             filenames.insert(0, fn)
 
-    filenames = [x.strip() for x in filenames]
+    filenames = [x.strip() for x in filenames if os.path.exists(x)]
 
     # update with hard-coded PARAMS
     PARAMS.update(HARDCODED_PARAMS)
@@ -320,7 +320,9 @@ def get_parameters(filenames=None,
 
     # backwards compatibility - read ini files
     ini_filenames = [x for x in filenames if x.endswith(".ini")]
+    PARAMS["pipeline_ini"] = ini_filenames
     yml_filenames = [x for x in filenames if not x.endswith(".ini")]
+    PARAMS["pipeline_yml"] = yml_filenames
 
     if ini_filenames:
         conf = configparser.SafeConfigParser()

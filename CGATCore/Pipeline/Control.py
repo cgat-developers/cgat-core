@@ -155,11 +155,11 @@ def print_config_files():
         Priority 1 is the highest.
     '''
 
-    filenames = get_params()['pipeline_ini']
-    print("\n List of .ini files used to configure the pipeline")
+    filenames = get_params()['pipeline_ini'] + get_params()['pipeline_yml']
+    print("\n List of config files used to configure the pipeline")
     s = len(filenames)
     if s == 0:
-        print(" No ini files passed!")
+        print(" No config files passed!")
     elif s >= 1:
         print(" %-11s: %s " % ("Priority", "File"))
         for f in filenames:
