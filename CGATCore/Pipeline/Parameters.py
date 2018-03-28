@@ -235,6 +235,15 @@ def get_parameters(filenames=None,
     '''read one or more config files and build global PARAMS configuration
     dictionary.
 
+    Different config files have different priorities:
+    * highest -> ordered list of given .yml files
+    * then    -> pipeline.ini in working directory
+    * then    -> ~/.cgat
+    * lowest  -> default pipeline.ini in config file
+
+    Higher priority files will overwrite configuration of lower priority ones.
+    If in doubt, please use "printconfig" to see priority.
+
     Arguments
     ---------
     filenames : list
@@ -302,12 +311,14 @@ def get_parameters(filenames=None,
                               userfile)
             if os.path.exists(fn):
                 # priority is:
-                # highest -> pipeline.ini in working directory
-                # then    -> ~/.cgat or ~/.cgat.yml
+                # highest -> ordered list of given .yml files
+                # then    -> pipeline.ini in working directory
+                # then    -> ~/.cgat
                 # lowest  -> default pipeline.ini in config file
+                # if in doubt, use "printconfig" to see priority
                 if 'pipeline.ini' in filenames:
                     index = filenames.index('pipeline.ini')
-                    filenames.insert(index,fn)
+                    filenames.insert(index, fn)
                 else:
                     filenames.append(fn)
 
