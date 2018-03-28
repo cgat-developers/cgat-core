@@ -297,10 +297,19 @@ def get_parameters(filenames=None,
 
     if user:
         # read configuration from a users home directory
-        fn = os.path.join(os.path.expanduser("~"),
-                          ".cgat.yml")
-        if os.path.exists(fn):
-            filenames.insert(0, fn)
+        for userfile in ['.cgat', '.cgat.yml']:
+            fn = os.path.join(os.path.expanduser("~"),
+                              userfile)
+            if os.path.exists(fn):
+                # priority is:
+                # highest -> pipeline.ini in working directory
+                # then    -> ~/.cgat or ~/.cgat.yml
+                # lowest  -> default pipeline.ini in config file
+                if 'pipeline.ini' in filenames:
+                    index = filenames.index('pipeline.ini')
+                    filenames.insert(index,fn)
+                else:
+                    filenames.append(fn)
 
     filenames = [x.strip() for x in filenames if os.path.exists(x)]
 
@@ -308,6 +317,14 @@ def get_parameters(filenames=None,
     PARAMS.update(HARDCODED_PARAMS)
     if defaults:
         PARAMS.update(defaults)
+
+    # for backwards compatibility - normalize dictionaries
+    p = {}
+    for k, v in PARAMS.items():
+        if isinstance(v, collections.Mapping):
+            for kk, vv in v.items():
+                p["{}_{}".format(k, kk)] = vv
+    PARAMS.update(p)
 
     # reset working directory. Set in PARAMS to prevent repeated calls to
     # os.getcwd() failing if network is busy
@@ -319,9 +336,9 @@ def get_parameters(filenames=None,
         PARAMS["pipelinedir"] = 'unknown'
 
     # backwards compatibility - read ini files
-    ini_filenames = [x for x in filenames if x.endswith(".ini")]
+    ini_filenames = [x for x in filenames if x.endswith(".ini") or x.endswith(".cgat")]
     PARAMS["pipeline_ini"] = ini_filenames
-    yml_filenames = [x for x in filenames if not x.endswith(".ini")]
+    yml_filenames = [x for x in filenames if x.endswith(".yml")]
     PARAMS["pipeline_yml"] = yml_filenames
 
     if ini_filenames:
@@ -353,16 +370,15 @@ def get_parameters(filenames=None,
             with open(filename) as inf:
                 p = yaml.load(inf)
                 if p:
-                    PARAMS.update(p)
+                    flat_p = {}
+                    for k, v in p.items():
+                        if isinstance(v, collections.Mapping):
+                            for kk, vv in v.items():
+                                flat_p["{}_{}".format(k, kk)] = vv
+                        else:
+                            flat_p[k] = v
+                    PARAMS.update(flat_p)
 
-    # for backwards compatibility - normalize dictionaries
-    p = {}
-    for k, v in PARAMS.items():
-        if isinstance(v, collections.Mapping):
-            for kk, vv in v.items():
-                p["{}_{}".format(k, kk)] = vv
-    PARAMS.update(p)
-                
     # interpolate some params with other parameters
     for param in INTERPOLATE_PARAMS:
         try:
@@ -376,6 +392,14 @@ def get_parameters(filenames=None,
         if param.endswith("dir"):
             if value.startswith("."):
                 PARAMS[param] = os.path.abspath(value)
+
+    # for backwards compatibility - normalize dictionaries
+    # once PARAM has been updated
+    # update nested dictionaries with values in PARAM
+    for k, v in PARAMS.items():
+        if isinstance(v, collections.Mapping):
+            for kk, vv in v.items():
+                PARAMS[k][kk] = PARAMS["{}_{}".format(k, kk)]
 
     # make sure that the dictionary reference has not changed
     assert id(PARAMS) == old_id
