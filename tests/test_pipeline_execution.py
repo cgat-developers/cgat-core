@@ -24,7 +24,7 @@ def run_on_cluster(to_cluster):
 class BaseTest(unittest.TestCase):
 
     def setUp(self):
-        self.work_dir = P.get_temp_dir()
+        self.work_dir = P.get_temp_dir(shared=True)
 
     def tearDown(self):
         shutil.rmtree(self.work_dir)
@@ -41,7 +41,6 @@ class TestExecutionRun(BaseTest):
         # drive to work because of outfile using work_dir
         # TODO: use as shared temporary directory
         outfile = os.path.join(self.work_dir, "out")
-
         with run_on_cluster(True):
             P.run(
                 "hostname > {outfile}".format(outfile=outfile))
