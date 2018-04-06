@@ -3,13 +3,12 @@ import math
 import itertools
 import collections
 import random
+from functools import reduce
+import numpy
 
 import CGATCore.Experiment as E
 import CGATCore.CSV as CSV
-import CGAT.Stats as Stats
 import CGATCore.IOTools as IOTools
-import scipy
-from functools import reduce
 
 
 def get_columns(fields, columns="all"):
@@ -83,7 +82,7 @@ def read_and_group_table(infile, options):
     elif options.group_function == "sum":
         f = lambda z: reduce(lambda x, y: x + y, z)
     elif options.group_function == "mean":
-        f = scipy.mean
+        f = numpy.mean
     elif options.group_function == "cat":
         f = lambda x: ";".join([y for y in x if y != ""])
         converter = str
@@ -91,6 +90,8 @@ def read_and_group_table(infile, options):
         f = lambda x: ";".join([y for y in set(x) if y != ""])
         converter = str
     elif options.group_function == "stats":
+        raise NotImplementedError("method stats not implemented at the moment")
+        # Stats lives in cgat-apps/CGAT
         f = lambda x: str(Stats.DistributionalParameters(x))
         # update headers
         new_fields = [fields[options.group_column]]
