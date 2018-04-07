@@ -15,8 +15,6 @@ import configparser
 import getpass
 import logging
 import yaml
-import re
-from collections import defaultdict
 
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
@@ -53,7 +51,7 @@ class TriggeredDefaultFactory:
 # Global variable for parameter interpolation in commands
 # This is a dictionary that can be switched between defaultdict
 # and normal dict behaviour.
-PARAMS = defaultdict(TriggeredDefaultFactory())
+PARAMS = collections.defaultdict(TriggeredDefaultFactory())
 
 # patch - if --help or -h in command line arguments,
 # switch to a default dict to avoid missing paramater
@@ -137,7 +135,7 @@ def config_to_dictionary(config):
         A dictionary of configuration values
 
     """
-    p = defaultdict(lambda: defaultdict(TriggeredDefaultFactory()))
+    p = {}
     for section in config.sections():
         for key, value in config.items(section):
             try:
@@ -149,10 +147,6 @@ def config_to_dictionary(config):
                 raise
 
             p["%s_%s" % (section, key)] = v
-
-            # IMS: new heirarchical format
-            p[section][key] = v
-
             if section in ("general", "DEFAULT"):
                 p["%s" % (key)] = v
 
@@ -160,19 +154,6 @@ def config_to_dictionary(config):
         p["%s" % (key)] = IOTools.str2val(value)
 
     return p
-
-
-def nested_update(old, new):
-    '''Update potentially nested dictionaries. If both old[x] and new[x]
-    inherit from collections.Mapping, then update old[x] with entries from
-    new[x], otherwise set old[x] to new[x]'''
-
-    for key, value in new.items():
-        if isinstance(value, collections.Mapping) and \
-           isinstance(old.get(key, str()), collections.Mapping):
-            old[key].update(new[key])
-        else:
-            old[key] = new[key]
 
 
 def input_validation(PARAMS, pipeline_script=""):
@@ -254,6 +235,15 @@ def get_parameters(filenames=None,
     '''read one or more config files and build global PARAMS configuration
     dictionary.
 
+    Different config files have different priorities:
+    * highest -> ordered list of given .yml files
+    * then    -> pipeline.ini in working directory
+    * then    -> ~/.cgat
+    * lowest  -> default pipeline.ini in config file
+
+    Higher priority files will overwrite configuration of lower priority ones.
+    If in doubt, please use "printconfig" to see priority.
+
     Arguments
     ---------
     filenames : list
@@ -316,17 +306,36 @@ def get_parameters(filenames=None,
 
     if user:
         # read configuration from a users home directory
-        fn = os.path.join(os.path.expanduser("~"),
-                          ".cgat.yml")
-        if os.path.exists(fn):
-            filenames.insert(0, fn)
+        for userfile in ['.cgat', '.cgat.yml']:
+            fn = os.path.join(os.path.expanduser("~"),
+                              userfile)
+            if os.path.exists(fn):
+                # priority is:
+                # highest -> ordered list of given .yml files
+                # then    -> pipeline.ini in working directory
+                # then    -> ~/.cgat
+                # lowest  -> default pipeline.ini in config file
+                # if in doubt, use "printconfig" to see priority
+                if 'pipeline.ini' in filenames:
+                    index = filenames.index('pipeline.ini')
+                    filenames.insert(index, fn)
+                else:
+                    filenames.append(fn)
 
-    filenames = [x.strip() for x in filenames]
+    filenames = [x.strip() for x in filenames if os.path.exists(x)]
 
     # update with hard-coded PARAMS
-    nested_update(PARAMS, HARDCODED_PARAMS)
+    PARAMS.update(HARDCODED_PARAMS)
     if defaults:
-        nested_update(PARAMS, defaults)
+        PARAMS.update(defaults)
+
+    # for backwards compatibility - normalize dictionaries
+    p = {}
+    for k, v in PARAMS.items():
+        if isinstance(v, collections.Mapping):
+            for kk, vv in v.items():
+                p["{}_{}".format(k, kk)] = vv
+    PARAMS.update(p)
 
     # reset working directory. Set in PARAMS to prevent repeated calls to
     # os.getcwd() failing if network is busy
@@ -338,11 +347,12 @@ def get_parameters(filenames=None,
         PARAMS["pipelinedir"] = 'unknown'
 
     # backwards compatibility - read ini files
-    ini_filenames = [x for x in filenames if x.endswith(".ini")]
-    yml_filenames = [x for x in filenames if not x.endswith(".ini")]
+    ini_filenames = [x for x in filenames if x.endswith(".ini") or x.endswith(".cgat")]
+    PARAMS["pipeline_ini"] = ini_filenames
+    yml_filenames = [x for x in filenames if x.endswith(".yml")]
+    PARAMS["pipeline_yml"] = yml_filenames
 
     if ini_filenames:
-
         conf = configparser.SafeConfigParser()
         try:
             conf.read(ini_filenames)
@@ -358,9 +368,8 @@ def get_parameters(filenames=None,
             config = configparser.RawConfigParser()
             config.read(ini_filenames)
             p = config_to_dictionary(config)
-
         if p:
-            nested_update(PARAMS, p)
+            PARAMS.update(p)
 
     if yml_filenames:
         for filename in yml_filenames:
@@ -372,16 +381,15 @@ def get_parameters(filenames=None,
             with open(filename) as inf:
                 p = yaml.load(inf)
                 if p:
-                    nested_update(PARAMS, p)
+                    flat_p = {}
+                    for k, v in p.items():
+                        if isinstance(v, collections.Mapping):
+                            for kk, vv in v.items():
+                                flat_p["{}_{}".format(k, kk)] = vv
+                        else:
+                            flat_p[k] = v
+                    PARAMS.update(flat_p)
 
-    # for backwards compatibility - normalize dictionaries
-    p = {}
-    for k, v in PARAMS.items():
-        if isinstance(v, collections.Mapping):
-            for kk, vv in v.items():
-                p["{}_{}".format(k, kk)] = vv
-    nested_update(PARAMS, p)
-                
     # interpolate some params with other parameters
     for param in INTERPOLATE_PARAMS:
         try:
@@ -395,6 +403,14 @@ def get_parameters(filenames=None,
         if param.endswith("dir"):
             if value.startswith("."):
                 PARAMS[param] = os.path.abspath(value)
+
+    # for backwards compatibility - normalize dictionaries
+    # once PARAM has been updated
+    # update nested dictionaries with values in PARAM
+    for k, v in PARAMS.items():
+        if isinstance(v, collections.Mapping):
+            for kk, vv in v.items():
+                PARAMS[k][kk] = PARAMS["{}_{}".format(k, kk)]
 
     # make sure that the dictionary reference has not changed
     assert id(PARAMS) == old_id
