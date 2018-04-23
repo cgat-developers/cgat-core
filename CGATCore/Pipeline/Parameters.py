@@ -151,7 +151,12 @@ def config_to_dictionary(config):
             p["%s_%s" % (section, key)] = v
 
             # IMS: new heirarchical format
-            p[section][key] = v
+            try:
+                p[section][key] = v
+            except TypeError:
+                # fails with things like genome_dir=abc
+                # if [genome] does not exist.
+                continue
 
             if section in ("general", "DEFAULT"):
                 p["%s" % (key)] = v

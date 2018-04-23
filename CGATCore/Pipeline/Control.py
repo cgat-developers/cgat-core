@@ -17,6 +17,7 @@ from io import StringIO
 from multiprocessing.pool import ThreadPool
 import multiprocessing
 import contextlib
+import collections
 import json
 import logging
 import math
@@ -401,7 +402,11 @@ def peek_parameters(workingdir,
     if update_interface:
         for key, value in list(dump.items()):
             if key.startswith("interface"):
-                dump[key] = os.path.join(workingdir, value)
+                if isinstance(value, str):
+                    dump[key] = os.path.join(workingdir, value)
+                elif isinstance(value, collections.Mapping):
+                    for kkey, vvalue in list(value.items()):
+                        value[key] = os.path.join(workingdir, vvalue)
 
     # keep only interface if so required
     if restrict_interface:
