@@ -118,6 +118,7 @@ class EventPool(gevent.pool.Pool):
         """ignore timeout parameter."""
         return OLD_NEXT(instance)
 
+
 gevent.pool.IMapUnordered.next = EventPool.next_with_timeout
 
 
@@ -130,11 +131,11 @@ def write_config_files(pipeline_path, general_path):
     '''
 
     paths = [pipeline_path, general_path]
-    config_files = ['pipeline.ini', 'conf.py']
+    config_files = ['pipeline.yml', 'conf.py']
 
     for dest in config_files:
         if os.path.exists(dest):
-            E.warn("file `%s` already exists - skipped" % dest)
+            E.warn("file `%s` alrcgatflow intervals -v 5 -p 10 --is-test  configeady exists - skipped" % dest)
             continue
 
         for path in paths:
