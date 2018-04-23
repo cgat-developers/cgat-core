@@ -77,7 +77,7 @@ def cached_os_path_realpath(filename):
 
 
 @E.cached_function
-def cached_os_path_relpath(filename):
+def cached_os_path_relpath(filename, start=None):
     return SAVED_OS_PATH_RELPATH(filename)
 
 
@@ -341,7 +341,7 @@ def peek_parameters(workingdir,
 
     '''
     caller_locals = get_caller_locals()
-    
+
     # check if we should raise errors
     if on_error_raise is None:
         on_error_raise = not is_test() and \
