@@ -545,7 +545,6 @@ def create_view(dbhandle, tables, tablename, outfile,
     FROM %(from_statement)s
     WHERE %(where_statement)s
     ''' % locals()
-
     Database.executewait(dbhandle, statement)
 
     nrows = Database.executewait(
