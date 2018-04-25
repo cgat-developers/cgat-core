@@ -852,6 +852,17 @@ class GridExecutor(Executor):
                     "The stderr was: \n{}\n{}\n"
                     "-----------------------------------------".format(
                         job_id, retval.terminatedSignal, "".join(stderr), statement))
+
+            elif retval.hasExited is False or retval.wasAborted is True:
+                raise OSError(
+                    "-------------------------------------------------\n"
+                    "Cluster job was aborted (%s) and/or failed to exit (%s) "
+                    "while running the following statement:\n"
+                    "\n%s\n"
+                    "(Job may have been cancelled by the user or the scheduler)\n"
+                    "----------------------------------------------------------\n"
+                    .format(retval.wasAborted, not retval.hasExited, statement))
+
             try:
                 resource_usage = [retval]
             except AttributeError:
