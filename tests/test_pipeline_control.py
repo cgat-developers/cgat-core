@@ -18,7 +18,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 class BaseTest(unittest.TestCase):
 
     def setUp(self):
-        self.work_dir = P.get_temp_dir()
+        self.work_dir = P.get_temp_dir(shared=True)
 
     def tearDown(self):
         shutil.rmtree(self.work_dir)

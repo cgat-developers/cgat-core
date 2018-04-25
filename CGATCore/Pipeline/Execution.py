@@ -32,7 +32,9 @@ import CGATCore.IOTools as IOTools
 from CGATCore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
 from CGATCore.Pipeline.Files import get_temp_filename, get_temp_dir
 from CGATCore.Pipeline.Parameters import substitute_parameters, get_params
-from CGATCore.Pipeline.Cluster import setup_drmaa_job_template, get_drmaa_job_stdout_stderr
+from CGATCore.Pipeline.Cluster import setup_drmaa_job_template, \
+    get_drmaa_job_stdout_stderr, \
+    set_drmaa_job_paths
 
 
 # talking to a cluster
@@ -926,7 +928,7 @@ class GridExecutor(Executor):
                                         job_memory=self.job_memory,
                                         job_threads=self.job_threads,
                                         working_directory=self.workingdir,
-                                        **options["cluster"])
+                                        **options)
 
     def wait_for_job_completion(self, job_ids):
 

@@ -11,8 +11,8 @@ import sqlite3
 import sqlalchemy
 from CGATCore import Database as Database
 import CGATCore.Experiment as E
-
-from CGATCore.IOTools import snip
+from CGATCore.IOTools import snip, touch_file
+from CGATCore.Pipeline.Files import get_temp_file
 from CGATCore.Pipeline.Execution import run
 from CGATCore.Pipeline.Parameters import get_params
 
@@ -22,7 +22,7 @@ def tablequote(track):
     return re.sub("[-(),\[\].]", "_", track)
 
 
-def toTable(outfile):
+def to_table(outfile):
     '''convert a filename from a load statement into a table name.
 
     This method checks if the filename ends with ".load". The suffix
@@ -83,7 +83,7 @@ def build_load_statement(tablename, retry=True, options=""):
     opts.append("--database-url={}".format(params["database"]["url"]))
 
     db_options = " ".join(opts)
-    load_statement = ("cgat csv2db {db_options} {options} --table={tablename}".format(**locals()))
+    load_statement = ("python -m CGATCore.CSV2DB {db_options} {options} --table={tablename}".format(**locals()))
 
     return load_statement
 
@@ -146,7 +146,7 @@ def load(infile,
         job_memory = get_params()["cluster_memory_default"]
 
     if not tablename:
-        tablename = toTable(outfile)
+        tablename = to_table(outfile)
 
     statement = []
 
@@ -157,15 +157,15 @@ def load(infile,
 
     if collapse:
         statement.append(
-            "cgat table2table --collapse=%(collapse)s")
+            "python -m CGATCore.Table --collapse=%(collapse)s")
 
     if transpose:
         statement.append(
-            """cgat table2table --transpose
+            """python -m CGATCore.Table --transpose
             --set-transpose-field=%(transpose)s""")
 
     if shuffle:
-        statement.append("cgat randomize_lines --keep-header=1")
+        statement.append("python -m CGATCore.Table --method=randomize-rows")
 
     if limit > 0:
         # use awk to filter in order to avoid a pipeline broken error from head
@@ -179,20 +179,21 @@ def load(infile,
 
     statement = " | ".join(statement) + " > %(outfile)s"
 
+    to_cluster = False
     run(statement)
 
 
-def concatenateAndLoad(infiles,
-                       outfile,
-                       regex_filename=None,
-                       header=None,
-                       cat="track",
-                       has_titles=True,
-                       missing_value="na",
-                       retry=True,
-                       tablename=None,
-                       options="",
-                       job_memory=None):
+def concatenate_and_load(infiles,
+                         outfile,
+                         regex_filename=None,
+                         header=None,
+                         cat="track",
+                         has_titles=True,
+                         missing_value="na",
+                         retry=True,
+                         tablename=None,
+                         options="",
+                         job_memory=None):
     """concatenate multiple tab-separated files and upload into database.
 
     The table name is given by outfile without the
@@ -244,7 +245,7 @@ def concatenateAndLoad(infiles,
         job_memory = get_params()["cluster_memory_default"]
 
     if tablename is None:
-        tablename = toTable(outfile)
+        tablename = to_table(outfile)
 
     infiles = " ".join(infiles)
 
@@ -267,7 +268,7 @@ def concatenateAndLoad(infiles,
                                           options=load_options,
                                           retry=retry)
 
-    statement = '''cgat combine-tables
+    statement = '''python -m CGATCore.Tables
     --cat=%(cat)s
     --missing-value=%(missing_value)s
     %(cat_options)s
@@ -275,18 +276,19 @@ def concatenateAndLoad(infiles,
     | %(load_statement)s
     > %(outfile)s'''
 
+    to_cluster = False
     run(statement)
 
 
-def mergeAndLoad(infiles,
-                 outfile,
-                 suffix=None,
-                 columns=(0, 1),
-                 regex=None,
-                 row_wise=True,
-                 retry=True,
-                 options="",
-                 prefixes=None):
+def merge_and_load(infiles,
+                   outfile,
+                   suffix=None,
+                   columns=(0, 1),
+                   regex=None,
+                   row_wise=True,
+                   retry=True,
+                   options="",
+                   prefixes=None):
     '''merge multiple categorical tables and load into a database.
 
     The tables are merged and entered row-wise, i.e, the contents of
@@ -388,16 +390,16 @@ def mergeAndLoad(infiles,
 
     if row_wise:
         transform = """| perl -p -e "s/bin/track/"
-        | cgat table2table --transpose"""
+        | python -m CGATCore.Table --transpose"""
     else:
         transform = ""
 
     load_statement = build_load_statement(
-        toTable(outfile),
+        to_table(outfile),
         options="--add-index=track " + options,
         retry=retry)
 
-    statement = """cgat combine_tables
+    statement = """python -m CGATCore.Tables
     %(header_stmt)s
     --skip-titles
     --missing-value=0
@@ -407,6 +409,7 @@ def mergeAndLoad(infiles,
     | %(load_statement)s
     > %(outfile)s
     """
+    to_cluster = False
     run(statement)
 
 
@@ -459,9 +462,9 @@ def connect():
     return engine
 
 
-def createView(dbhandle, tables, tablename, outfile,
-               view_type="TABLE",
-               ignore_duplicates=True):
+def create_view(dbhandle, tables, tablename, outfile,
+                view_type="TABLE",
+                ignore_duplicates=True):
     '''create a database view for a list of tables.
 
     This method performs a join across multiple tables and stores the
@@ -542,7 +545,6 @@ def createView(dbhandle, tables, tablename, outfile,
     FROM %(from_statement)s
     WHERE %(where_statement)s
     ''' % locals()
-
     Database.executewait(dbhandle, statement)
 
     nrows = Database.executewait(
@@ -557,10 +559,10 @@ def createView(dbhandle, tables, tablename, outfile,
                (nrows, min(tracks)))
 
     E.info("created view_mapping with %i rows" % nrows)
-    touchFile(outfile)
+    touch_file(outfile)
 
 
-def getDatabaseName():
+def get_database_name():
     '''Return the database name associated with the pipeline.
 
     This method lookis in different sections in the ini file to permit
@@ -590,7 +592,7 @@ def getDatabaseName():
     raise KeyError("database name not found")
 
 
-def importFromIterator(
+def load_from_iterator(
         outfile,
         tablename,
         iterator,
@@ -616,7 +618,7 @@ def importFromIterator(
         List of column names to add indices on.
     '''
 
-    tmpfile = getTempFile(".")
+    tmpfile = get_temp_file(".")
 
     if columns:
         keys, values = list(zip(*list(columns.items())))

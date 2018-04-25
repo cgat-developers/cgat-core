@@ -28,6 +28,7 @@ Code
 
 '''
 
+import sys
 import pandas
 import re
 
@@ -291,3 +292,26 @@ def buildParser():
     )
 
     return parser
+
+
+def main(argv=sys.argv):
+
+    parser = buildParser()
+
+    (options, args) = E.start(parser, argv=argv,
+                              add_database_options=True)
+
+    if options.from_zipped:
+        import gzip
+        infile = gzip.GzipFile(fileobj=options.stdin, mode='r')
+
+    else:
+        infile = options.stdin
+
+    run(infile, options)
+
+    E.stop()
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
