@@ -68,6 +68,7 @@ HARDCODED_PARAMS = {
     'scriptsdir': SCRIPTS_SCRIPTS_DIR,
     'toolsdir': SCRIPTS_SCRIPTS_DIR,
     # directory used for temporary local files
+    # on the submission node
     'tmpdir': os.environ.get("TMPDIR",
                              os.path.join("/tmp", getpass.getuser())),
     # directory used for temporary files shared across machines
@@ -94,7 +95,12 @@ HARDCODED_PARAMS = {
         # parallel environment to use for multi-threaded jobs
         'parallel_environment': 'dedicated',
         # the cluster queue manager
-        'queue_manager': "sge"
+        'queue_manager': "sge",
+        # directory specification for temporary files on cluster nodes,
+        # useful for passing the name of a non-standard environment variable
+        # which will be set by the queue manager e.g. in a prolog script
+        # if set to False, the general "tmpdir" parameter is used.
+        'tmpdir': False
     },
     # ruffus job limits for databases
     'jobs_limit_db': 10,

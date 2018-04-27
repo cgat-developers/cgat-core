@@ -429,6 +429,8 @@ class Executor(object):
 
         self.logger = get_logger()
 
+        self.run_on_cluster = will_run_on_cluster(kwargs)
+
         self.job_threads = kwargs.get("job_threads", 1)
 
         if "job_memory" in kwargs and "job_total_memory" in kwargs:
@@ -501,11 +503,7 @@ class Executor(object):
         teardown_cmds = []
         cleanup_funcs = []
 
-        # create local scratch if it does not already exists. Note that
-        # directory itself will be not deleted while its contents should
-        # be cleaned up.
         setup_cmds.append("umask 002")
-        setup_cmds.append("mkdir -p {}".format(get_params()["tmpdir"]))
 
         if "arv=" in statement:
 
@@ -580,8 +578,6 @@ class Executor(object):
         tmpfilename = get_temp_filename(dir=self.workingdir, clear=True)
         tmpfilename = tmpfilename + ".sh"
 
-        tmpdir = get_temp_dir(clear=True)
-
         expanded_statement, cleanup_funcs = self.expand_statement(statement)
 
         with open(tmpfilename, "w") as tmpfile:
@@ -602,11 +598,22 @@ class Executor(object):
 
             # create and set system scratch dir for temporary files
             tmpfile.write("umask 002\n")
-            tmpfile.write("mkdir -p {}\n".format(tmpdir))
-            tmpfile.write("export TMPDIR={}\n".format(tmpdir))
+
+            if self.run_on_cluster:
+                cluster_tmpdir = get_params()["cluster_tmpdir"]
+                if cluster_tmpdir:
+                    tmpdir = cluster_tmpdir
+                else:
+                    tmpdir = get_params()["tmpdir"]
+            else:
+                tmpdir = get_params()["tmpdir"]
+
+            tmpfile.write("TMPDIR=`mktemp -p {}`\n".format(tmpdir))
+            tmpfile.write("export TMPDIR\n")
+
             cleanup_funcs.append(
                 ("clean_temp",
-                 "{{ rm -rf {}; }}".format(tmpdir)))
+                 "{ rm -rf $TMPDIR; }"))
 
             # output times whenever script exits, preserving
             # return status
