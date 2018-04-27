@@ -86,6 +86,9 @@ HARDCODED_PARAMS = {
         'memory_resource': "mem_free",
         # amount of memory set by default for each job
         'memory_default': "4G",
+        # ensure requested memory is not exceeded via ulimit (this is
+        # not compatible with and/or needed  for all cluster configurations)
+        'memory_ulimit': True,
         # general cluster options
         'options': "",
         # parallel environment to use for multi-threaded jobs
@@ -386,7 +389,7 @@ def get_parameters(filenames=None,
             for kk, vv in v.items():
                 p["{}_{}".format(k, kk)] = vv
     nested_update(PARAMS, p)
-                
+
     # interpolate some params with other parameters
     for param in INTERPOLATE_PARAMS:
         try:
