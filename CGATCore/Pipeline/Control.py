@@ -79,7 +79,7 @@ def cached_os_path_realpath(filename):
 
 @E.cached_function
 def cached_os_path_relpath(filename, start=None):
-    return SAVED_OS_PATH_RELPATH(filename)
+    return SAVED_OS_PATH_RELPATH(filename, start)
 
 
 @E.cached_function
