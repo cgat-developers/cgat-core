@@ -11,6 +11,12 @@ import CGATCore.CSV as CSV
 import CGATCore.IOTools as IOTools
 
 
+# The status of this module is unresolved. Functionality implemented
+# here is used in the Database.py module to massage tables before
+# uploading.  On the other hand, some functionality relies on the
+# cgat-apps/CGAT/Stats.py module.
+
+
 def get_columns(fields, columns="all"):
     '''return columns to take.'''
     if columns == "all":
@@ -90,7 +96,6 @@ def read_and_group_table(infile, options):
         f = lambda x: ";".join([y for y in set(x) if y != ""])
         converter = str
     elif options.group_function == "stats":
-        raise NotImplementedError("method stats not implemented at the moment")
         # Stats lives in cgat-apps/CGAT
         f = lambda x: str(Stats.DistributionalParameters(x))
         # update headers
