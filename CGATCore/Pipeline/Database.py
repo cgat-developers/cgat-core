@@ -78,7 +78,7 @@ def build_load_statement(tablename, retry=True, options=""):
 
     if retry:
         opts.append(" --retry ")
-        
+
     params = get_params()
     opts.append("--database-url={}".format(params["database"]["url"]))
 
@@ -157,15 +157,22 @@ def load(infile,
 
     if collapse:
         statement.append(
-            "python -m CGATCore.Table --collapse=%(collapse)s")
+            "python -m CGATCore.Table "
+            "--log=%(outfile)s.collapse.log "
+            "--collapse=%(collapse)s")
 
     if transpose:
         statement.append(
-            """python -m CGATCore.Table --transpose
-            --set-transpose-field=%(transpose)s""")
+            "python -m CGATCore.Table "
+            "--log=%(outfile)s.transpose.log "
+            "--transpose "
+            "--set-transpose-field=%(transpose)s")
 
     if shuffle:
-        statement.append("python -m CGATCore.Table --method=randomize-rows")
+        statement.append(
+            "python -m CGATCore.Table "
+            "--log=%(outfile)s.shuffle.log "
+            "--method=randomize-rows")
 
     if limit > 0:
         # use awk to filter in order to avoid a pipeline broken error from head
