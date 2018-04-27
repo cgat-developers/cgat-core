@@ -50,6 +50,7 @@ class TriggeredDefaultFactory:
         else:
             raise KeyError("missing parameter accessed")
 
+
 # Global variable for parameter interpolation in commands
 # This is a dictionary that can be switched between defaultdict
 # and normal dict behaviour.
@@ -61,9 +62,8 @@ PARAMS = defaultdict(TriggeredDefaultFactory())
 if is_test() or "--help" in sys.argv or "-h" in sys.argv:
     TriggeredDefaultFactory.with_default = True
 
-# A list of hard-coded parameters for the environment
-# These can be overwritten by command line options and
-# configuration files
+# A list of hard-coded parameters for fall-back. These should be
+# overwritten by command line options and configuration files.
 HARDCODED_PARAMS = {
     'scriptsdir': SCRIPTS_SCRIPTS_DIR,
     'toolsdir': SCRIPTS_SCRIPTS_DIR,
@@ -278,7 +278,7 @@ def get_parameters(filenames=None,
        If set to a boolean, the parameter dictionary will be a
        defaultcollection. This is useful for pipelines that are
        imported (for example for documentation generation) but not
-       executed as there might not be an appropriate .ini file
+       executed as there might not be an appropriate .yml file
        available. If `only_import` is None, it will be set to the
        default, which is to raise an exception unless the calling
        script is imported or the option ``--is-test`` has been passed
@@ -289,9 +289,8 @@ def get_parameters(filenames=None,
     params : dict
        Global configuration dictionary.
     '''
-
     if filenames is None:
-        filenames = ["benchmark.yml"]
+        filenames = ["pipeline.yml"]
 
     if isinstance(filenames, str):
         filenames = [filenames]
@@ -317,8 +316,8 @@ def get_parameters(filenames=None,
         TriggeredDefaultFactory.with_default = True
 
     if site_ini:
-        # read configuration from /etc/cgat/pipeline.ini
-        fn = "/etc/cgat/pipeline.ini"
+        # read configuration from /etc/cgat/pipeline.yml
+        fn = "/etc/cgat/pipeline.yml"
         if os.path.exists(fn):
             filenames.insert(0, fn)
 
@@ -345,49 +344,27 @@ def get_parameters(filenames=None,
     else:
         PARAMS["pipelinedir"] = 'unknown'
 
-    # backwards compatibility - read ini files
-    ini_filenames = [x for x in filenames if x.endswith(".ini")]
-    yml_filenames = [x for x in filenames if not x.endswith(".ini")]
+    for filename in filenames:
+        if not os.path.exists(filename):
+            continue
+        get_logger().info("reading config from file {}".format(
+            filename))
 
-    if ini_filenames:
-
-        conf = configparser.SafeConfigParser()
-        try:
-            conf.read(ini_filenames)
-            p = config_to_dictionary(conf)
-        except configparser.InterpolationSyntaxError as ex:
-            # Do not log, as called before logging module is initialized -
-            # this will mess up loging configuration in Control.py and Experiment.py
-            # E.debug(
-            #     "InterpolationSyntaxError when reading configuration file, "
-            #     "likely due to use of '%'. "
-            #     "Please quote '%' if ini interpolation is required. "
-            #     "Orginal error: {}".format(str(ex)))
-            config = configparser.RawConfigParser()
-            config.read(ini_filenames)
-            p = config_to_dictionary(config)
-
-        if p:
-            nested_update(PARAMS, p)
-
-    if yml_filenames:
-        for filename in yml_filenames:
-            if not os.path.exists(filename):
-                continue
-            get_logger().info("reading config from file {}".format(
-                filename))
-
-            with open(filename) as inf:
-                p = yaml.load(inf)
-                if p:
-                    nested_update(PARAMS, p)
+        with open(filename) as inf:
+            p = yaml.load(inf)
+            if p:
+                nested_update(PARAMS, p)
 
     # for backwards compatibility - normalize dictionaries
     p = {}
     for k, v in PARAMS.items():
         if isinstance(v, collections.Mapping):
             for kk, vv in v.items():
-                p["{}_{}".format(k, kk)] = vv
+                new_key = "{}_{}".format(k, kk)
+                if new_key in p:
+                    raise ValueError(
+                        "key {} does already exist".format(new_key))
+                p[new_key] = vv
     nested_update(PARAMS, p)
 
     # interpolate some params with other parameters
@@ -398,11 +375,10 @@ def get_parameters(filenames=None,
             raise TypeError('could not interpolate %s: %s' %
                             (PARAMS[param], msg))
 
-    # expand pathnames
+    # expand directory pathnames
     for param, value in list(PARAMS.items()):
-        if param.endswith("dir"):
-            if value.startswith("."):
-                PARAMS[param] = os.path.abspath(value)
+        if (param.endswith("dir") and value is not None and value.startswith(".")):
+            PARAMS[param] = os.path.abspath(value)
 
     # make sure that the dictionary reference has not changed
     assert id(PARAMS) == old_id
@@ -555,6 +531,17 @@ def check_parameter(param):
     """check if parameter ``key`` is set"""
     if param not in PARAMS:
         raise ValueError("need `%s` to be set" % param)
+
+
+# WIP: how to find the right pipeline
+# 1. caller locals()
+# 2. explicitely (with pipeline name)
+def initialize(*args, **kwargs):
+    """initialize the CGATFlow pipeline"""
+    return get_parameters(
+        ["%s/pipeline.yml" % os.path.splitext(__file__)[0],
+         "../pipeline.yml",
+         "pipeline.yml"])
 
 
 def get_params():
