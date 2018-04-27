@@ -1261,10 +1261,14 @@ def run(statement, **kwargs):
         del options["self"]
     options.update(list(kwargs.items()))
 
-    # inject params dictionary from Task functions into option dict.
-    # This allows passing options from the config file.
+    # inject params named tuple from TaskLibrary functions into option
+    # dict. This allows overriding options set in the code with options set
+    # in a .yml file
     if "params" in options:
-        options.update(options["params"]._asdict())
+        try:
+            options.update(options["params"]._asdict())
+        except AttributeError:
+            pass
 
     # insert parameters supplied through simplified interface such
     # as job_memory, job_options, job_queue
