@@ -135,7 +135,7 @@ def write_config_files(pipeline_path, general_path):
 
     for dest in config_files:
         if os.path.exists(dest):
-            E.warn("file `%s` alrcgatflow intervals -v 5 -p 10 --is-test  configeady exists - skipped" % dest)
+            E.warn("file `%s` already exists - skipped" % dest)
             continue
 
         for path in paths:
