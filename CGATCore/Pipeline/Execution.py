@@ -858,9 +858,9 @@ class GridExecutor(Executor):
             elif retval.hasExited is False or retval.wasAborted is True:
                 raise OSError(
                     "-------------------------------------------------\n"
-                    "Cluster job was aborted (%s) and/or failed to exit (%s) "
+                    "Cluster job was aborted ({}) and/or failed to exit ({}) "
                     "while running the following statement:\n"
-                    "\n%s\n"
+                    "\n{}\n"
                     "(Job may have been cancelled by the user or the scheduler)\n"
                     "----------------------------------------------------------\n"
                     .format(retval.wasAborted, not retval.hasExited, statement))
