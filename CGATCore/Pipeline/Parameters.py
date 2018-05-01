@@ -383,7 +383,6 @@ def get_parameters(filenames=None,
 
     # expand directory pathnames
     for param, value in list(PARAMS.items()):
-        print("##### {} -> {}".format(param, value))
         if (param.endswith("dir") and isinstance(value, str) and value.startswith(".")):
             PARAMS[param] = os.path.abspath(value)
 
