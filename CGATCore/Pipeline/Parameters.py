@@ -328,7 +328,10 @@ def get_parameters(filenames=None,
         if os.path.exists(fn):
             filenames.insert(0, fn)
 
-    filenames = [x.strip() for x in filenames]
+    filenames = [x.strip() for x in filenames if os.path.exists(x)]
+
+    # save list of config files
+    PARAMS["pipeline_yml"] = filenames
 
     # update with hard-coded PARAMS
     nested_update(PARAMS, HARDCODED_PARAMS)
