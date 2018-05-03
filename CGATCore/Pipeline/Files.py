@@ -48,7 +48,14 @@ def get_temp_file(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"
             dir = get_params()['tmpdir']
 
     if not os.path.exists(dir):
-        os.makedirs(dir)
+        try:
+            os.makedirs(dir)
+        except OSError:
+            # avoid race condition when several processes try to create
+            # temporary directory.
+            pass
+        if not os.path.exists(dir):
+            raise OSError("temporary directory {} could not be created".format(dir))
 
     return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp",
                                        mode=mode,
