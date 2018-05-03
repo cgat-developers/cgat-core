@@ -434,17 +434,23 @@ class Executor(object):
         if "job_memory" in kwargs and "job_total_memory" in kwargs:
             raise ValueError("both job_memory and job_total_memory have been given")
 
-        if "job_total_memory" in kwargs:
-            self.job_total_memory = kwargs['job_total_memory']
-            self.job_memory = IOTools.bytes2human(
-                IOTools.human2bytes(self.job_total_memory) / self.job_threads)
-        elif 'job_memory' in kwargs and kwargs["job_memory"]:
-            # job_memory takes precedence over job_total_memory
-            self.job_memory = kwargs['job_memory']
-            self.job_total_memory = self.job_memory * self.job_threads
+        self.job_total_memory = kwargs.get('job_total_memory', None)
+        self.job_memory = kwargs.get('job_memory', None)
+
+        if self.job_total_memory == "unlimited" or self.job_memory == "unlimited":
+            self.job_total_memory = self.job_memory = "unlimited"
         else:
-            self.job_memory = get_params()["cluster"].get("memory_default", "4G")
-            self.job_total_memory = self.job_memory * self.job_threads
+            if self.job_total_memory:
+                self.job_memory = IOTools.bytes2human(
+                    IOTools.human2bytes(self.job_total_memory) / self.job_threads)
+            elif self.job_memory:
+                self.job_total_memory = self.job_memory * self.job_threads
+            else:
+                self.job_memory = get_params()["cluster"].get("memory_default", "4G")
+                if self.job_memory == "unlimited":
+                    self.job_total_memory = "unlimited"
+                else:
+                    self.job_total_memory = self.job_memory * self.job_threads
 
         self.ignore_pipe_errors = kwargs.get('ignore_pipe_errors', False)
         self.ignore_errors = kwargs.get('ignore_errors', False)
