@@ -39,9 +39,7 @@ import ruffus
 try:
     import drmaa
     HAS_DRMAA = True
-except ImportError:
-    HAS_DRMAA = False
-except RuntimeError:
+except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
 import CGATCore.Experiment as E

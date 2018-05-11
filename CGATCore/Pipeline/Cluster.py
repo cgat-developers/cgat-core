@@ -20,9 +20,7 @@ import CGATCore.Experiment as E
 try:
     import drmaa
     HAS_DRMAA = True
-except ImportError:
-    HAS_DRMAA = False
-except RuntimeError:
+except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
 
