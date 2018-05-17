@@ -578,6 +578,17 @@ class Executor(object):
         tmpfilename = get_temp_filename(dir=self.workingdir, clear=True)
         tmpfilename = tmpfilename + ".sh"
 
+        if self.run_on_cluster:
+            cluster_tmpdir = get_params()["cluster_tmpdir"]
+            if cluster_tmpdir:
+                tmpdir = cluster_tmpdir
+            else:
+                tmpdir = get_params()["tmpdir"]
+        else:
+            tmpdir = get_params()["tmpdir"]
+
+        tmpdir = get_temp_dir(dir=tmpdir, clear=True)
+
         expanded_statement, cleanup_funcs = self.expand_statement(statement)
 
         with open(tmpfilename, "w") as tmpfile:
@@ -598,22 +609,11 @@ class Executor(object):
 
             # create and set system scratch dir for temporary files
             tmpfile.write("umask 002\n")
-
-            if self.run_on_cluster:
-                cluster_tmpdir = get_params()["cluster_tmpdir"]
-                if cluster_tmpdir:
-                    tmpdir = cluster_tmpdir
-                else:
-                    tmpdir = get_params()["tmpdir"]
-            else:
-                tmpdir = get_params()["tmpdir"]
-
-            tmpfile.write("TMPDIR=`mktemp -p {}`\n".format(tmpdir))
-            tmpfile.write("export TMPDIR\n")
-
+            tmpfile.write("mkdir -p {}\n".format(tmpdir))
+            tmpfile.write("export TMPDIR={}\n".format(tmpdir))
             cleanup_funcs.append(
                 ("clean_temp",
-                 "{ rm -rf $TMPDIR; }"))
+                 "{{ rm -rf {}; }}".format(tmpdir)))
 
             # output times whenever script exits, preserving
             # return status
