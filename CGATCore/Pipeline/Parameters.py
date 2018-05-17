@@ -315,6 +315,9 @@ def get_parameters(filenames=None,
         # turn on default dictionary
         TriggeredDefaultFactory.with_default = True
 
+    # if self in caller_locals, then the code is being run by pytest
+    PARAMS['testing'] = 'self' in caller_locals
+
     if site_ini:
         # read configuration from /etc/cgat/pipeline.yml
         fn = "/etc/cgat/pipeline.yml"
