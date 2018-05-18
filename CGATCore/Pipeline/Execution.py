@@ -41,9 +41,7 @@ from CGATCore.Pipeline.Cluster import setup_drmaa_job_template, \
 try:
     import drmaa
     HAS_DRMAA = True
-except RuntimeError:
-    HAS_DRMAA = False
-except ImportError:
+except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
 # global drmaa session

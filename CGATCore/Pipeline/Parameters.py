@@ -315,6 +315,14 @@ def get_parameters(filenames=None,
         # turn on default dictionary
         TriggeredDefaultFactory.with_default = True
 
+    # check if the pipeline is in testing mode
+    if 'argv' in caller_locals:
+        found = False
+        for e in caller_locals['argv']:
+            if 'template_pipeline.py' in e:
+                found = True
+    PARAMS['testing'] = 'self' in caller_locals or found
+
     if site_ini:
         # read configuration from /etc/cgat/pipeline.yml
         fn = "/etc/cgat/pipeline.yml"

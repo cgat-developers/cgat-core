@@ -39,9 +39,7 @@ import ruffus
 try:
     import drmaa
     HAS_DRMAA = True
-except ImportError:
-    HAS_DRMAA = False
-except RuntimeError:
+except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
 import CGATCore.Experiment as E
@@ -1117,6 +1115,12 @@ def run_workflow(options, args, pipeline=None):
         try:
             with cache_os_functions():
                 if options.pipeline_action == "make":
+
+                    if not options.without_cluster and not HAS_DRMAA and not get_params()['testing']:
+                        E.critical("DRMAA API not found so cannot talk to a cluster.")
+                        E.critical("Please use --local to run the pipeline"
+                                   " on this host: {}".format(os.uname()[1]))
+                        sys.exit(-1)
 
                     # get tasks to be done. This essentially replicates
                     # the state information within ruffus.
