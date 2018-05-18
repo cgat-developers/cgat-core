@@ -1,4 +1,4 @@
-"""Test cases for the Pipeline.Execution module."""
+"""Test cases for the CGATCore.IOTools module."""
 
 import unittest
 import os
