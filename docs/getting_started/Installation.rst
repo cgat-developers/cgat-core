@@ -17,18 +17,37 @@ The latter refers to the whole collection of pipelines developed at CGAT, which 
 Automated installation
 ----------------------
 
+The following sections describe how to install the CGATCore framework. For instructions on how to install
+the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html>`_ .
+
 The preferred method to install the CGATCore is using the installation script,
-which uses conda_.
+which uses `conda <https://conda.io/docs/>`_.
 
 Here are the steps::
 
-   Add steps here...........
+   # download installation script:
+   curl -O https://raw.githubusercontent.com/cgat-developers/cgat-core/master/install-CGAT-tools.sh
 
-The installation script will put everything under the specified location. It needs
-? GB of disk space and it takes about 7 minutes to complete. The aim of the
-script is to provide a portable installation that does not interfere with the existing
-software. As a result, you will have a conda environment working with the CGAT-core
-which can be enabled on demand according to your needs.
+   # see help:
+   bash install-CGAT-tools.sh
+
+   # install the development version (recommended, no production version yet):
+   bash install-CGAT-tools.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
+
+   # the code is downloaded in zip format by default. If you want to get a git clone, use:
+   --git # for an HTTPS clone
+   --git-ssh # for a SSH clone (you need to be a cgat-developer contributor on GitHub to do this)
+
+   # enable the conda environment as requested by the installation script
+   # NB: you probably want to automate this by adding the instructions below to your .bashrc
+   source </full/path/to/folder/without/trailing/slash>/conda-install/etc/profile.d/conda.sh cgat-c
+   conda activate base
+   conda activate cgat-c
+
+The installation script will put everything under the specified location. It needs 1.2 GB of disk space.
+The aim of the script is to provide a portable installation that does not interfere with the existing
+software. As a result, you will have a conda environment working with the CGAT-core which can be enabled
+on demand according to your needs.
 
 .. _getting_started-Manual:
 
@@ -40,9 +59,6 @@ To obtain the latest code, check it out from the public git_ repository and acti
    git clone https://github.com/cgat-developers/cgat-core.git
    cd cgat-core
    python setup.py develop
-
-The CGAT-core depends on the CGAT scripts, which can be installed by following the
-`installation <http://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html>`_ instructions.
 
 Once checked-out, you can get the latest changes via pulling::
 
