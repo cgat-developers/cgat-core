@@ -317,7 +317,7 @@ def get_parameters(filenames=None,
 
     # check if the pipeline is in testing mode
     found = False
-    if 'argv' in caller_locals:
+    if 'argv' in caller_locals and caller_locals['argv'] is not None:
         for e in caller_locals['argv']:
             if 'template_pipeline.py' in e:
                 found = True
