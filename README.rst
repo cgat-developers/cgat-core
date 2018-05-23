@@ -55,9 +55,11 @@ Here are the steps::
    --git # for an HTTPS clone
    --git-ssh # for a SSH clone (you need to be a cgat-developer contributor on GitHub to do this)
 
-   # once the installation is finished, enable the conda environment as requested by the installation script:
-   source </full/path/to/folder/without/trailing/slash>/conda-install/bin/activate cgat-c
-
+   # enable the conda environment as requested by the installation script
+   # NB: you probably want to automate this by adding the instructions below to your .bashrc
+   source </full/path/to/folder/without/trailing/slash>/conda-install/etc/profile.d/conda.sh cgat-c
+   conda activate base
+   conda activate cgat-c
 
 The installation script will put everything under the specified location. It needs 1.2 GB of disk space.
 The aim of the script is to provide a portable installation that does not interfere with the existing
