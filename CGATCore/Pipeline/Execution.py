@@ -607,7 +607,7 @@ class Executor(object):
                 tmpfile.write("export TMPDIR\n")
             else:
                 tmpdir = get_temp_dir(dir=get_params()["tmpdir"],
-                                  clear=True)
+                                      clear=True)
                 tmpfile.write("mkdir -p {}\n".format(tmpdir))
                 tmpfile.write("export TMPDIR={}\n".format(tmpdir))
 
