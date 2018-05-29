@@ -340,7 +340,11 @@ def get_parameters(filenames=None,
         fn = os.path.join(os.path.expanduser("~"),
                           ".cgat.yml")
         if os.path.exists(fn):
-            filenames.insert(0, fn)
+            if 'pipeline.yml' in filenames:
+                index = filenames.index('pipeline.yml')
+                filenames.insert(index, fn)
+            else:
+                filenames.append(fn)
 
     filenames = [x.strip() for x in filenames if os.path.exists(x)]
 
