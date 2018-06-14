@@ -607,7 +607,7 @@ class Executor(object):
 
             if self.run_on_cluster and cluster_tmpdir:
                 tmpdir = cluster_tmpdir
-                tmpfile.write("TMPDIR=`mktemp -p {}`\n".format(tmpdir))
+                tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
                 tmpfile.write("export TMPDIR\n")
             else:
                 tmpdir = get_temp_dir(dir=get_params()["tmpdir"],
