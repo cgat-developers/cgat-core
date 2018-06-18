@@ -325,7 +325,7 @@ def main(argv=sys.argv):
         if "," in options.header_names:
             options.header_names = options.header_names.split(",")
         else:
-            options.header_names = re.split("\s+", options.headers.strip())
+            options.header_names = re.split("\s+", options.header_names.strip())
 
     run(infile, options)
 
