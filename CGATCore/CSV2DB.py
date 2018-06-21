@@ -323,7 +323,12 @@ def main(argv=sys.argv):
 
     if options.header_names:
         if "," in options.header_names:
-            options.header_names = options.header_names.split(",")
+            # sqlalchemy.exc.ArgumentError:
+            #     Column must be constructed with a non-blank
+            #     name or assign a non-blank .name before adding to a Table.
+            replace_empty_strings = (lambda arg: '-' if len(arg) ==0 else arg)
+            options.header_names = \
+                [x for x in map(replace_empty_strings, options.header_names.split(','))]
         else:
             options.header_names = re.split("\s+", options.header_names.strip())
 
