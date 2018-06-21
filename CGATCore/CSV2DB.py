@@ -326,7 +326,7 @@ def main(argv=sys.argv):
             # sqlalchemy.exc.ArgumentError:
             #     Column must be constructed with a non-blank
             #     name or assign a non-blank .name before adding to a Table.
-            replace_empty_strings = (lambda arg: '-' if len(arg) ==0 else arg)
+            replace_empty_strings = (lambda arg: '-' if len(arg) == 0 else arg)
             options.header_names = \
                 [x for x in map(replace_empty_strings, options.header_names.split(','))]
         else:
