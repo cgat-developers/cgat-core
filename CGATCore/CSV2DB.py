@@ -37,7 +37,7 @@ from CGATCore import Database as Database
 
 
 def quote_tablename(name, quote_char="_", flavour="sqlite"):
-    
+
     if flavour == "sqlite":
         # no special characters. Column names can not start with a number.
         if name[0] in "0123456789":
@@ -58,7 +58,7 @@ def get_flavour(database_url):
         return "postgres"
     else:
         return "sqlite"
-    
+
 
 def run(infile, options, chunk_size=10000):
 
@@ -67,9 +67,9 @@ def run(infile, options, chunk_size=10000):
         options.retries = 20
     else:
         options.retries = -1
-    
+
     flavour = get_flavour(options.database_url)
-    
+
     tablename = quote_tablename(options.tablename,
                                 flavour=flavour)
 
@@ -85,10 +85,26 @@ def run(infile, options, chunk_size=10000):
     else:
         if_exists = "replace"
 
+    # handle header logic up-front
+    if options.replace_header:
+        if options.header_names is None:
+            raise ValueError("No replacement headers provided")
+        header = 0
+        names = options.header_names
+    else:
+        if options.header_names is None:
+            header = 0
+            names = None
+        else:
+            header = None
+            names = options.header_names
+
     counter = E.Counter()
     try:
         for idx, df in enumerate(pandas.read_csv(
                 infile,
+                header=header,
+                names=names,
                 sep=separator,
                 index_col=False,
                 comment="#",
@@ -102,9 +118,6 @@ def run(infile, options, chunk_size=10000):
                 if_exists = "append"
 
             columns = list(df.columns)
-
-            if options.replace_header:
-                columns = options.header_names
 
             if options.lowercase_columns:
                 columns = [x.lower() for x in columns]
@@ -134,7 +147,7 @@ def run(infile, options, chunk_size=10000):
             raise
         else:
             return
-        
+
     nindex = 0
     for index in options.indices:
         nindex += 1
@@ -160,17 +173,17 @@ def run(infile, options, chunk_size=10000):
                 counter.empty_columns_removed += 1
             except Exception as ex:
                 E.info("removing empty column {} failed".format(column))
-            
+
     statement = "SELECT COUNT(*) FROM %s" % (tablename)
     cc = Database.executewait(dbhandle, statement, retries=options.retries)
     result = cc.fetchone()
     cc.close()
 
     counter.output = result[0]
-    
+
     E.info(counter)
 
-    
+
 def buildParser():
 
     parser = E.OptionParser(
@@ -234,7 +247,7 @@ def buildParser():
                       action="store_true",
                       help="ignore columns which are all empty "
                       "[default=%default].")
-    
+
     # parser.add_option("-q", "--quick", dest="insert_quick",
     #                   action="store_true",
     #                   help="try quick file based import - needs to "
@@ -307,6 +320,17 @@ def main(argv=sys.argv):
 
     else:
         infile = options.stdin
+
+    if options.header_names:
+        if "," in options.header_names:
+            # sqlalchemy.exc.ArgumentError:
+            #     Column must be constructed with a non-blank
+            #     name or assign a non-blank .name before adding to a Table.
+            replace_empty_strings = (lambda arg: '-' if len(arg) == 0 else arg)
+            options.header_names = \
+                [x for x in map(replace_empty_strings, options.header_names.split(','))]
+        else:
+            options.header_names = re.split("\s+", options.header_names.strip())
 
     run(infile, options)
 
