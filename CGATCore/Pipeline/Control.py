@@ -129,7 +129,7 @@ def write_config_files(pipeline_path, general_path):
     '''
 
     paths = [pipeline_path, general_path]
-    config_files = ['pipeline.yml', 'conf.py']
+    config_files = ['pipeline.yml']
 
     for dest in config_files:
         if os.path.exists(dest):
@@ -199,7 +199,7 @@ def clone_pipeline(srcdir, destdir=None):
 
     get_logger().info("cloning pipeline from %s to %s" % (srcdir, destdir))
 
-    copy_files = ("conf.py", "pipeline.ini", "benchmark.yml", "csvdb")
+    copy_files = ("conf.py", "pipeline.yml", "benchmark.yml", "csvdb")
     ignore_prefix = (
         "report", "_cache", "export", "tmp", "ctmp",
         "_static", "_templates", "shell.log", "pipeline.log",
@@ -562,8 +562,7 @@ debug <target> [args]
    in the pipeline is run without checking any dependencies.
 
 config
-   write new configuration files pipeline.ini, sphinxreport.ini and conf.py
-   with default values
+   write new configuration files pipeline.yml with default values
 
 dump
    write pipeline configuration to stdout
@@ -1315,5 +1314,5 @@ def main(argv=sys.argv):
         argv = sys.argv
 
     options, args = parse_commandline(argv,
-                                      config_file="pipeline.ini")
+                                      config_file="pipeline.yml")
     run_workflow(options, args)
