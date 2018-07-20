@@ -961,7 +961,7 @@ def start(parser=None,
     if logger_callback:
         logger = logger_callback(global_options)
     else:
-        logger = logging.getLogger("daisy")
+        logger = logging.getLogger("CGATCore")
 
     logger.info(get_header())
     logger.info(get_params(global_options))
@@ -992,7 +992,7 @@ def stop(logger=None):
             "#######################################################\n")
 
     if logger is None:
-        logger = logging.getLogger("daisy")
+        logger = logging.getLogger("CGATCore")
     logger.info(get_footer())
 
     # close files

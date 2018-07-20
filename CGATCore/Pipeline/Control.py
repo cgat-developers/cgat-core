@@ -121,7 +121,7 @@ gevent.pool.IMapUnordered.next = EventPool.next_with_timeout
 
 
 def get_logger():
-    return logging.getLogger("daisy.pipeline")
+    return logging.getLogger("CGATCore.pipeline")
 
 
 def write_config_files(pipeline_path, general_path):
@@ -503,7 +503,7 @@ def ruffus_return_dag(stream,
 
 def setup_logging(options, pipeline=None):
 
-    logger = logging.getLogger("daisy.pipeline")
+    logger = logging.getLogger("CGATCore.pipeline")
 
     if options.log_config_filename is None:
 
@@ -1041,7 +1041,7 @@ def run_workflow(options, args, pipeline=None):
     global GLOBAL_ARGS
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
-    logger = logging.getLogger("daisy.pipeline")
+    logger = logging.getLogger("CGATCore.pipeline")
 
     logger.info("started in workingdir: {}".format(get_params().get("workingdir")))
     # At this point, the PARAMS dictionary has already been
