@@ -278,7 +278,7 @@ def get_parameters(filenames=None,
        specified parameters in the configuration files.
     user : bool
        If set, configuration files will also be read from a
-       file called :file:`.daisy.yml` in the user`s
+       file called :file:`.cgat.yml` in the user`s
        home directory.
     only_import : bool
        If set to a boolean, the parameter dictionary will be a
