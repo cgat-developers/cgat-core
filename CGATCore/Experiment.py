@@ -1153,7 +1153,9 @@ def run(statement,
     else:
         retcode = subprocess.call(statement, shell=True, **kwargs)
         if retcode < 0:
-            raise OSError("process was terminated by signal %i" % -retcode)
+            raise OSError("process was terminated by signal: {}".format(-retcode))
+        elif retcode > 0:
+            raise OSError("process exited with code: {}".format(retcode))
         return retcode
 
 
