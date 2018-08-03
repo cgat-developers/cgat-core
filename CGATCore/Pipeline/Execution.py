@@ -509,6 +509,11 @@ class Executor(object):
 
         setup_cmds.append("umask 002")
 
+        for var in ["MKL_NUM_THREADS",
+                    "OPENBLAS_NUM_THREADS",
+                    "OMP_NUM_THREADS"]:
+            setup_cmds.append("export {}={}".format(var, self.options.get("job_threads", 1)))
+
         if "arv=" in statement:
 
             # Todo: permit setting this in params
