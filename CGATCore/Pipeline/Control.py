@@ -95,7 +95,7 @@ GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
 
 # Monkey patching to make Gevent.pool compatible with
 # ruffus.
-OLD_NEXT = gevent.pool.IMapUnordered.next
+# # OLD_NEXT = gevent.pool.IMapUnordered.next
 
 
 class EventPool(gevent.pool.Pool):
@@ -112,14 +112,6 @@ class EventPool(gevent.pool.Pool):
 
     def terminate(self):
         self.kill()
-
-    @staticmethod
-    def next_with_timeout(instance, timeout=None):
-        """ignore timeout parameter."""
-        return OLD_NEXT(instance)
-
-
-gevent.pool.IMapUnordered.next = EventPool.next_with_timeout
 
 
 def get_logger():
@@ -1135,12 +1127,11 @@ def run_workflow(options, args, pipeline=None):
                     if options.without_cluster:
                         # use ThreadPool to avoid taking multiple CPU for pipeline
                         # controller.
-                        ruffus.task.Pool = ThreadPool
+                        opts = {"multithread": options.multiprocess}
                     else:
                         # use cooperative multitasking instead of multiprocessing.
-                        ruffus.task.Pool = EventPool
-                        ruffus.task.queue = gevent.queue
-
+                        opts = {"multiprocess": options.multiprocess,
+                                "pool_manager": "gevent"}
                         # create the session proxy
                         start_session()
 
@@ -1150,7 +1141,6 @@ def run_workflow(options, args, pipeline=None):
                     ruffus.pipeline_run(
                         options.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
-                        multiprocess=options.multiprocess,
                         logger=logger,
                         verbose=options.loglevel,
                         log_exceptions=options.log_exceptions,
@@ -1158,6 +1148,7 @@ def run_workflow(options, args, pipeline=None):
                         checksum_level=options.ruffus_checksums_level,
                         pipeline=pipeline,
                         one_second_per_job=False,
+                        **opts
                     )
 
                     close_session()
