@@ -12,38 +12,40 @@ import CGATCore.Experiment as E
 
 
 def read_table(filename, options):
-    '''read table and filter.
+    '''read table and filter as an iterator.
     '''
 
     if os.path.exists(filename):
-        lines = IOTools.open_file(filename, "r").readlines()
+        lines = IOTools.open_file(filename, "r")
     else:
-        lines = []
+        lines = (x for x in [])
 
     # extract table by regular expression
+
+    enumerated_lines = enumerate(lines)
+    
     if options.regex_start:
         rx = re.compile(options.regex_start)
-        for n, line in enumerate(lines):
+        for n, line in enumerated_lines:
             if rx.search(line):
-                E.info("reading table from line %i/%i" % (n, len(lines)))
-                lines = lines[n:]
+                E.info("reading table from line %i" % n)
+                if not line.startswith("#") and line.strip():
+                    yield line
                 break
         else:
             E.info("start regex not found - no table")
-            lines = []
 
     if options.regex_end:
         rx = re.compile(options.regex_end)
-        for n, line in enumerate(lines):
-            if rx.search(line):
-                break
-        lines = lines[:n]
+        
+    for n, line in enumerated_lines:
 
-    # remove comments and empty lines
-    lines = [x for x in lines if not x.startswith("#") and x.strip()]
-
-    return lines
-
+        if options.regex_end and rx.search(line):
+            break
+        
+        if not line.startswith("#") and line.strip():
+            yield line
+        
 
 def concatenate_tables(outfile, options, args):
     '''concatenate tables.'''
@@ -62,11 +64,9 @@ def concatenate_tables(outfile, options, args):
     # read all tables
     for filename, header in zip(options.filenames, row_headers):
         table = read_table(filename, options)
-        if len(table) == 0:
-            E.warn("table '%s' is empty" % filename)
-            continue
         tables.append(table)
         headers.append(header)
+
     row_headers = headers
         
     if options.cat is None:
@@ -84,10 +84,21 @@ def concatenate_tables(outfile, options, args):
                 (len(row_headers[0]), len(row_head_titles)))
 
     # collect titles
+    first_lines = []
+    
+    for n, table in enumerate(tables):
+            try:
+                title_line = next(table)
+            except StopIteration:
+                E.warn("Empty table %s " % options.filenames[n])
+                first_lines.append(None)
+                continue
+            first_lines.append(title_line)
+
     if options.input_has_titles:
         titles = collections.OrderedDict()
-        for table in tables:
-            for key in table[0][:-1].split("\t"):
+        for title_line in first_lines:
+            for key in title_line[:-1].split("\t"):
                 # skip any titles that conflict with
                 # the newly added titles
                 if key in row_head_titles:
@@ -102,7 +113,7 @@ def concatenate_tables(outfile, options, args):
         for x, title in enumerate(titles.keys()):
             map_title2column[title] = x
     else:
-        ncolumns = [len(table[0].split('\t')) for table in tables]
+        ncolumns = [len(first_line.split('\t')) for first_line in first_lines]
         if min(ncolumns) != max(ncolumns):
             raise ValueError('tables have unequal number of columns '
                              '(min=%i, max=%i)' %
@@ -113,14 +124,12 @@ def concatenate_tables(outfile, options, args):
 
     all_titles = set(titles.keys())
     for nindex, table in enumerate(tables):
-        if options.input_has_titles:
-            titles = table[0][:-1].split("\t")
-            map_old2new = [map_title2column[t] for t in titles]
-            del table[0]
-        else:
-            map_old2new = list(range(len(all_titles)))
 
-        for l in table:
+        if first_lines[nindex] is None:
+            # table is empty
+            continue
+
+        def _output_line(l, map_old2new):
             data = [missing_value] * len(all_titles)
             for x, value in enumerate(l[:-1].split("\t")):
                 if map_old2new[x] is None:
@@ -131,6 +140,16 @@ def concatenate_tables(outfile, options, args):
             row = "\t".join([str(x) for x in row_headers[nindex]] +
                             data) + "\n"
             outfile.write(row)
+            
+        if options.input_has_titles:
+            titles = first_lines[nindex][:-1].split("\t")
+            map_old2new = [map_title2column[t] for t in titles]
+        else:
+            map_old2new = list(range(len(all_titles)))
+            _output_line(first_lines[nindex], map_old2new)
+
+        for l in table:
+            _output_line(l, map_old2new)
 
 
 def join_tables(outfile, options, args):
