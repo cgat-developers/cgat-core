@@ -196,7 +196,8 @@ def join_tables(outfile, options, args):
         lines = read_table(filename, options)
 
         # skip (or not skip) empty tables
-        if len(lines) == 0 and options.ignore_empty:
+        #https://nelsonslog.wordpress.com/2016/04/06/python3-no-len-for-iterators/
+        if sum(1 for e in lines) == 0 and options.ignore_empty:
             E.warn("%s is empty - skipped" % filename)
             headers_to_delete.append(nindex)
             continue
@@ -206,8 +207,10 @@ def join_tables(outfile, options, args):
         max_size = 0
         ncolumns = 0
 
+        lines = read_table(filename, options)
+
         if options.input_has_titles:
-            data = lines[0][:-1].split("\t")
+            data = next(lines)[0][:-1].split("\t")
             # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
@@ -252,7 +255,6 @@ def join_tables(outfile, options, args):
                 else:
                     titles.append(data[x])
 
-            del lines[0]
         else:
 
             # set take based on numeric columns if no titles are present
