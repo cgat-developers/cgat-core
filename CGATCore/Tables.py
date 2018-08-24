@@ -195,22 +195,25 @@ def join_tables(outfile, options, args):
 
         lines = read_table(filename, options)
 
-        # skip (or not skip) empty tables
-        #https://nelsonslog.wordpress.com/2016/04/06/python3-no-len-for-iterators/
-        if sum(1 for e in lines) == 0 and options.ignore_empty:
-            E.warn("%s is empty - skipped" % filename)
-            headers_to_delete.append(nindex)
-            continue
+        try:
+            # check if the table is empty
+            data = next(lines).split()
+        except StopIteration:
+            # an empty table will raise a StopIteration
+            # skip (or not skip) empty tables
+            if options.ignore_empty:
+                E.warn("%s is empty - skipped" % filename)
+                headers_to_delete.append(nindex)
+                continue
 
         table = {}
         sizes = {}
         max_size = 0
         ncolumns = 0
 
-        lines = read_table(filename, options)
-
         if options.input_has_titles:
-            data = next(lines).split()
+            # See https://github.com/cgat-developers/cgat-core/pull/53
+            #data = next(lines).split()
             # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
