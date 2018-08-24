@@ -210,7 +210,7 @@ def join_tables(outfile, options, args):
         lines = read_table(filename, options)
 
         if options.input_has_titles:
-            data = next(lines)[0][:-1].split("\t")
+            data = next(lines).split()
             # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
