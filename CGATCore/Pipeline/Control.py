@@ -525,13 +525,13 @@ def setup_logging(options, pipeline=None):
 
 
 def get_version():
-    # try git:
-    try:
-        stdout, stderr = execute(
-            "git rev-parse HEAD", cwd=get_params()["scriptsdir"])
-    except:
-        stdout = "NA"
-    return stdout
+    # get script that has called P.main()
+    code_location = os.path.dirname(get_caller(1).__file__)
+    # try git for runs from repository
+    stdout = E.run(
+        "git rev-parse HEAD", cwd=code_location, return_stdout=True, on_error="ignore").strip()
+    return code_location, stdout
+
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
@@ -1042,7 +1042,9 @@ def run_workflow(options, args, pipeline=None):
     # configuration files.
     update_params_with_commandline_options(get_params(), options)
 
-    version = get_version()
+    code_location, version = get_version()
+    logger.info("code location: {}".format(code_location))
+    logger.info("code version: {}".format(version))
 
     if args:
         options.pipeline_action = args[0]
@@ -1138,8 +1140,6 @@ def run_workflow(options, args, pipeline=None):
                         # create the session proxy
                         start_session()
 
-                    logger.info("code location: {}".format(get_params()["scriptsdir"]))
-                    logger.info("code version: {}".format(version))
                     logger.info("working directory is: {}".format(get_params()["workingdir"]))
                     ruffus.pipeline_run(
                         options.pipeline_targets,
