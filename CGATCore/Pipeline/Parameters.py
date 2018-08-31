@@ -554,17 +554,6 @@ def check_parameter(param):
         raise ValueError("need `%s` to be set" % param)
 
 
-# WIP: how to find the right pipeline
-# 1. caller locals()
-# 2. explicitely (with pipeline name)
-def initialize(*args, **kwargs):
-    """initialize the CGATFlow pipeline"""
-    return get_parameters(
-        ["%s/pipeline.yml" % os.path.splitext(__file__)[0],
-         "../pipeline.yml",
-         "pipeline.yml"])
-
-
 def get_params():
     """return handle to global parameter dictionary"""
     return PARAMS
