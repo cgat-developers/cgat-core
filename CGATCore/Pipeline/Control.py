@@ -506,7 +506,7 @@ def setup_logging(options, pipeline=None):
         if pipeline is not None:
             pipeline_name = pipeline.name
         else:
-            pipeline_name = get_params()["pipeline_name"]
+            pipeline_name = get_params().get("pipeline_name", "main")
 
         handler.setFormatter(
             E.MultiLineFormatter(
