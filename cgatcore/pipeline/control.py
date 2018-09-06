@@ -43,7 +43,7 @@ except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
 import cgatcore.Experiment as E
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 from cgatcore.Pipeline.Parameters import input_validation, get_params, get_parameters
 from cgatcore.Pipeline.Utils import get_caller, get_caller_locals, is_test
 from cgatcore.Pipeline.Execution import execute, start_session,\
@@ -257,17 +257,17 @@ def clean(files, logfile):
 
     if not dry_run:
         if not os.path.exists(logfile):
-            outfile = IOTools.open_file(logfile, "w")
+            outfile = iotools.open_file(logfile, "w")
             outfile.write("filename\tzapped\tlinkdest\t%s\n" %
                           "\t".join(fields))
         else:
-            outfile = IOTools.open_file(logfile, "a")
+            outfile = iotools.open_file(logfile, "a")
 
     c = E.Counter()
     for fn in files:
         c.files += 1
         if not dry_run:
-            stat, linkdest = IOTools.zap_file(fn)
+            stat, linkdest = iotools.zap_file(fn)
             if stat is not None:
                 c.zapped += 1
                 if linkdest is not None:
@@ -800,7 +800,7 @@ def update_params_with_commandline_options(params, options):
 
     for variables in options.variables_to_set:
         variable, value = variables.split("=")
-        value = IOTools.str2val(value.strip())
+        value = iotools.str2val(value.strip())
         # enter old style
         params[variable.strip()] = value
         # enter new style

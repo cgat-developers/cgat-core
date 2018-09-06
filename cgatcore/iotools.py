@@ -1,4 +1,4 @@
-'''IOTools.py - Tools for I/O operations
+'''iotools.py - Tools for I/O operations
 ========================================
 
 This module contains utility functions for reading/writing from files.

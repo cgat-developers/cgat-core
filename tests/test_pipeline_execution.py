@@ -6,7 +6,7 @@ import contextlib
 import socket
 import os
 import cgatcore.Pipeline as P
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 
 
 @contextlib.contextmanager
@@ -46,7 +46,7 @@ class TestExecutionRun(BaseTest):
                 "hostname > {outfile}".format(outfile=outfile))
             has_cluster = P.will_run_on_cluster({"to_cluster": True})
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             execution_hostname = outf.read().strip()
 
         hostname = socket.gethostname()
@@ -63,7 +63,7 @@ class TestExecutionRun(BaseTest):
                 outfile=outfile),
             to_cluster=False)
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             execution_hostname = outf.read().strip()
 
         hostname = socket.gethostname()
@@ -198,7 +198,7 @@ class TestExecutionRunLocal(unittest.TestCase):
 
         self.assertTrue(benchmark_data)
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             memory_used = int(outf.read().strip())
 
         self.assertEqual(memory_used, self.test_memory_size)
@@ -218,7 +218,7 @@ class TestExecutionRunLocal(unittest.TestCase):
             job_memory="unlimited".format())
         self.assertTrue(benchmark_data)
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             memory_used = int(outf.read().strip())
 
         self.assertEqual(memory_used, self.test_memory_size)
@@ -234,7 +234,7 @@ class TestExecutionRunLocal(unittest.TestCase):
                   tmpfile=tmpfile),
               to_cluster=False)
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             hostname = outf.readline().strip()
             tmpfile_read = outf.readline().strip()
 
@@ -254,7 +254,7 @@ class TestExecutionRunLocal(unittest.TestCase):
                   outfile=outfile),
               to_cluster=False)
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             hostname = outf.readline().strip()
             tmpdir = outf.readline().strip()
 
@@ -278,7 +278,7 @@ class TestExecutionRunLocal(unittest.TestCase):
                 outfile=outfile),
             to_cluster=False)
 
-        with IOTools.open_file(outfile) as outf:
+        with iotools.open_file(outfile) as outf:
             hostname = outf.readline().strip()
             tmpdir = outf.readline().strip()
 
@@ -365,7 +365,7 @@ class TestExecutionRunCluster(TestExecutionRunLocal):
         P.close_session()
 
     def file_exists(self, filename, hostname=None, expect=False):
-        return IOTools.remote_file_exists(filename, hostname, expect)
+        return iotools.remote_file_exists(filename, hostname, expect)
 
 
 if __name__ == "__main__":

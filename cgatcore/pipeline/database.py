@@ -11,7 +11,7 @@ import sqlite3
 import sqlalchemy
 from cgatcore import Database as Database
 import cgatcore.Experiment as E
-from cgatcore.IOTools import snip, touch_file
+from cgatcore.iotools import snip, touch_file
 from cgatcore.Pipeline.Files import get_temp_file
 from cgatcore.Pipeline.Execution import run
 from cgatcore.Pipeline.Parameters import get_params

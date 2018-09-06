@@ -9,7 +9,7 @@ import cgatcore
 import cgatcore.Experiment as E
 
 import cgatcore.Pipeline as P
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -135,7 +135,7 @@ loggers:
             absent=["pipeline.log", "shell.log"])
 
         self.assertFalse(
-            IOTools.is_empty(os.path.join(self.work_dir, "extra.log")))
+            iotools.is_empty(os.path.join(self.work_dir, "extra.log")))
 
         with open(os.path.join(self.work_dir, "extra.log")) as inf:
             self.assertTrue("DEBUG" in inf.read())
