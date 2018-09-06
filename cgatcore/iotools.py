@@ -43,7 +43,7 @@ import subprocess
 import itertools
 import tempfile
 import paramiko
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 
 
 def force_str(iterator, encoding="ascii"):

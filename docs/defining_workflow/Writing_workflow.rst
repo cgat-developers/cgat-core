@@ -123,7 +123,7 @@ basic modules as follows.
 
 .. code-block:: python
 
-   import cgatcore.Experiment as E
+   import cgatcore.experiment as E
    from cgatcore import Pipeline as P
    import cgatcore.iotools as iotools
 

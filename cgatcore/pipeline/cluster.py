@@ -15,7 +15,7 @@ import os
 import stat
 import time
 import logging
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 
 try:
     import drmaa

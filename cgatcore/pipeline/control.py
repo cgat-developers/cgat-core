@@ -42,7 +42,7 @@ try:
 except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 from cgatcore.Pipeline.Parameters import input_validation, get_params, get_parameters
 from cgatcore.Pipeline.Utils import get_caller, get_caller_locals, is_test

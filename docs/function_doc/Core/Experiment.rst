@@ -1,4 +1,4 @@
 
-.. automodule:: cgatcore.Experiment
+.. automodule:: cgatcore.experiment
    :members:
    :show-inheritance:

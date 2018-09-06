@@ -9,7 +9,7 @@ import os
 import tempfile
 
 import cgatcore.iotools as iotools
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 from cgatcore.Pipeline.Parameters import get_params
 
 

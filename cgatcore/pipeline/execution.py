@@ -26,7 +26,7 @@ import time
 import math
 import shutil
 import gevent
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 
 from cgatcore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
