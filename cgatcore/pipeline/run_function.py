@@ -35,7 +35,7 @@ import sys
 import os
 import importlib
 
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.Pipeline as P
 
 

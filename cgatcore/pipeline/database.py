@@ -10,7 +10,7 @@ import os
 import sqlite3
 import sqlalchemy
 from cgatcore import Database as Database
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 from cgatcore.iotools import snip, touch_file
 from cgatcore.Pipeline.Files import get_temp_file
 from cgatcore.Pipeline.Execution import run

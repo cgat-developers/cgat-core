@@ -1,7 +1,7 @@
-'''Experiment.py - writing reproducible scripts
+'''experiment.py - writing reproducible scripts
 =========================================================
 
-The :mod:`Experiment` modules contains utility functions for argument
+The :mod:`experiment` modules contains utility functions for argument
 parsing, logging and record keeping within scripts.
 
 This module is imported by most CGAT scripts. It provides convenient
@@ -24,7 +24,7 @@ The basic usage of this module within a script is::
     """
     import sys
     import optparse
-    import CGAT.Experiment as E
+    import CGAT.experiment as E
 
     def main(argv=None):
         """script main.
@@ -212,7 +212,7 @@ overwriting existing files.
 Logging
 -------
 
-:py:mod:`Experiment` provides the well known logging methods from
+:py:mod:`experiment` provides the well known logging methods from
 the :py:mod:`logging` module such as :py:func:`info`,
 :py:func:`warn`, etc. These are provided so that no additional import
 of the :py:mod:`logging` module is required, but either functions

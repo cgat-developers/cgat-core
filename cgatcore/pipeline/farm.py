@@ -79,7 +79,7 @@ import shutil
 
 from multiprocessing.pool import Pool, ThreadPool
 
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 
 import cgatcore.Pipeline as P

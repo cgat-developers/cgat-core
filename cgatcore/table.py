@@ -6,7 +6,7 @@ import random
 from functools import reduce
 import numpy
 
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.CSV as CSV
 import cgatcore.iotools as iotools
 

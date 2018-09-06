@@ -32,7 +32,7 @@ import sys
 import pandas
 import re
 
-from cgatcore import Experiment as E
+from cgatcore import experiment as E
 from cgatcore import Database as Database
 
 

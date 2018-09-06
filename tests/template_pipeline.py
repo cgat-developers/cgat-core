@@ -36,7 +36,7 @@ Code
 import sys
 import ruffus
 import numpy.random
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.Pipeline as P
 
 # load global options from the config file

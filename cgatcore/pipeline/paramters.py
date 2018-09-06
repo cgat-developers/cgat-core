@@ -16,7 +16,7 @@ import yaml
 import re
 from collections import defaultdict
 
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 from cgatcore.Pipeline.Utils import get_caller_locals, is_test
 

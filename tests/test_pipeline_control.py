@@ -6,7 +6,7 @@ import shutil
 import subprocess
 
 import cgatcore
-import cgatcore.Experiment as E
+import cgatcore.experiment as E
 
 import cgatcore.Pipeline as P
 import cgatcore.iotools as iotools
@@ -97,10 +97,10 @@ class TestExecutionControl(BaseTest):
 version: 1
 formatters:
   default:
-    '()': cgatcore.Experiment.MultiLineFormatter
+    '()': cgatcore.experiment.MultiLineFormatter
     format: '# %(asctime)s %(levelname)s %(module)s - %(message)s'
   with_app:
-    '()': cgatcore.Experiment.MultiLineFormatter
+    '()': cgatcore.experiment.MultiLineFormatter
     format: '%(asctime)s %(levelname)s %(app_name)s %(module)s - %(message)s'
 filters:
   name_filter:
