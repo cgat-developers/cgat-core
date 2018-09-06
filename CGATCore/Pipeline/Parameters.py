@@ -6,12 +6,10 @@ Reference
 
 """
 
-import types
 import collections
 import os
 import sys
 import platform
-import configparser
 import getpass
 import logging
 import yaml
@@ -21,6 +19,8 @@ from collections import defaultdict
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
 from CGATCore.Pipeline.Utils import get_caller_locals, is_test
+
+HAVE_INITIALIZED = False
 
 # sort out script paths
 
@@ -295,13 +295,17 @@ def get_parameters(filenames=None,
     params : dict
        Global configuration dictionary.
     '''
+    global PARAMS, HAVE_INITIALIZED
+    # only execute function once
+    if HAVE_INITIALIZED:
+        return PARAMS
+
     if filenames is None:
         filenames = ["pipeline.yml"]
 
     if isinstance(filenames, str):
         filenames = [filenames]
 
-    global PARAMS
     old_id = id(PARAMS)
 
     caller_locals = get_caller_locals()
@@ -403,6 +407,7 @@ def get_parameters(filenames=None,
 
     # make sure that the dictionary reference has not changed
     assert id(PARAMS) == old_id
+    HAVE_INITIALIZED = True
     return PARAMS
 
 
@@ -552,17 +557,6 @@ def check_parameter(param):
     """check if parameter ``key`` is set"""
     if param not in PARAMS:
         raise ValueError("need `%s` to be set" % param)
-
-
-# WIP: how to find the right pipeline
-# 1. caller locals()
-# 2. explicitely (with pipeline name)
-def initialize(*args, **kwargs):
-    """initialize the CGATFlow pipeline"""
-    return get_parameters(
-        ["%s/pipeline.yml" % os.path.splitext(__file__)[0],
-         "../pipeline.yml",
-         "pipeline.yml"])
 
 
 def get_params():

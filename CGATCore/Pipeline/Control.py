@@ -44,7 +44,7 @@ except (ImportError, RuntimeError):
 
 import CGATCore.Experiment as E
 import CGATCore.IOTools as IOTools
-from CGATCore.Pipeline.Parameters import input_validation, get_params
+from CGATCore.Pipeline.Parameters import input_validation, get_params, get_parameters
 from CGATCore.Pipeline.Utils import get_caller, get_caller_locals, is_test
 from CGATCore.Pipeline.Execution import execute, start_session,\
     close_session
@@ -89,7 +89,6 @@ def cached_os_path_islink(filename):
 # used as relevant sections are entered into the PARAMS
 # dictionary. Could be deprecated and removed.
 GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
-
 
 # Monkey patching to make Gevent.pool compatible with
 # ruffus.
@@ -507,7 +506,7 @@ def setup_logging(options, pipeline=None):
         if pipeline is not None:
             pipeline_name = pipeline.name
         else:
-            pipeline_name = "main"
+            pipeline_name = get_params().get("pipeline_name", "main")
 
         handler.setFormatter(
             E.MultiLineFormatter(
@@ -664,6 +663,17 @@ def parse_commandline(argv=None, **kwargs):
                       help="explicitely set paramater values "
                       "[default=%default].")
 
+    parser.add_option("--input-glob", "--input-glob", dest="input_globs",
+                      type="string", action="append",
+                      help="glob expression for input filenames. The exact format "
+                      "is pipeline specific. If the pipeline expects only a single input, "
+                      "`--input-glob=*.bam` will be sufficient. If the pipeline expects "
+                      "multiple types of input, a qualifier might need to be added, for example "
+                      "`--input-glob=bam=*.bam` --input-glob=bed=*.bed.gz`. Giving this option "
+                      "overrides the default of a pipeline looking for input in the current directory "
+                      "or specified the config file. "
+                      "[default=%default].")
+
     parser.add_option("--checksums", dest="ruffus_checksums_level",
                       type="int",
                       help="set the level of ruffus checksums"
@@ -736,6 +746,7 @@ def parse_commandline(argv=None, **kwargs):
         work_dir=None,
         always_mount=False,
         only_info=False,
+        input_globs=[],
         input_validation=False)
 
     parser.set_defaults(**kwargs)
@@ -744,13 +755,13 @@ def parse_commandline(argv=None, **kwargs):
         kwargs["callback"](parser)
 
     logger_callback = setup_logging
-
     (options, args) = E.start(
         parser,
         add_cluster_options=True,
         argv=argv,
         logger_callback=logger_callback)
 
+    options.pipeline_name = argv[0]
     return options, args
 
 
@@ -759,6 +770,7 @@ def update_params_with_commandline_options(params, options):
     dictionary with command line options.
     """
 
+    params["pipeline_name"] = options.pipeline_name
     params["dryrun"] = options.dry_run
     if options.cluster_queue is not None:
         params["cluster_queue"] = options.cluster_queue
@@ -777,6 +789,14 @@ def update_params_with_commandline_options(params, options):
     params["shell_logfile"] = options.shell_logfile
 
     params["ruffus_checksums_level"] = options.ruffus_checksums_level
+    # always create an "input" section
+    params["input_globs"] = {}
+    for variable in options.input_globs:
+        if "=" in variable:
+            variable, value = variable.split("=")
+            params["input_globs"][variable.strip()] = value.strip()
+        else:
+            params["input_globs"]["default"] = variable.strip()
 
     for variables in options.variables_to_set:
         variable, value = variables.split("=")
@@ -999,6 +1019,52 @@ class LoggingFilterProgress(logging.Filter):
         return True
 
 
+def initialize(argv=None, caller=None):
+    """setup the pipeline framework.
+
+    Arguments
+    ---------
+    options: object
+        Container for command line arguments.
+    args : list
+        List of command line arguments.
+    """
+    if argv is None:
+        argv = sys.argv
+
+    # load default options from config files
+    if caller:
+        path = os.path.splitext(caller)[0]
+    else:
+        path = os.path.splitext(get_caller_locals()["__file__"])[0]
+
+    get_parameters(
+        [os.path.join(path, "pipeline.yml"),
+         "../pipeline.yml",
+         "pipeline.yml"])
+
+    global GLOBAL_OPTIONS
+    global GLOBAL_ARGS
+
+    options, args = parse_commandline(argv,
+                                      config_file="pipeline.yml")
+
+    GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
+    logger = logging.getLogger("CGATCore.pipeline")
+
+    logger.info("started in workingdir: {}".format(get_params().get("workingdir")))
+    # At this point, the PARAMS dictionary has already been
+    # built. It now needs to be updated with selected command
+    # line options as these should always take precedence over
+    # configuration files.
+    update_params_with_commandline_options(get_params(), options)
+
+    code_location, version = get_version()
+    logger.info("code location: {}".format(code_location))
+    logger.info("code version: {}".format(version))
+    logger.info("pipeline has been initialized")
+
+
 def run_workflow(options, args, pipeline=None):
     """command line control function for a pipeline.
 
@@ -1020,32 +1086,11 @@ def run_workflow(options, args, pipeline=None):
 
     Arguments
     ---------
-    options: object
-        Container for command line arguments.
-    args : list
-        List of command line arguments.
     pipeline: object
         Pipeline to run. If not given, all ruffus pipelines are run.
 
     """
-
-    global GLOBAL_OPTIONS
-    global GLOBAL_ARGS
-
-    GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     logger = logging.getLogger("CGATCore.pipeline")
-
-    logger.info("started in workingdir: {}".format(get_params().get("workingdir")))
-    # At this point, the PARAMS dictionary has already been
-    # built. It now needs to be updated with selected command
-    # line options as these should always take precedence over
-    # configuration files.
-    update_params_with_commandline_options(get_params(), options)
-
-    code_location, version = get_version()
-    logger.info("code location: {}".format(code_location))
-    logger.info("code version: {}".format(version))
-
     if args:
         options.pipeline_action = args[0]
         if len(args) > 1:
@@ -1053,7 +1098,7 @@ def run_workflow(options, args, pipeline=None):
 
     if options.force_run:
         if options.force_run == "all":
-            forcedtorun_tasks = pipeline_get_task_names()
+            forcedtorun_tasks = ruffus.pipeline_get_task_names()
         else:
             forcedtorun_tasks = options.pipeline_targets
     else:
@@ -1275,7 +1320,7 @@ def run_workflow(options, args, pipeline=None):
     E.stop(logger=get_logger())
 
 
-def main(argv=sys.argv):
+def main(argv=None):
     """command line control function for a pipeline.
 
     This method defines command line options for the pipeline and
@@ -1304,6 +1349,7 @@ def main(argv=sys.argv):
     if argv is None:
         argv = sys.argv
 
-    options, args = parse_commandline(argv,
-                                      config_file="pipeline.yml")
-    run_workflow(options, args)
+    if GLOBAL_OPTIONS is None:
+        initialize(caller=get_caller().__file__)
+
+    run_workflow(GLOBAL_OPTIONS, GLOBAL_ARGS)
