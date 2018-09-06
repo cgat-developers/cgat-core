@@ -8,9 +8,9 @@ Reference
 import os
 import tempfile
 
-import CGATCore.IOTools as IOTools
-import CGATCore.Experiment as E
-from CGATCore.Pipeline.Parameters import get_params
+import cgatcore.IOTools as IOTools
+import cgatcore.Experiment as E
+from cgatcore.Pipeline.Parameters import get_params
 
 
 def get_temp_file(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"):

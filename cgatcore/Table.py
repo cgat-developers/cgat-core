@@ -6,9 +6,9 @@ import random
 from functools import reduce
 import numpy
 
-import CGATCore.Experiment as E
-import CGATCore.CSV as CSV
-import CGATCore.IOTools as IOTools
+import cgatcore.Experiment as E
+import cgatcore.CSV as CSV
+import cgatcore.IOTools as IOTools
 
 
 # The status of this module is unresolved. Functionality implemented

@@ -13,7 +13,7 @@ pipeline layout and is useful when starting a new pipeline from scratch.
 
 **Installation of CGAT code**
 
-In order to begin writing a pipeline you will need to install the CGATCore code 
+In order to begin writing a pipeline you will need to install the cgatcore code 
 (see :ref:`getting_started-Installation`) for installation instructions.
 
 To run pipeline_quickstart.py (thecode to generate the boiler plate layout) please install the

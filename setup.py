@@ -17,7 +17,7 @@ IS_OSX = sys.platform == 'darwin'
 ########################################################################
 ########################################################################
 # collect CGAT version
-sys.path.insert(0, "CGATCore")
+sys.path.insert(0, "cgatcore")
 import version
 
 version = version.__version__
@@ -32,7 +32,7 @@ if major < 3:
     raise SystemExit("""CGAT requires Python 3 or later.""")
 
 cgat_packages = find_packages()
-cgat_package_dirs = {'CGATCore': 'CGATCore'}
+cgat_package_dirs = {'cgatcore': 'cgatcore'}
 
 ##########################################################
 ##########################################################
@@ -52,9 +52,9 @@ Operating System :: MacOS
 
 setup(
     # package information
-    name='CGATCore',
+    name='cgatcore',
     version=version,
-    description='CGAT : the Computational Genomics Analysis Toolkit',
+    description='cgatcore : the Computational Genomics Analysis Toolkit',
     author='Andreas Heger',
     author_email='andreas.heger@gmail.com',
     license="MIT",

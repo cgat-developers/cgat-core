@@ -5,8 +5,8 @@ import unittest
 import contextlib
 import socket
 import os
-import CGATCore.Pipeline as P
-import CGATCore.IOTools as IOTools
+import cgatcore.Pipeline as P
+import cgatcore.IOTools as IOTools
 
 
 @contextlib.contextmanager

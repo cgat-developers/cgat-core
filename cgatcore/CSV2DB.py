@@ -32,8 +32,8 @@ import sys
 import pandas
 import re
 
-from CGATCore import Experiment as E
-from CGATCore import Database as Database
+from cgatcore import Experiment as E
+from cgatcore import Database as Database
 
 
 def quote_tablename(name, quote_char="_", flavour="sqlite"):

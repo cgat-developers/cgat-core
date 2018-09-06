@@ -9,12 +9,12 @@ import re
 import os
 import sqlite3
 import sqlalchemy
-from CGATCore import Database as Database
-import CGATCore.Experiment as E
-from CGATCore.IOTools import snip, touch_file
-from CGATCore.Pipeline.Files import get_temp_file
-from CGATCore.Pipeline.Execution import run
-from CGATCore.Pipeline.Parameters import get_params
+from cgatcore import Database as Database
+import cgatcore.Experiment as E
+from cgatcore.IOTools import snip, touch_file
+from cgatcore.Pipeline.Files import get_temp_file
+from cgatcore.Pipeline.Execution import run
+from cgatcore.Pipeline.Parameters import get_params
 
 
 def tablequote(track):
@@ -83,7 +83,7 @@ def build_load_statement(tablename, retry=True, options=""):
     opts.append("--database-url={}".format(params["database"]["url"]))
 
     db_options = " ".join(opts)
-    load_statement = ("python -m CGATCore.CSV2DB {db_options} {options} --table={tablename}".format(**locals()))
+    load_statement = ("python -m cgatcore.CSV2DB {db_options} {options} --table={tablename}".format(**locals()))
 
     return load_statement
 
@@ -157,20 +157,20 @@ def load(infile,
 
     if collapse:
         statement.append(
-            "python -m CGATCore.Table "
+            "python -m cgatcore.Table "
             "--log=%(outfile)s.collapse.log "
             "--collapse=%(collapse)s")
 
     if transpose:
         statement.append(
-            "python -m CGATCore.Table "
+            "python -m cgatcore.Table "
             "--log=%(outfile)s.transpose.log "
             "--transpose "
             "--set-transpose-field=%(transpose)s")
 
     if shuffle:
         statement.append(
-            "python -m CGATCore.Table "
+            "python -m cgatcore.Table "
             "--log=%(outfile)s.shuffle.log "
             "--method=randomize-rows")
 
@@ -275,7 +275,7 @@ def concatenate_and_load(infiles,
                                           options=load_options,
                                           retry=retry)
 
-    statement = '''python -m CGATCore.Tables
+    statement = '''python -m cgatcore.Tables
     --cat=%(cat)s
     --missing-value=%(missing_value)s
     %(cat_options)s
@@ -397,7 +397,7 @@ def merge_and_load(infiles,
 
     if row_wise:
         transform = """| perl -p -e "s/bin/track/"
-        | python -m CGATCore.Table --transpose"""
+        | python -m cgatcore.Table --transpose"""
     else:
         transform = ""
 
@@ -406,7 +406,7 @@ def merge_and_load(infiles,
         options="--add-index=track " + options,
         retry=retry)
 
-    statement = """python -m CGATCore.Tables
+    statement = """python -m cgatcore.Tables
     %(header_stmt)s
     --skip-titles
     --missing-value=0

@@ -96,7 +96,7 @@ For a non-comprehensive list of citations please see our :citing and :ref:`proje
    defining_workflow/Tutorial.rst
 
 .. toctree::
-   :caption: CGATCore functions
+   :caption: cgatcore functions
    :name: function_doc
    :maxdepth: 1
    :hidden:

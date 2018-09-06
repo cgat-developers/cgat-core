@@ -192,13 +192,13 @@ Reference
 import os
 
 # import submodules into namespace
-from CGATCore.Pipeline.Control import *
-from CGATCore.Pipeline.Database import *
-from CGATCore.Pipeline.Files import *
-from CGATCore.Pipeline.Cluster import *
-from CGATCore.Pipeline.Execution import *
-from CGATCore.Pipeline.Utils import *
-from CGATCore.Pipeline.Parameters import *
+from cgatcore.Pipeline.Control import *
+from cgatcore.Pipeline.Database import *
+from cgatcore.Pipeline.Files import *
+from cgatcore.Pipeline.Cluster import *
+from cgatcore.Pipeline.Execution import *
+from cgatcore.Pipeline.Utils import *
+from cgatcore.Pipeline.Parameters import *
 
 # PARAMS is defined in Parameters.py
 # PARAMS = get_params()

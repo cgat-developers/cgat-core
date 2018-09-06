@@ -79,10 +79,10 @@ import shutil
 
 from multiprocessing.pool import Pool, ThreadPool
 
-import CGATCore.Experiment as E
-import CGATCore.IOTools as IOTools
+import cgatcore.Experiment as E
+import cgatcore.IOTools as IOTools
 
-import CGATCore.Pipeline as P
+import cgatcore.Pipeline as P
 
 
 def chunk_iterator_lines(infile, args, prefix, use_header=False):

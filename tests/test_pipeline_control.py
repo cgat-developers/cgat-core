@@ -5,11 +5,11 @@ import os
 import shutil
 import subprocess
 
-import CGATCore
-import CGATCore.Experiment as E
+import cgatcore
+import cgatcore.Experiment as E
 
-import CGATCore.Pipeline as P
-import CGATCore.IOTools as IOTools
+import cgatcore.Pipeline as P
+import cgatcore.IOTools as IOTools
 
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -97,14 +97,14 @@ class TestExecutionControl(BaseTest):
 version: 1
 formatters:
   default:
-    '()': CGATCore.Experiment.MultiLineFormatter
+    '()': cgatcore.Experiment.MultiLineFormatter
     format: '# %(asctime)s %(levelname)s %(module)s - %(message)s'
   with_app:
-    '()': CGATCore.Experiment.MultiLineFormatter
+    '()': cgatcore.Experiment.MultiLineFormatter
     format: '%(asctime)s %(levelname)s %(app_name)s %(module)s - %(message)s'
 filters:
   name_filter:
-    '()': CGATCore.Pipeline.Control.LoggingFilterPipelineName
+    '()': cgatcore.Pipeline.Control.LoggingFilterPipelineName
     name: mypipeline_name
 handlers:
   console:
@@ -121,7 +121,7 @@ root:
   handlers: [console]
   level: INFO
 loggers:
-  CGATCore.pipeline:
+  cgatcore.pipeline:
     handlers: [second_stream]
     filters: [name_filter]
     level: DEBUG

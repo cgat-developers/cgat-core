@@ -16,9 +16,9 @@ import yaml
 import re
 from collections import defaultdict
 
-import CGATCore.Experiment as E
-import CGATCore.IOTools as IOTools
-from CGATCore.Pipeline.Utils import get_caller_locals, is_test
+import cgatcore.Experiment as E
+import cgatcore.IOTools as IOTools
+from cgatcore.Pipeline.Utils import get_caller_locals, is_test
 
 HAVE_INITIALIZED = False
 
@@ -38,7 +38,7 @@ if not os.path.exists(SCRIPTS_SCRIPTS_DIR):
 
 
 def get_logger():
-    return logging.getLogger("CGATCore.pipeline")
+    return logging.getLogger("cgatcore.pipeline")
 
 
 class TriggeredDefaultFactory:

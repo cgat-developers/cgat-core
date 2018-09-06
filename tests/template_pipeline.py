@@ -5,7 +5,7 @@ Pipeline template
 .. Replace the documentation below with your own description of the
    pipeline's purpose
 
-This script is a template for writing a workflow using the CGATCore
+This script is a template for writing a workflow using the cgatcore
 toolkit.
 
 Overview
@@ -16,7 +16,7 @@ Usage
 
 To run this pipeline, type::
 
-   CGATCore template-pipeline make all
+   cgatcore template-pipeline make all
 
 Input files
 -----------
@@ -36,8 +36,8 @@ Code
 import sys
 import ruffus
 import numpy.random
-import CGATCore.Experiment as E
-import CGATCore.Pipeline as P
+import cgatcore.Experiment as E
+import cgatcore.Pipeline as P
 
 # load global options from the config file
 global PARAMS

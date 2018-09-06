@@ -4,12 +4,12 @@
 Citing and Citations
 ====================
 
-CGATCore has been developed over the past 10 years and as such has been used in a number of previously published scientific artciles. 
+cgatcore has been developed over the past 10 years and as such has been used in a number of previously published scientific artciles. 
 
-Citing CGATCore
+Citing cgatcore
 ---------------
 
-When using CGATCore for a publication, **please cite the following article** in you paper:
+When using cgatcore for a publication, **please cite the following article** in you paper:
 
 ADD CITATION HERE
 
