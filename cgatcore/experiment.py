@@ -872,7 +872,7 @@ def start(parser=None,
         parser.add_option_group(group)
 
     if add_database_options:
-        group = OptionGroup(parser, "Database connection options")
+        group = OptionGroup(parser, "database connection options")
         group.add_option(
             "--database-url", dest="database_url", type="string",
             help="database connection url, for example sqlite:///./csvdb [%default].")

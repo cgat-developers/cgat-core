@@ -11,7 +11,7 @@ It is a collection of utility functions covering the topics:
 * `Logging`_
 * `Parameterisation`_
 * `Running tasks`_
-* `Database upload`_
+* `database upload`_
 * `Report building`_
 
 See :doc:`pipelines/pipeline_template` for a pipeline illustrating the
@@ -117,7 +117,7 @@ or parameters. These methods are useful to perform pre-run checks
 inside a pipeline if a particular requirement is met. But see also the
 ``check`` commandline command.
 
-Database upload
+database upload
 ---------------
 
 To assist with uploading data into a database, :mod:`Pipeline` provides
@@ -178,8 +178,8 @@ within a submodule to be exported are all imported to the namespace of
 .. toctree::
 
    Pipeline/Control
-   Pipeline/Database
-   Pipeline/Execution
+   Pipeline/database
+   Pipeline/execution
    Pipeline/Files
    Pipeline/Local
    Pipeline/Parameters
@@ -193,10 +193,10 @@ import os
 
 # import submodules into namespace
 from cgatcore.Pipeline.Control import *
-from cgatcore.Pipeline.Database import *
+from cgatcore.Pipeline.database import *
 from cgatcore.Pipeline.Files import *
 from cgatcore.Pipeline.Cluster import *
-from cgatcore.Pipeline.Execution import *
+from cgatcore.Pipeline.execution import *
 from cgatcore.Pipeline.Utils import *
 from cgatcore.Pipeline.Parameters import *
 
@@ -213,7 +213,7 @@ PARAMS["workingdir"] = os.getcwd()
 #     "clone",
 #     "touch",
 #     "snip",
-#     # Execution.py
+#     # execution.py
 #     "run",
 #     "execute",
 #     "shellquote",
@@ -222,7 +222,7 @@ PARAMS["workingdir"] = os.getcwd()
 #     "joinStatements",
 #     "cluster_runnable",
 #     "run_pickled",
-#     # Database.py
+#     # database.py
 #     "tablequote",
 #     "toTable",
 #     "build_load_statement",
@@ -231,7 +231,7 @@ PARAMS["workingdir"] = os.getcwd()
 #     "mergeAndLoad",
 #     "connect",
 #     "createView",
-#     "getDatabaseName",
+#     "getdatabaseName",
 #     "importFromIterator",
 #     # Utils.py
 #     "add_doc",

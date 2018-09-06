@@ -38,7 +38,7 @@ class BaseTest(unittest.TestCase):
         return proc.returncode, stdout, stderr
 
 
-class TestExecutionControl(BaseTest):
+class TestexecutionControl(BaseTest):
 
     expected_output_files = ["sample_{:02}.mean".format(x) for x in range(10)] +\
                             ["sample_{:02}.txt".format(x) for x in range(10)]

@@ -1,4 +1,4 @@
-"""Execution.py - Job control for ruffus pipelines
+"""execution.py - Job control for ruffus pipelines
 =========================================================
 
 Session
