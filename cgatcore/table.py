@@ -8,7 +8,7 @@ import numpy
 
 import cgatcore.Experiment as E
 import cgatcore.CSV as CSV
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 
 
 # The status of this module is unresolved. Functionality implemented
@@ -591,7 +591,7 @@ def main(argv=None):
         patterns = []
 
         if options.file:
-            infile = IOTools.open_file(options.file, "r")
+            infile = iotools.open_file(options.file, "r")
             for line in infile:
                 if line[0] == "#":
                     continue
@@ -760,7 +760,7 @@ def main(argv=None):
                 other_table_name = options.parameters[0]
                 del options.parameters[0]
                 other_fields, other_table = CSV.readTable(
-                    IOTools.open_file(other_table_name, "r"),
+                    iotools.open_file(other_table_name, "r"),
                     with_header=options.has_headers,
                     as_rows=False)
 

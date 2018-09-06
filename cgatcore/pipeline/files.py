@@ -8,7 +8,7 @@ Reference
 import os
 import tempfile
 
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 import cgatcore.Experiment as E
 from cgatcore.Pipeline.Parameters import get_params
 
@@ -140,7 +140,7 @@ def check_executables(filenames):
     missing = []
 
     for filename in filenames:
-        if not IOTools.which(filename):
+        if not iotools.which(filename):
             missing.append(filename)
 
     if missing:

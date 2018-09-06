@@ -1,4 +1,4 @@
 
-.. automodule:: cgatcore.IOTools
+.. automodule:: cgatcore.iotools
    :members:
    :show-inheritance:

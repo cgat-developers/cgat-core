@@ -7,7 +7,7 @@ import os
 import glob
 import collections
 
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 import cgatcore.Experiment as E
 
 
@@ -16,7 +16,7 @@ def read_table(filename, options):
     '''
 
     if os.path.exists(filename):
-        lines = IOTools.open_file(filename, "r").readlines()
+        lines = iotools.open_file(filename, "r").readlines()
     else:
         lines = []
 

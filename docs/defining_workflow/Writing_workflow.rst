@@ -125,7 +125,7 @@ basic modules as follows.
 
    import cgatcore.Experiment as E
    from cgatcore import Pipeline as P
-   import cgatcore.IOTools as IOTools
+   import cgatcore.iotools as iotools
 
 
 Running commands within tasks

@@ -27,7 +27,7 @@ import math
 import shutil
 import gevent
 import cgatcore.Experiment as E
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 
 from cgatcore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
 from cgatcore.Pipeline.Files import get_temp_filename, get_temp_dir
@@ -441,8 +441,8 @@ class Executor(object):
             self.job_total_memory = self.job_memory = "unlimited"
         else:
             if self.job_total_memory:
-                self.job_memory = IOTools.bytes2human(
-                    IOTools.human2bytes(self.job_total_memory) / self.job_threads)
+                self.job_memory = iotools.bytes2human(
+                    iotools.human2bytes(self.job_total_memory) / self.job_threads)
             elif self.job_memory:
                 self.job_total_memory = self.job_memory * self.job_threads
             else:
@@ -647,7 +647,7 @@ class Executor(object):
                 requested_memory_kb = max(
                     1000,
                     int(math.ceil(
-                        IOTools.human2bytes(self.job_memory) / 1024 * self.job_threads)))
+                        iotools.human2bytes(self.job_memory) / 1024 * self.job_threads)))
                 # unsetting error exit as often not permissions
                 tmpfile.write("set +e\n")
                 tmpfile.write("ulimit -v {} > /dev/null \n".format(
@@ -804,7 +804,7 @@ class GridExecutor(Executor):
             raise ValueError("no Grid Session found")
 
         # if running on cluster, use a working directory on shared drive
-        self.workingdir_is_local = IOTools.is_local(self.workingdir)
+        self.workingdir_is_local = iotools.is_local(self.workingdir)
 
         # connect to global session
         pid = os.getpid()
@@ -1441,9 +1441,9 @@ def cluster_runnable(func):
             submit_args, args_file = _pickle_args(args, kwargs)
             module_file = os.path.abspath(
                 sys.modules[func.__module__].__file__)
-            submit(IOTools.snip(__file__),
+            submit(iotools.snip(__file__),
                    "run_pickled",
-                   args=[IOTools.snip(module_file), function_name, args_file],
+                   args=[iotools.snip(module_file), function_name, args_file],
                    **submit_args)
         else:
             # remove job contral options before running function

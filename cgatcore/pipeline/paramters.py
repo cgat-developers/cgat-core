@@ -17,7 +17,7 @@ import re
 from collections import defaultdict
 
 import cgatcore.Experiment as E
-import cgatcore.IOTools as IOTools
+import cgatcore.iotools as iotools
 from cgatcore.Pipeline.Utils import get_caller_locals, is_test
 
 HAVE_INITIALIZED = False
@@ -150,7 +150,7 @@ def config_to_dictionary(config):
     for section in config.sections():
         for key, value in config.items(section):
             try:
-                v = IOTools.str2val(value)
+                v = iotools.str2val(value)
             except TypeError:
                 E.error("error converting key %s, value %s" % (key, value))
                 E.error("Possible multiple concurrent attempts to "
@@ -171,7 +171,7 @@ def config_to_dictionary(config):
                 p["%s" % (key)] = v
 
     for key, value in config.defaults().items():
-        p["%s" % (key)] = IOTools.str2val(value)
+        p["%s" % (key)] = iotools.str2val(value)
 
     return p
 

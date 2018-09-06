@@ -11,5 +11,5 @@ Add links to the other core documentation
    Core/CSV.rst
    Core/CSV2DB.rst
    Core/Database.rst
-   Core/IOTools.rst
+   Core/iotools.rst
    Core/Logfile.rst
