@@ -32,7 +32,8 @@ if major < 3:
     raise SystemExit("""CGAT requires Python 3 or later.""")
 
 cgat_packages = find_packages()
-cgat_package_dirs = {'cgatcore': 'cgatcore'}
+cgat_package_dirs = {'cgatcore': 'cgatcore',
+                     'CGATCore': 'cgatcore'}
 
 ##########################################################
 ##########################################################
@@ -53,6 +54,29 @@ Operating System :: MacOS
 setup(
     # package information
     name='cgatcore',
+    version=version,
+    description='cgatcore : the Computational Genomics Analysis Toolkit',
+    author='Andreas Heger',
+    author_email='andreas.heger@gmail.com',
+    license="MIT",
+    platforms=["any"],
+    keywords="computational genomics",
+    long_description='CGAT : the Computational Genomics Analysis Toolkit',
+    classifiers=[_f for _f in classifiers.split("\n") if _f],
+    url="https://github.com/cgat-developers/cgat-core",
+    # package contents
+    packages=cgat_packages,
+    package_dir=cgat_package_dirs,
+    include_package_data=True,
+    # other options
+    zip_safe=False,
+    test_suite="tests",
+)
+
+# for backwards compatibility, to be removed
+setup(
+    # package information
+    name='CGATCore',
     version=version,
     description='cgatcore : the Computational Genomics Analysis Toolkit',
     author='Andreas Heger',
