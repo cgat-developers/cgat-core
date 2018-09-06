@@ -26,13 +26,13 @@ import time
 import math
 import shutil
 import gevent
-import CGATCore.Experiment as E
-import CGATCore.IOTools as IOTools
+import cgatcore.Experiment as E
+import cgatcore.IOTools as IOTools
 
-from CGATCore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
-from CGATCore.Pipeline.Files import get_temp_filename, get_temp_dir
-from CGATCore.Pipeline.Parameters import substitute_parameters, get_params
-from CGATCore.Pipeline.Cluster import setup_drmaa_job_template, \
+from cgatcore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
+from cgatcore.Pipeline.Files import get_temp_filename, get_temp_dir
+from cgatcore.Pipeline.Parameters import substitute_parameters, get_params
+from cgatcore.Pipeline.Cluster import setup_drmaa_job_template, \
     get_drmaa_job_stdout_stderr, \
     set_drmaa_job_paths
 
@@ -53,7 +53,7 @@ GEVENT_TIMEOUT_WAIT = 1
 
 
 def get_logger():
-    return logging.getLogger("CGATCore.pipeline")
+    return logging.getLogger("cgatcore.pipeline")
 
 
 def _pickle_args(args, kwargs):
@@ -1296,7 +1296,7 @@ def run(statement, **kwargs):
     options['without_cluster'] = options.get('without_cluster')
 
     # SGE compatible job_name
-    name_substrate = str(options.get("outfile", "CGATCore"))
+    name_substrate = str(options.get("outfile", "cgatcore"))
     if os.path.basename(name_substrate).startswith("result"):
         name_substrate = os.path.basename(os.path.dirname(name_substrate))
     else:
@@ -1402,7 +1402,7 @@ def submit(module,
         args = ""
 
     statement = (
-        "python -m CGATCore.Pipeline.run_function "
+        "python -m cgatcore.Pipeline.run_function "
         "--module=%(module)s "
         "--function=%(function)s "
         "%(logfile)s "

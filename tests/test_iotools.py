@@ -1,11 +1,11 @@
-"""Test cases for the CGATCore.IOTools module."""
+"""Test cases for the cgatcore.IOTools module."""
 
 import unittest
 import os
 import shutil
 import tempfile
 import time
-import CGATCore.IOTools as IOTools
+import cgatcore.IOTools as IOTools
 
 
 class TestIOToolsTouchFile(unittest.TestCase):

@@ -7,8 +7,8 @@ import os
 import glob
 import collections
 
-import CGATCore.IOTools as IOTools
-import CGATCore.Experiment as E
+import cgatcore.IOTools as IOTools
+import cgatcore.Experiment as E
 
 
 def read_table(filename, options):

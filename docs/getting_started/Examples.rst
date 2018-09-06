@@ -6,7 +6,7 @@ Running a pipeline
 ==================
 
 
-This section provides a tutorial-like introduction of how to run CGAT workflows/pipelines. As an example of how we use CGATCore to 
+This section provides a tutorial-like introduction of how to run CGAT workflows/pipelines. As an example of how we use cgatcore to 
 build computational pipelines, please refer to the code detailed in our cgat-flow repository here_ .
 
 .. _getting_started-Intro:
@@ -32,7 +32,7 @@ It really helps if you are familiar with:
 Setting up a pipeline
 ======================
 
-**Step 1**: Install CGAT-flow (our collection of CGATCore pieplines):
+**Step 1**: Install CGAT-flow (our collection of cgatcore pieplines):
 
 Check that your computing environment is appropriate and follow installation instructions (see Installation instructions).
 The directory in which the CGAT code repository is located is the

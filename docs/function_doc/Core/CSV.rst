@@ -1,5 +1,5 @@
 
-.. automodule:: CGATCore.CSV
+.. automodule:: cgatcore.CSV
    :members:
    :show-inheritance:
 

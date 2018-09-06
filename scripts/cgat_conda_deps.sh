@@ -323,14 +323,14 @@ cat /dev/null > ${TMP_MISC}
 cat /dev/null > ${TMP_DEPS}
 
 # Python
-find_python_imports "${REPO_FOLDER}/CGATCore"
+find_python_imports "${REPO_FOLDER}/cgatcore"
 [[ ${ALL} -eq 1 ]] && find_python_imports "${REPO_FOLDER}/tests"
 
 # R
-find_r_imports "${REPO_FOLDER}/CGATCore"
+find_r_imports "${REPO_FOLDER}/cgatcore"
 
 # Misc
-find_misc_programs "${REPO_FOLDER}/CGATCore"
+find_misc_programs "${REPO_FOLDER}/cgatcore"
 
 
 ### create header of env file ###

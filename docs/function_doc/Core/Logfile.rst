@@ -1,4 +1,4 @@
 
-.. automodule:: CGATCore.Logfile
+.. automodule:: cgatcore.Logfile
    :members:
    :show-inheritance:

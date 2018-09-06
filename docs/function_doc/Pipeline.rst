@@ -3,6 +3,6 @@
 Pipeline modules
 ================
 
-.. automodule:: CGATCore.Pipeline
+.. automodule:: cgatcore.Pipeline
    :members:
    :show-inheritance:

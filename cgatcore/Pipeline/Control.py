@@ -42,11 +42,11 @@ try:
 except (ImportError, RuntimeError):
     HAS_DRMAA = False
 
-import CGATCore.Experiment as E
-import CGATCore.IOTools as IOTools
-from CGATCore.Pipeline.Parameters import input_validation, get_params, get_parameters
-from CGATCore.Pipeline.Utils import get_caller, get_caller_locals, is_test
-from CGATCore.Pipeline.Execution import execute, start_session,\
+import cgatcore.Experiment as E
+import cgatcore.IOTools as IOTools
+from cgatcore.Pipeline.Parameters import input_validation, get_params, get_parameters
+from cgatcore.Pipeline.Utils import get_caller, get_caller_locals, is_test
+from cgatcore.Pipeline.Execution import execute, start_session,\
     close_session
 
 
@@ -112,7 +112,7 @@ class EventPool(gevent.pool.Pool):
 
 
 def get_logger():
-    return logging.getLogger("CGATCore.pipeline")
+    return logging.getLogger("cgatcore.pipeline")
 
 
 def write_config_files(pipeline_path, general_path):
@@ -494,7 +494,7 @@ def ruffus_return_dag(stream,
 
 def setup_logging(options, pipeline=None):
 
-    logger = logging.getLogger("CGATCore.pipeline")
+    logger = logging.getLogger("cgatcore.pipeline")
 
     if options.log_config_filename is None:
 
@@ -1050,7 +1050,7 @@ def initialize(argv=None, caller=None):
                                       config_file="pipeline.yml")
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
-    logger = logging.getLogger("CGATCore.pipeline")
+    logger = logging.getLogger("cgatcore.pipeline")
 
     logger.info("started in workingdir: {}".format(get_params().get("workingdir")))
     # At this point, the PARAMS dictionary has already been
@@ -1090,7 +1090,7 @@ def run_workflow(options, args, pipeline=None):
         Pipeline to run. If not given, all ruffus pipelines are run.
 
     """
-    logger = logging.getLogger("CGATCore.pipeline")
+    logger = logging.getLogger("cgatcore.pipeline")
     if args:
         options.pipeline_action = args[0]
         if len(args) > 1:

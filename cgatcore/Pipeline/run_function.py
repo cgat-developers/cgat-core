@@ -35,8 +35,8 @@ import sys
 import os
 import importlib
 
-import CGATCore.Experiment as E
-import CGATCore.Pipeline as P
+import cgatcore.Experiment as E
+import cgatcore.Pipeline as P
 
 
 def main(argv=None):

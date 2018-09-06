@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# CGATCore documentation build configuration file, created by
+# cgatcore documentation build configuration file, created by
 # sphinx-quickstart on Sat Mar  3 13:24:26 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -54,7 +54,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'CGATCore'
+project = 'cgatcore'
 copyright = '2018, CGAT Developers'
 author = 'CGAT Developers'
 
@@ -151,7 +151,7 @@ rst_epilog = '''
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'CGATCoredoc'
+htmlhelp_basename = 'cgatcoredoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -178,7 +178,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'CGATCore.tex', 'CGATCore Documentation',
+    (master_doc, 'cgatcore.tex', 'cgatcore Documentation',
      'CGAT Developers', 'manual'),
 ]
 
@@ -188,7 +188,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'cgatcore', 'CGATCore Documentation',
+    (master_doc, 'cgatcore', 'cgatcore Documentation',
      [author], 1)
 ]
 
@@ -199,7 +199,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'CGATCore', 'CGATCore Documentation',
-     author, 'CGATCore', 'One line description of project.',
+    (master_doc, 'cgatcore', 'cgatcore Documentation',
+     author, 'cgatcore', 'One line description of project.',
      'Miscellaneous'),
 ]

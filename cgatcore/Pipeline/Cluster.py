@@ -15,7 +15,7 @@ import os
 import stat
 import time
 import logging
-import CGATCore.Experiment as E
+import cgatcore.Experiment as E
 
 try:
     import drmaa
@@ -25,7 +25,7 @@ except (ImportError, RuntimeError):
 
 
 def get_logger():
-    return logging.getLogger("CGATCore.pipeline")
+    return logging.getLogger("cgatcore.pipeline")
 
 
 def setup_drmaa_job_template(drmaa_session,

@@ -117,15 +117,15 @@ indexed with tabix to allow random access.
 Import statements
 -----------------
 
-In order to run our pipelines you will need to import the CGATCore python
+In order to run our pipelines you will need to import the cgatcore python
 modules into your pipeline. For every CGAT pipeline we recommend importing the
 basic modules as follows.
 
 .. code-block:: python
 
-   import CGATCore.Experiment as E
-   from CGATCore import Pipeline as P
-   import CGATCore.IOTools as IOTools
+   import cgatcore.Experiment as E
+   from cgatcore import Pipeline as P
+   import cgatcore.IOTools as IOTools
 
 
 Running commands within tasks

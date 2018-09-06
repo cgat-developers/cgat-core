@@ -23,8 +23,8 @@ from nose.tools import ok_
 
 # DIRECTORIES to examine
 EXPRESSIONS = (
-    ('FirstLevel', 'CGATCore/*.py'),
-    ('SecondLevel', 'CGATCore/Pipeline/*.py'))
+    ('FirstLevel', 'cgatcore/*.py'),
+    ('SecondLevel', 'cgatcore/Pipeline/*.py'))
 
 # Codes to ignore in the pep8 BaseReport
 IGNORE = set(('E101',  # indentation contains mixed spaces and tabs

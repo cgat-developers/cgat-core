@@ -4,7 +4,7 @@
 Developers
 ==========
 
-The following individuals are the main developers of the CGATCore 
+The following individuals are the main developers of the cgatcore 
 
 Andreas Heger
 
