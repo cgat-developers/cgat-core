@@ -10,6 +10,6 @@ Add links to the other core documentation
    Core/experiment.rst
    Core/CSV.rst
    Core/CSV2DB.rst
-   Core/Database.rst
+   Core/database.rst
    Core/iotools.rst
    Core/Logfile.rst

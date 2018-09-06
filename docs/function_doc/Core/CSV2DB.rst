@@ -1,4 +1,4 @@
 
-.. automodule:: cgatcore.CSV2DB
+.. automodule:: cgatcore.csv2DB
    :members:
    :show-inheritance:

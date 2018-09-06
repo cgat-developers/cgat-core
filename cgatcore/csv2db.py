@@ -33,7 +33,7 @@ import pandas
 import re
 
 from cgatcore import experiment as E
-from cgatcore import Database as Database
+from cgatcore import database as database
 
 
 def quote_tablename(name, quote_char="_", flavour="sqlite"):
@@ -73,7 +73,7 @@ def run(infile, options, chunk_size=10000):
     tablename = quote_tablename(options.tablename,
                                 flavour=flavour)
 
-    dbhandle = Database.connect(url=options.database_url)
+    dbhandle = database.connect(url=options.database_url)
 
     if "tab" in options.dialect:
         separator = "\t"
@@ -154,7 +154,7 @@ def run(infile, options, chunk_size=10000):
         try:
             statement = "CREATE INDEX %s_index%i ON %s (%s)" % (
                 tablename, nindex, tablename, index)
-            cc = Database.executewait(dbhandle, statement, retries=options.retries)
+            cc = database.executewait(dbhandle, statement, retries=options.retries)
             cc.close()
             E.info("added index on column %s" % (index))
             counter.indexes_created += 1
@@ -167,7 +167,7 @@ def run(infile, options, chunk_size=10000):
             try:
                 statement = "ALTER TABLE %s DROP COLUMN %s".format(
                     tablename, column)
-                cc = Database.executewait(dbhandle, statement, retries=options.retries)
+                cc = database.executewait(dbhandle, statement, retries=options.retries)
                 cc.close()
                 E.info("removed empty column %s" % (column))
                 counter.empty_columns_removed += 1
@@ -175,7 +175,7 @@ def run(infile, options, chunk_size=10000):
                 E.info("removing empty column {} failed".format(column))
 
     statement = "SELECT COUNT(*) FROM %s" % (tablename)
-    cc = Database.executewait(dbhandle, statement, retries=options.retries)
+    cc = database.executewait(dbhandle, statement, retries=options.retries)
     result = cc.fetchone()
     cc.close()
 

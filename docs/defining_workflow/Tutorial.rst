@@ -77,7 +77,7 @@ pipeline. It also contains utility functions that help wth executing the pipelin
      	"../pipeline.ini",
      	"pipeline.ini"])
 
-**Database helper:** This code helps with connecting to a sqlite database::
+**database helper:** This code helps with connecting to a sqlite database::
 
     def connect():
 	 '''utility function to connect to database.

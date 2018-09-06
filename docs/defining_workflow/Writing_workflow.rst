@@ -258,7 +258,7 @@ files will remain after aborted runs to be cleaned up manually.
 
 .. _defining_workflow-databases:
 
-Databases
+databases
 ---------
 
 Loading data into the database

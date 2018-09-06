@@ -1,4 +1,4 @@
-'''Database.py - Database utility functions
+'''database.py - database utility functions
 ===========================================
 
 This module contains convenience functions to work with a relational

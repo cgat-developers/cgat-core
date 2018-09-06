@@ -7,12 +7,12 @@ from functools import reduce
 import numpy
 
 import cgatcore.experiment as E
-import cgatcore.CSV as CSV
+import cgatcore.csv as CSV
 import cgatcore.iotools as iotools
 
 
 # The status of this module is unresolved. Functionality implemented
-# here is used in the Database.py module to massage tables before
+# here is used in the database.py module to massage tables before
 # uploading.  On the other hand, some functionality relies on the
 # cgat-apps/CGAT/Stats.py module.
 

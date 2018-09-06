@@ -1,4 +1,4 @@
-"""Database.py - Database upload for ruffus pipelines
+"""database.py - database upload for ruffus pipelines
 =========================================================
 
 Reference
@@ -9,11 +9,11 @@ import re
 import os
 import sqlite3
 import sqlalchemy
-from cgatcore import Database as Database
+from cgatcore import database as database
 import cgatcore.experiment as E
 from cgatcore.iotools import snip, touch_file
 from cgatcore.Pipeline.Files import get_temp_file
-from cgatcore.Pipeline.Execution import run
+from cgatcore.Pipeline.execution import run
 from cgatcore.Pipeline.Parameters import get_params
 
 
@@ -83,7 +83,7 @@ def build_load_statement(tablename, retry=True, options=""):
     opts.append("--database-url={}".format(params["database"]["url"]))
 
     db_options = " ".join(opts)
-    load_statement = ("python -m cgatcore.CSV2DB {db_options} {options} --table={tablename}".format(**locals()))
+    load_statement = ("python -m cgatcore.csv2DB {db_options} {options} --table={tablename}".format(**locals()))
 
     return load_statement
 
@@ -504,19 +504,19 @@ def create_view(dbhandle, tables, tablename, outfile,
 
     '''
 
-    Database.executewait(
+    database.executewait(
         dbhandle,
         "DROP %(view_type)s IF EXISTS %(tablename)s" % locals())
 
     tracks, columns = [], []
     tablenames = [x[0] for x in tables]
     for table, track in tables:
-        d = Database.executewait(
+        d = database.executewait(
             dbhandle,
             "SELECT COUNT(DISTINCT %s) FROM %s" % (track, table))
         tracks.append(d.fetchone()[0])
         columns.append(
-            [x.lower() for x in Database.getColumnNames(dbhandle, table)
+            [x.lower() for x in database.getColumnNames(dbhandle, table)
              if x != track])
 
     E.info("creating %s from the following tables: %s" %
@@ -552,9 +552,9 @@ def create_view(dbhandle, tables, tablename, outfile,
     FROM %(from_statement)s
     WHERE %(where_statement)s
     ''' % locals()
-    Database.executewait(dbhandle, statement)
+    database.executewait(dbhandle, statement)
 
-    nrows = Database.executewait(
+    nrows = database.executewait(
         dbhandle, "SELECT COUNT(*) FROM view_mapping").fetchone()[0]
 
     if nrows == 0:
@@ -580,7 +580,7 @@ def get_database_name():
     Returns
     -------
     databasename : string
-        Database name. Returns empty string if not found.
+        database name. Returns empty string if not found.
 
     Raises
     ------

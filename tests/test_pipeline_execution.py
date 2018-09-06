@@ -1,4 +1,4 @@
-"""Test cases for the Pipeline.Execution module."""
+"""Test cases for the Pipeline.execution module."""
 
 import shutil
 import unittest
@@ -30,7 +30,7 @@ class BaseTest(unittest.TestCase):
         shutil.rmtree(self.work_dir)
 
 
-class TestExecutionRun(BaseTest):
+class TestexecutionRun(BaseTest):
 
     def setUp(self):
         P.get_parameters()
@@ -70,7 +70,7 @@ class TestExecutionRun(BaseTest):
         self.assertEqual(hostname, execution_hostname)
 
 
-class TestExecutionRunLocal(unittest.TestCase):
+class TestexecutionRunLocal(unittest.TestCase):
 
     test_memory_size = 100000000
     base_memory_size = 3000000000
@@ -353,15 +353,15 @@ class TestExecutionRunLocal(unittest.TestCase):
             self.validate_benchmark_data(d, s)
 
 
-class TestExecutionRunCluster(TestExecutionRunLocal):
+class TestexecutionRunCluster(TestexecutionRunLocal):
     to_cluster = True
 
     def setUp(self):
-        TestExecutionRunLocal.setUp(self)
+        TestexecutionRunLocal.setUp(self)
         P.start_session()
 
     def tearDown(self):
-        TestExecutionRunLocal.tearDown(self)
+        TestexecutionRunLocal.tearDown(self)
         P.close_session()
 
     def file_exists(self, filename, hostname=None, expect=False):
