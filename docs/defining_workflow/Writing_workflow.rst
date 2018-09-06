@@ -417,7 +417,7 @@ read lastly have higher priority.
 
 Here is the order in which the configuration values are read:
 
-1. Hard-coded values in :file:`CGATPipelines/Pipeline/Parameters.py`.
+1. Hard-coded values in :file:`CGATPipelines/pipeline.parameters.py`.
 2. Parameters stored in :file:`pipeline.ini` files in different locations.
 3. Variables declared in the ruffus tasks calling ``P.run()``;
    e.g. ``job_memory=32G``

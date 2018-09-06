@@ -10,7 +10,7 @@ import tempfile
 
 import cgatcore.iotools as iotools
 import cgatcore.experiment as E
-from cgatcore.Pipeline.Parameters import get_params
+from cgatcore.pipeline.parameters import get_params
 
 
 def get_temp_file(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"):

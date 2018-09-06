@@ -44,8 +44,8 @@ except (ImportError, RuntimeError):
 
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
-from cgatcore.Pipeline.Parameters import input_validation, get_params, get_parameters
-from cgatcore.Pipeline.Utils import get_caller, get_caller_locals, is_test
+from cgatcore.pipeline.parameters import input_validation, get_params, get_parameters
+from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
 from cgatcore.Pipeline.execution import execute, start_session,\
     close_session
 

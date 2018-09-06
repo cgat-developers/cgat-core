@@ -12,9 +12,9 @@ import sqlalchemy
 from cgatcore import database as database
 import cgatcore.experiment as E
 from cgatcore.iotools import snip, touch_file
-from cgatcore.Pipeline.Files import get_temp_file
+from cgatcore.pipeline.files import get_temp_file
 from cgatcore.Pipeline.execution import run
-from cgatcore.Pipeline.Parameters import get_params
+from cgatcore.pipeline.parameters import get_params
 
 
 def tablequote(track):
