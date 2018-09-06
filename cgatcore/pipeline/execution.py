@@ -29,9 +29,9 @@ import gevent
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 
-from cgatcore.Pipeline.Utils import get_caller_locals, get_caller, get_calling_function
-from cgatcore.Pipeline.Files import get_temp_filename, get_temp_dir
-from cgatcore.Pipeline.Parameters import substitute_parameters, get_params
+from cgatcore.pipeline.utils import get_caller_locals, get_caller, get_calling_function
+from cgatcore.pipeline.files import get_temp_filename, get_temp_dir
+from cgatcore.pipeline.parameters import substitute_parameters, get_params
 from cgatcore.Pipeline.Cluster import setup_drmaa_job_template, \
     get_drmaa_job_stdout_stderr, \
     set_drmaa_job_paths

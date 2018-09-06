@@ -177,13 +177,13 @@ within a submodule to be exported are all imported to the namespace of
 
 .. toctree::
 
-   Pipeline/Control
+   pipeline.control
    Pipeline/database
    Pipeline/execution
-   Pipeline/Files
+   pipeline.files
    Pipeline/Local
-   Pipeline/Parameters
-   Pipeline/Utils
+   pipeline.parameters
+   pipeline.utils
 
 Reference
 ---------
@@ -192,13 +192,13 @@ Reference
 import os
 
 # import submodules into namespace
-from cgatcore.Pipeline.Control import *
+from cgatcore.pipeline.control import *
 from cgatcore.Pipeline.database import *
-from cgatcore.Pipeline.Files import *
+from cgatcore.pipeline.files import *
 from cgatcore.Pipeline.Cluster import *
 from cgatcore.Pipeline.execution import *
-from cgatcore.Pipeline.Utils import *
-from cgatcore.Pipeline.Parameters import *
+from cgatcore.pipeline.utils import *
+from cgatcore.pipeline.parameters import *
 
 # PARAMS is defined in Parameters.py
 # PARAMS = get_params()

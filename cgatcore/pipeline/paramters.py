@@ -18,7 +18,7 @@ from collections import defaultdict
 
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
-from cgatcore.Pipeline.Utils import get_caller_locals, is_test
+from cgatcore.pipeline.utils import get_caller_locals, is_test
 
 HAVE_INITIALIZED = False
 

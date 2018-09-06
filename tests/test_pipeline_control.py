@@ -1,4 +1,4 @@
-"""Test cases for the Pipeline.Control module."""
+"""Test cases for the pipeline.control module."""
 
 import unittest
 import os
@@ -104,7 +104,7 @@ formatters:
     format: '%(asctime)s %(levelname)s %(app_name)s %(module)s - %(message)s'
 filters:
   name_filter:
-    '()': cgatcore.Pipeline.Control.LoggingFilterPipelineName
+    '()': cgatcore.pipeline.control.LoggingFilterPipelineName
     name: mypipeline_name
 handlers:
   console:
