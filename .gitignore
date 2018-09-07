@@ -4,7 +4,7 @@
 
 # exclude recipes - add manuall
 recipes
-
+ctmp*
 
 # Vim auxiliary files
 *~

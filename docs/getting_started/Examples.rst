@@ -40,14 +40,14 @@ source directory. It will be abbreviated ``<cgat>`` in the
 following commands. 
 
 The source directory will contain the pipeline master script named
-:file:`CGATPipelines/pipeline_<name>.py`
+:file:`CGATpipelines/pipeline_<name>.py`
 
 The default configuration files will be contained in the folder
-:file:`CGATPipelines/Pipeline<Name>/`
+:file:`CGATpipelines/pipeline<Name>/`
 
 All our pipelines are written to be lightweight. Therefore, a module file
 assoaiated with the pipeline master script, typically named
-:file:`CGATPipelines/Pipeline<Name>.py`, is usually where code required to run the tasks
+:file:`CGATpipelines/pipeline<Name>.py`, is usually where code required to run the tasks
 of the pipleine is located. 
 
 **Step 2**: To run a pipeline you will need to create a working directory
@@ -90,12 +90,12 @@ R packages are satisfied by running::
 
       cgatflow <name> check
 
-.. _getting_started-PipelineRunning:
+.. _getting_started-pipelineRunning:
 
 Running a pipeline
 ===================
 
-Pipelines are controlled by a single python script called
+pipelines are controlled by a single python script called
 :file:`pipeline_<name>.py` that lives in the source directory. Command line usage information is available by running::
 
    cgatflow <name> --help
@@ -321,6 +321,6 @@ The first command retrieves the latest changes from the master
 repository and the second command updates your local version with
 these changes.
 
-.. _PipelineReporting:
-.. _cgat_tsv2links.py: https://github.com/CGATOxford/CGATPipelines/blob/master/scripts/cgat_tsv2links.py
-.. _here: https://github.com/cgat-developers/cgat-flow/tree/master/CGATPipelines 
+.. _pipelineReporting:
+.. _cgat_tsv2links.py: https://github.com/CGATOxford/CGATpipelines/blob/master/scripts/cgat_tsv2links.py
+.. _here: https://github.com/cgat-developers/cgat-flow/tree/master/CGATpipelines 

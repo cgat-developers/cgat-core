@@ -1,11 +1,11 @@
-"""Test cases for the Pipeline.execution module."""
+"""Test cases for the pipeline.execution module."""
 
 import shutil
 import unittest
 import contextlib
 import socket
 import os
-import cgatcore.Pipeline as P
+import cgatcore.pipeline as P
 import cgatcore.iotools as iotools
 
 
@@ -353,7 +353,7 @@ class TestexecutionRunLocal(unittest.TestCase):
             self.validate_benchmark_data(d, s)
 
 
-class TestexecutionRunCluster(TestexecutionRunLocal):
+class TestexecutionRuncluster(TestexecutionRunLocal):
     to_cluster = True
 
     def setUp(self):

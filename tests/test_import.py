@@ -32,7 +32,7 @@ from nose.tools import ok_
 # DIRECTORIES to examine
 EXPRESSIONS = (
     ('FirstLevel', 'cgatcore/*.py'),
-    ('SecondLevel', 'cgatcore/Pipeline/*.py'))
+    ('SecondLevel', 'cgatcore/pipeline/*.py'))
 
 # Code to exclude
 EXCLUDE = ()

@@ -82,7 +82,7 @@ from multiprocessing.pool import Pool, ThreadPool
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 
-import cgatcore.Pipeline as P
+import cgatcore.pipeline as P
 
 
 def chunk_iterator_lines(infile, args, prefix, use_header=False):

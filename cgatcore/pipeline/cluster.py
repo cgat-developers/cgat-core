@@ -1,4 +1,4 @@
-'''Cluster.py - cluster utility functions for ruffus pipelines
+'''cluster.py - cluster utility functions for ruffus pipelines
 ==============================================================
 
 This module abstracts the DRMAA native specification and provides
@@ -153,7 +153,7 @@ def setup_drmaa_job_template(drmaa_session,
         # DRMAA for PBS Pro is the same as for torque:
         # http://apps.man.poznan.pl/trac/pbs-drmaa
         # Webpages with some examples:
-        # https://wiki.galaxyproject.org/Admin/Config/Performance/Cluster#PBS
+        # https://wiki.galaxyproject.org/Admin/Config/Performance/cluster#PBS
         # https://sites.google.com/a/case.edu/hpc-upgraded-cluster/home/Software-Guide/pbs-drmaa
         # https://albertsk.files.wordpress.com/2011/12/pbs.pdf
 

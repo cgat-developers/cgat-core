@@ -26,7 +26,7 @@ Usage
 
 Example::
 
-   python cgat_check_deps --pipeline CGATPipelines/pipeline_annotations.py
+   python cgat_check_deps --pipeline CGATpipelines/pipeline_annotations.py
 
 Type::
 
@@ -196,7 +196,7 @@ def checkDepedencies(pipeline):
 
     # check existence of pipeline script
     if not os.access(pipeline, os.R_OK):
-        raise IOError("Pipeline %s was not found\n" % pipeline)
+        raise IOError("pipeline %s was not found\n" % pipeline)
 
     if os.path.isdir(pipeline):
         raise IOError("The given input is a folder, and must be a script\n")

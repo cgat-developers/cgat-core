@@ -22,7 +22,7 @@ A statement is specified in the normal way i.e.::
    P.run()
 
 If the module is in your $PYTHONPATH you can just name it
-directly. i.e "Pipeline" would specifiy Pipeline.py
+directly. i.e "pipeline" would specifiy pipeline.py
 
 The script has currently only been tested with single input/output.
 
@@ -36,7 +36,7 @@ import os
 import importlib
 
 import cgatcore.experiment as E
-import cgatcore.Pipeline as P
+import cgatcore.pipeline as P
 
 
 def main(argv=None):

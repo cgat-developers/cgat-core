@@ -1,8 +1,8 @@
 
 ================
-Pipeline modules
+pipeline modules
 ================
 
-.. automodule:: cgatcore.Pipeline
+.. automodule:: cgatcore.pipeline
    :members:
    :show-inheritance:

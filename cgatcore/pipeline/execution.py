@@ -32,7 +32,7 @@ import cgatcore.iotools as iotools
 from cgatcore.pipeline.utils import get_caller_locals, get_caller, get_calling_function
 from cgatcore.pipeline.files import get_temp_filename, get_temp_dir
 from cgatcore.pipeline.parameters import substitute_parameters, get_params
-from cgatcore.Pipeline.Cluster import setup_drmaa_job_template, \
+from cgatcore.pipeline.cluster import setup_drmaa_job_template, \
     get_drmaa_job_stdout_stderr, \
     set_drmaa_job_paths
 
@@ -875,7 +875,7 @@ class GridExecutor(Executor):
             elif retval.hasExited is False or retval.wasAborted is True:
                 raise OSError(
                     "-------------------------------------------------\n"
-                    "Cluster job was aborted ({}) and/or failed to exit ({}) "
+                    "cluster job was aborted ({}) and/or failed to exit ({}) "
                     "while running the following statement:\n"
                     "\n{}\n"
                     "(Job may have been cancelled by the user or the scheduler)\n"
@@ -1402,7 +1402,7 @@ def submit(module,
         args = ""
 
     statement = (
-        "python -m cgatcore.Pipeline.run_function "
+        "python -m cgatcore.pipeline.run_function "
         "--module=%(module)s "
         "--function=%(function)s "
         "%(logfile)s "
@@ -1417,7 +1417,7 @@ def cluster_runnable(func):
 
     The decorated function now takes extra arguments. The most important
     is *submit*. If set to true, it will submit the function to the cluster
-    via the Pipeline.submit framework. Arguments to the function are
+    via the pipeline.submit framework. Arguments to the function are
     pickled, so this will only work if arguments are picklable. Other
     arguments to submit are also accepted.
 

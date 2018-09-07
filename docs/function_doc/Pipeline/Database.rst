@@ -1,4 +1,4 @@
 
-.. automodule:: cgatcore.Pipeline.database
+.. automodule:: cgatcore.pipeline.database
    :members:
    :show-inheritance:

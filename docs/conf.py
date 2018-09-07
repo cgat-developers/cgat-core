@@ -118,7 +118,7 @@ html_sidebars = {
 # Included at the end of each rst file
 rst_epilog = '''
 .. _CGAT Training Programme: http://www.cgat.org
-.. _CGAT Pipeline Collection: https://www.cgat.org/downloads/public/CGATPipelines/documentation/
+.. _CGAT pipeline Collection: https://www.cgat.org/downloads/public/CGATpipelines/documentation/
 .. _CGAT Code Collection: https://www.cgat.org/downloads/public/cgat/documentation/
 .. _pysam: https://github.com/pysam-developers/pysam
 .. _samtools: http://samtools.sourceforge.net/

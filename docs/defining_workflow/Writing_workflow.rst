@@ -21,18 +21,18 @@ Scriptability
 Reproducibility
     The pipeline is fully automated. The same inputs and configuration will produce the same outputs.
 Reusability
-    The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (Pipeline.ini).
+    The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (pipeline.ini).
 Archivability
     Once finished, the whole project should be able to archived without too many major dependencies on external data. This should be a simple process and hence all project data should be self-contained. It should not involve going through various directories or databases to figure out which files and tables belong to a project or a project depends on.
 
 .. _defining_workflow-building:
 
-Building a Pipeline
+Building a pipeline
 -------------------
 
 The best way to build a pipeline is to start from an example. In the `cgat-developers <https://github.com/cgat-developers/>`_ repository 
 we have a number of our production workflows in the `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ sub-repository. There are several 
-pipelines available, however the easiest way to build your own pipeline is to use `pipeline_quickstart.py <https://github.com/cgat-developers/cgat-flow/blob/master/CGATPipelines/pipeline_quickstart.py>`_. 
+pipelines available, however the easiest way to build your own pipeline is to use `pipeline_quickstart.py <https://github.com/cgat-developers/cgat-flow/blob/master/CGATpipelines/pipeline_quickstart.py>`_. 
 
 For a step by step tutorial on how to run the pipeline_quickstart.py pipeline please refer to our `tutorials <>`_.
 
@@ -60,15 +60,15 @@ if you wish to create a module file, we usually save this file in the following 
    import ModuleTest
 
 This section describes how pipelines can be constructed using the
-:mod:`Pipeline` module in CGAT-core. The Pipeline.py module contains a variety of
+:mod:`pipeline` module in CGAT-core. The pipeline.py module contains a variety of
 useful functions for pipeline construction.
 
 .. _defining_workflow-p-input:
 
-Pipeline input
+pipeline input
 --------------
 
-Pipelines are executed within a dedicated working
+pipelines are executed within a dedicated working
 directory. They usually require the following files within this
 directory:
 
@@ -86,7 +86,7 @@ directory, run QC on these and map the reads to a genome sequence etc.
 
 .. _defining_workflow-p-output:
 
-Pipeline output 
+pipeline output 
 ----------------
 
 The pipeline will create files and database tables in the
@@ -111,7 +111,7 @@ If you require random access to a file, load the file into the
 database and index it appropriately. Genomic interval files can be
 indexed with tabix to allow random access.
 
-.. _PipelineCommands:
+.. _pipelineCommands:
 
 
 Import statements
@@ -124,7 +124,7 @@ basic modules as follows.
 .. code-block:: python
 
    import cgatcore.experiment as E
-   from cgatcore import Pipeline as P
+   from cgatcore import pipeline as P
    import cgatcore.iotools as iotools
 
 
@@ -132,7 +132,7 @@ Running commands within tasks
 -----------------------------
 
 To run a command line program within a pipeline task, build a
-statement and call the :meth:`Pipeline.run` method::
+statement and call the :meth:`pipeline.run` method::
 
    @files( '*.unsorted', suffix('.unsorted'), '.sorted')
    def sortFile( infile, outfile ):
@@ -140,7 +140,7 @@ statement and call the :meth:`Pipeline.run` method::
        statement = '''sort %(infile)s > %(outfile)s'''
        P.run()
 
-On calling the :meth:`Pipeline.run` method, the environment of the
+On calling the :meth:`pipeline.run` method, the environment of the
 caller is examined for a variable called ``statement``. The variable
 is subjected to string substitution from other variables in the local
 namespace. In the example above, ``%(infile)s`` and ``%(outfile)s``
@@ -207,7 +207,7 @@ To run the command from the previous section on the cluster::
 The pipeline will automatically create the job submission files,
 submit the job to the cluster and wait for its return.
 
-Pipelines will use the command line options ``--cluster-queue``,
+pipelines will use the command line options ``--cluster-queue``,
 ``--cluster-priority``, etc. for global job control. For example, to
 change the priority when starting the pipeline, use::
 
@@ -264,12 +264,12 @@ databases
 Loading data into the database
 ==============================
 
-:mod:`Pipeline.py` offers various tools for working with databases. By
+:mod:`pipeline.py` offers various tools for working with databases. By
 default, it is configured to use an sqlite3 database in the
 :term:`working directory` called :file:`csvdb`.
 
 Tab-separated output files can be loaded into a table using the
-:meth:`Pipeline.load` function. For example::
+:meth:`pipeline.load` function. For example::
 
    @jobs_limit(PARAMS.get("jobs_limit_db", 1), "db")
    @transform('data_*.tsv.gz', suffix('.tsv.gz'), '.load')
@@ -292,9 +292,9 @@ optional *options* argument::
 
 In order for the load mechanism to be transparent, it is best avoided
 to call the :file:`csv2db.py` script directly. Instead, use the
-:meth:`Pipeline.load` function. If the :file:`csv2db.py` needs to
+:meth:`pipeline.load` function. If the :file:`csv2db.py` needs to
 called at the end of a succession of statements, use the
-:meth:`Pipeline.build_load_statement` method, for example::
+:meth:`pipeline.build_load_statement` method, for example::
 
    def loadTranscript2Gene(infile, outfile):
        '''build and load a map of transcript to gene from gtf file
@@ -311,8 +311,8 @@ called at the end of a succession of statements, use the
        > %(outfile)s'''
        P.run()
 
-See also the variants :meth:`Pipeline.mergeAndLoad` and
-`:meth:`Pipeline.concatenateAndLoad` to combine multiple tables and
+See also the variants :meth:`pipeline.mergeAndLoad` and
+`:meth:`pipeline.concatenateAndLoad` to combine multiple tables and
 upload to the database in one go.
 
 Connecting to a database
@@ -320,7 +320,7 @@ Connecting to a database
 
 To use data in the database in your tasks, you need to first connect
 to the database. The best way to do this is via the connect() method
-in Pipeline.py.
+in pipeline.py.
 
 The following example illustrates how to use the connection::
 
@@ -334,7 +334,7 @@ The following example illustrates how to use the connection::
 	transcript_ids = set( [x[0] for x in cc.execute(statement)] )
 	...
 
-.. _PipelineReports:
+.. _pipelineReports:
 
 Reports
 -------
@@ -368,7 +368,7 @@ or Rmarkdown implimentations.
 
 For CGATReport:
 
-The :meth:`Pipeline.run_report` method builds or updates reports using
+The :meth:`pipeline.run_report` method builds or updates reports using
 CGATreport_. Usually, a pipeline will simply contain the following::
 
     @follows( mkdir( "report" ) )
@@ -417,7 +417,7 @@ read lastly have higher priority.
 
 Here is the order in which the configuration values are read:
 
-1. Hard-coded values in :file:`CGATPipelines/pipeline.parameters.py`.
+1. Hard-coded values in :file:`CGATpipelines/pipeline.parameters.py`.
 2. Parameters stored in :file:`pipeline.ini` files in different locations.
 3. Variables declared in the ruffus tasks calling ``P.run()``;
    e.g. ``job_memory=32G``
@@ -441,11 +441,11 @@ of your pipeline script to setup proper configuration values for
 your analyses::
 
    # load options from the config file
-   import CGATPipelines.Pipeline as P
+   import CGATpipelines.pipeline as P
    PARAMS =
      P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0]])
 
-The method :meth:`Pipeline.getParameters` reads parameters from
+The method :meth:`pipeline.getParameters` reads parameters from
 the :file:`pipeline.ini` located in the current :term:`working directory`
 and updates :py:data:`PARAMS`, a global dictionary of parameter values.
 It automatically guesses the type of parameters in the order of ``int()``,
@@ -518,7 +518,7 @@ execution of :file:`data1.fastq`, add the following to
    bowtie_threads=16
 
 This will set the configuration value ``bowtie_threads`` to 16 when
-using the command line substitution method in :meth:`Pipeline.run`. To
+using the command line substitution method in :meth:`pipeline.run`. To
 get an task-specific parameter values in a python task, use::
 
    @files( '*.fastq', suffix('.fastq'), '.bam')
@@ -526,5 +526,5 @@ get an task-specific parameter values in a python task, use::
        MY_PARAMS = P.substituteParameters( locals() )
        
 Thus, task specific are implemented generically using the
-:meth:`Pipeline.run` mechanism, but pipeline authors need to
+:meth:`pipeline.run` mechanism, but pipeline authors need to
 explicitely code for track specific parameters.
