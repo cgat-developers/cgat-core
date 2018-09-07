@@ -39,9 +39,6 @@ import numpy.random
 import cgatcore.experiment as E
 import cgatcore.pipeline as P
 
-# load global options from the config file
-global PARAMS
-
 
 def create_files(outfile):
 
@@ -50,9 +47,9 @@ def create_files(outfile):
         outf.write("\n".join(map(
             str,
             numpy.random.normal(
-                PARAMS["mu"],
-                PARAMS["sigma"],
-                PARAMS["num_samples"]))) + "\n")
+                P.get_params()["mu"],
+                P.get_params()["sigma"],
+                P.get_params()["num_samples"]))) + "\n")
 
 
 def compute_mean(infile, outfile):
@@ -79,21 +76,13 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    options, args = P.parse_commandline(argv,
-                                        config_file="template.yml")
-
-    global PARAMS
-    if options.config_file:
-        PARAMS = P.get_parameters(
-            options.config_file,
-            defaults={
-                "min_value": 0.0,
-                "num_samples": 1000,
-                "mu": 0.0,
-                "sigma": 1.0}
-        )
-    else:
-        sys.exit(P.main(options, args))
+    options, args = P.initialize(argv,
+                                 config_file="template.yml",
+                                 defaults={
+                                     "min_value": 0.0,
+                                     "num_samples": 1000,
+                                     "mu": 0.0,
+                                     "sigma": 1.0})
 
     pipeline = ruffus.Pipeline("template_pipeline")
 

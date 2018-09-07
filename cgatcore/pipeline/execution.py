@@ -473,10 +473,10 @@ class Executor(object):
 
         self.workingdir = get_params()["workingdir"]
 
-        self.shellfile = kwargs.get("shell_logfile", "shell.log")
+        self.shellfile = kwargs.get("shell_logfile", None)
         if self.shellfile:
             if not self.shellfile.startswith(os.sep):
-                self.shellfile = os.path.join(self.workingdir, "shell.log")
+                self.shellfile = os.path.join(self.workingdir, os.path.basename(self.shellfile))
 
     def __enter__(self):
         return self
