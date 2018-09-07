@@ -32,8 +32,7 @@ if major < 3:
     raise SystemExit("""CGAT requires Python 3 or later.""")
 
 cgat_packages = find_packages()
-cgat_package_dirs = {'cgatcore': 'cgatcore',
-                     'CGATCore': 'cgatcore'}
+cgat_package_dirs = {'cgatcore': 'cgatcore'}
 
 ##########################################################
 ##########################################################
