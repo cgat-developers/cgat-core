@@ -1019,7 +1019,7 @@ class LoggingFilterProgress(logging.Filter):
         return True
 
 
-def initialize(argv=None, caller=None):
+def initialize(argv=None, caller=None, defaults=None, **kwargs):
     """setup the pipeline framework.
 
     Arguments
@@ -1028,6 +1028,13 @@ def initialize(argv=None, caller=None):
         Container for command line arguments.
     args : list
         List of command line arguments.
+    defaults : dictionary
+        Dictionary with default values to be added to global
+        parameters dictionary.
+
+    Additional keyword arguments will be passed to the
+    :func:`~.parse_commandline` function.
+
     """
     if argv is None:
         argv = sys.argv
@@ -1036,19 +1043,24 @@ def initialize(argv=None, caller=None):
     if caller:
         path = os.path.splitext(caller)[0]
     else:
-        path = os.path.splitext(get_caller_locals()["__file__"])[0]
+        try:
+            path = os.path.splitext(get_caller().__file__)[0]
+        except AttributeError as ex:
+            path = "unknown"
+
+    if "config_file" not in kwargs:
+        kwargs["config_file"] = "pipeline.yml"
 
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
          "../pipeline.yml",
-         "pipeline.yml"])
+         kwargs["config_file"]],
+        defaults=defaults)
+
+    options, args = parse_commandline(argv, **kwargs)
 
     global GLOBAL_OPTIONS
     global GLOBAL_ARGS
-
-    options, args = parse_commandline(argv,
-                                      config_file="pipeline.yml")
-
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     logger = logging.getLogger("cgatcore.pipeline")
 
@@ -1063,6 +1075,8 @@ def initialize(argv=None, caller=None):
     logger.info("code location: {}".format(code_location))
     logger.info("code version: {}".format(version))
     logger.info("pipeline has been initialized")
+
+    return options, args
 
 
 def run_workflow(options, args, pipeline=None):
@@ -1350,6 +1364,8 @@ def main(argv=None):
         argv = sys.argv
 
     if GLOBAL_OPTIONS is None:
-        initialize(caller=get_caller().__file__)
+        options, args = initialize(caller=get_caller().__file__)
+    else:
+        options, args = GLOBAL_OPTIONS, GLOBAL_ARGS
 
-    run_workflow(GLOBAL_OPTIONS, GLOBAL_ARGS)
+    run_workflow(options, args)
