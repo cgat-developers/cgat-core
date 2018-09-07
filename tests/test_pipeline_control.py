@@ -8,7 +8,7 @@ import subprocess
 import cgatcore
 import cgatcore.experiment as E
 
-import cgatcore.Pipeline as P
+import cgatcore.pipeline as P
 import cgatcore.iotools as iotools
 
 
@@ -104,7 +104,7 @@ formatters:
     format: '%(asctime)s %(levelname)s %(app_name)s %(module)s - %(message)s'
 filters:
   name_filter:
-    '()': cgatcore.pipeline.control.LoggingFilterPipelineName
+    '()': cgatcore.pipeline.control.LoggingFilterpipelineName
     name: mypipeline_name
 handlers:
   console:

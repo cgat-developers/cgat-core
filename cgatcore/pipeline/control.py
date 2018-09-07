@@ -46,7 +46,7 @@ import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 from cgatcore.pipeline.parameters import input_validation, get_params, get_parameters
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
-from cgatcore.Pipeline.execution import execute, start_session,\
+from cgatcore.pipeline.execution import execute, start_session,\
     close_session
 
 
@@ -413,7 +413,7 @@ def peek_parameters(workingdir,
     return dump
 
 
-class LoggingFilterPipelineName(logging.Filter):
+class LoggingFilterpipelineName(logging.Filter):
     """add pipeline name to log message.
 
     With this filter, %(app_name)s can be used in log formats.
@@ -514,7 +514,7 @@ def setup_logging(options, pipeline=None):
                 "%(app_name)s %(module)s "
                 "- %(message)s"))
 
-        logger.addFilter(LoggingFilterPipelineName(name=pipeline_name))
+        logger.addFilter(LoggingFilterpipelineName(name=pipeline_name))
         logger.addHandler(handler)
 
         logger.info("pipeline log is {}".format(
@@ -704,7 +704,7 @@ def parse_commandline(argv=None, **kwargs):
                       help="working directory. Will be created if it does not exist "
                       "[default=%default].")
 
-    group = E.OptionGroup(parser, "Pipeline logging configuration")
+    group = E.OptionGroup(parser, "pipeline logging configuration")
 
     group.add_option("--pipeline-logfile", dest="pipeline_logfile",
                      type="string",
@@ -1077,7 +1077,7 @@ def run_workflow(options, args, pipeline=None):
 
     To use it, add::
 
-        import Pipeline as P
+        import pipeline as P
 
         if __name__ == "__main__":
             sys.exit(P.main(sys.argv))
@@ -1087,7 +1087,7 @@ def run_workflow(options, args, pipeline=None):
     Arguments
     ---------
     pipeline: object
-        Pipeline to run. If not given, all ruffus pipelines are run.
+        pipeline to run. If not given, all ruffus pipelines are run.
 
     """
     logger = logging.getLogger("cgatcore.pipeline")
@@ -1332,7 +1332,7 @@ def main(argv=None):
 
     To use it, add::
 
-        import CGAT.Pipeline as P
+        import CGAT.pipeline as P
 
         if __name__ == "__main__":
             sys.exit(P.main(sys.argv))

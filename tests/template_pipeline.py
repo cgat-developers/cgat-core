@@ -1,5 +1,5 @@
 """===========================
-Pipeline template
+pipeline template
 ===========================
 
 .. Replace the documentation below with your own description of the
@@ -23,7 +23,7 @@ Input files
 
 None required.
 
-Pipeline output
+pipeline output
 ===============
 
 .. Describe output files of the pipeline here
@@ -37,7 +37,7 @@ import sys
 import ruffus
 import numpy.random
 import cgatcore.experiment as E
-import cgatcore.Pipeline as P
+import cgatcore.pipeline as P
 
 # load global options from the config file
 global PARAMS

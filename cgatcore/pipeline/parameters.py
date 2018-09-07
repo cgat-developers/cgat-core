@@ -31,7 +31,7 @@ SCRIPTS_ROOT_DIR = os.path.dirname(
 # script directory
 SCRIPTS_SCRIPTS_DIR = os.path.join(SCRIPTS_ROOT_DIR, "scripts")
 
-# if Pipeline.py is called from an installed version, scripts are
+# if pipeline.py is called from an installed version, scripts are
 # located in the "bin" directory.
 if not os.path.exists(SCRIPTS_SCRIPTS_DIR):
     SCRIPTS_DIR = os.path.join(sys.exec_prefix, "bin")
@@ -211,7 +211,7 @@ def input_validation(PARAMS, pipeline_script=""):
     # check 3rd party dependencies
     if len(pipeline_script) > 0:
         # this import requires the PYTHONPATH in the following order
-        # PYTHONPATH=<src>/CGATPipelines:<src>/cgat
+        # PYTHONPATH=<src>/CGATpipelines:<src>/cgat
         import scripts.cgat_check_deps as cd
         deps, check_path_failures = cd.checkDepedencies(pipeline_script)
         # print info about dependencies
@@ -319,7 +319,7 @@ def get_parameters(filenames=None,
     # it is referenced in other modules. Thus the type
     # needs to be fixed at import. Raise error where this
     # is not the case.
-    # Note: Parameter sharing in the Pipeline module needs
+    # Note: Parameter sharing in the pipeline module needs
     # to be reorganized.
     if only_import:
         # turn on default dictionary

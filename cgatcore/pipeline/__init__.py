@@ -1,13 +1,13 @@
-'''Pipeline.py - Tools for ruffus pipelines
+'''pipeline.py - Tools for ruffus pipelines
 ===========================================
 
-The :mod:`Pipeline` module contains various utility functions for
+The :mod:`pipeline` module contains various utility functions for
 interfacing CGAT ruffus pipelines with an HPC cluster, uploading data
 to databases, providing parameterization, and more.
 
 It is a collection of utility functions covering the topics:
 
-* `Pipeline control`_
+* `pipeline control`_
 * `Logging`_
 * `Parameterisation`_
 * `Running tasks`_
@@ -15,16 +15,16 @@ It is a collection of utility functions covering the topics:
 * `Report building`_
 
 See :doc:`pipelines/pipeline_template` for a pipeline illustrating the
-use of this module. See :ref:`PipelineSettingUp` on how to set up a
+use of this module. See :ref:`pipelineSettingUp` on how to set up a
 pipeline.
 
-Pipeline control
+pipeline control
 ----------------
 
-:mod:`Pipeline` provides a :func:`main` function that provides command
+:mod:`pipeline` provides a :func:`main` function that provides command
 line control to a pipeline. To use it, add::
 
-    import CGAT.Pipeline as P
+    import CGAT.pipeline as P
     # ...
 
     if __name__ == "__main__":
@@ -36,9 +36,9 @@ to your pipeline script. Typing::
 
 will provide the following output:
 
-.. program-output:: python ../CGATPipelines/pipeline_template.py --help
+.. program-output:: python ../CGATpipelines/pipeline_template.py --help
 
-Documentation on using pipelines is at :ref:`PipelineRunning`.
+Documentation on using pipelines is at :ref:`pipelineRunning`.
 
 Logging
 -------
@@ -51,8 +51,8 @@ monitoring of pipeline progress.
 Running tasks
 -------------
 
-:mod:`Pipeline` provides a :func:`Pipeline.run` method to control
-running commandline tools. The :func:`Pipeline.run` method takes care
+:mod:`pipeline` provides a :func:`pipeline.run` method to control
+running commandline tools. The :func:`pipeline.run` method takes care
 of distributing these tasks to the cluster. It takes into
 consideration command line options such as ``--cluster-queue``. The
 command line option ``--local`` will run jobs locally for testing
@@ -65,12 +65,12 @@ runs a command locally.
 Functions such as :func:`shellquote`, :func:`getCallerLocals`,
 :func:`getCaller`, :func:`buildStatement`, :func:`expandStatement`,
 :func:`joinStatements` support the parameter interpolation mechanism
-used in :mod:`Pipeline`.
+used in :mod:`pipeline`.
 
 Parameterisation
 ----------------
 
-:mod:`Pipeline` provides hooks for reading pipeline configuration
+:mod:`pipeline` provides hooks for reading pipeline configuration
 values from :file:`.ini` files and making them available inside ruffus_
 tasks. The fundamental usage is a call to :func:`getParamaters` with
 a list of configuration files, typically::
@@ -80,7 +80,7 @@ a list of configuration files, typically::
          "../pipeline.ini",
          "pipeline.ini"])
 
-The :mod:`Pipeline` module defines a global variable :data:`PARAMS`
+The :mod:`pipeline` module defines a global variable :data:`PARAMS`
 that provides access the configuration values. To get a handle to
 this variable outside a pipeline script, call :func:`getParams`::
 
@@ -120,7 +120,7 @@ inside a pipeline if a particular requirement is met. But see also the
 database upload
 ---------------
 
-To assist with uploading data into a database, :mod:`Pipeline` provides
+To assist with uploading data into a database, :mod:`pipeline` provides
 several utility functions for conveniently uploading data. The :func:`load`
 method uploads data in a tab-separated file::
 
@@ -161,7 +161,7 @@ related to project.
 For these methods to work, the code assumes a certain directory
 layout. The method :func:`isCGAT` checks if the code is executed within the
 CGAT systems. The functions :func:`getProjectDirectories`,
-:func:`getPipelineName`, :func:`getProjectId`, :func:`getProjectName`
+:func:`getpipelineName`, :func:`getProjectId`, :func:`getProjectName`
 provide information about the pipeline executed and the project context.
 
 .. note::
@@ -173,15 +173,15 @@ Package layout
 
 The module is arranged as a python package with several submodules. Functions
 within a submodule to be exported are all imported to the namespace of
-:mod:`Pipeline`.
+:mod:`pipeline`.
 
 .. toctree::
 
    pipeline.control
-   Pipeline/database
-   Pipeline/execution
+   pipeline/database
+   pipeline/execution
    pipeline.files
-   Pipeline/Local
+   pipeline/Local
    pipeline.parameters
    pipeline.utils
 
@@ -193,10 +193,10 @@ import os
 
 # import submodules into namespace
 from cgatcore.pipeline.control import *
-from cgatcore.Pipeline.database import *
+from cgatcore.pipeline.database import *
 from cgatcore.pipeline.files import *
-from cgatcore.Pipeline.Cluster import *
-from cgatcore.Pipeline.execution import *
+from cgatcore.pipeline.cluster import *
+from cgatcore.pipeline.execution import *
 from cgatcore.pipeline.utils import *
 from cgatcore.pipeline.parameters import *
 
@@ -253,7 +253,7 @@ PARAMS["workingdir"] = os.getcwd()
 #     "publish_notebooks",
 #     "publish_tracks",
 #     "getProjectDirectories",
-#     "getPipelineName",
+#     "getpipelineName",
 #     "getProjectId",
 #     "getProjectName",
 #     "isCGAT",

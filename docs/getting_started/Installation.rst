@@ -6,7 +6,7 @@ Installation
 ============
 
 The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html>`_ .
+the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/Installingpipelines.html>`_ .
 Please note that installing the apps and flow will also install cgatcore as part of this process.
 
 We distinguish between two different installation types: production and development. The former refers to a well tested subset of pipelines, and is the recommended installation.
@@ -18,7 +18,7 @@ Automated installation
 ----------------------
 
 The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html>`_ .
+the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/Installingpipelines.html>`_ .
 
 The preferred method to install the cgatcore is using the installation script,
 which uses `conda <https://conda.io/docs/>`_.

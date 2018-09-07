@@ -13,7 +13,7 @@ from cgatcore import database as database
 import cgatcore.experiment as E
 from cgatcore.iotools import snip, touch_file
 from cgatcore.pipeline.files import get_temp_file
-from cgatcore.Pipeline.execution import run
+from cgatcore.pipeline.execution import run
 from cgatcore.pipeline.parameters import get_params
 
 
