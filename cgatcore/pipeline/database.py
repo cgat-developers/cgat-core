@@ -83,7 +83,7 @@ def build_load_statement(tablename, retry=True, options=""):
     opts.append("--database-url={}".format(params["database"]["url"]))
 
     db_options = " ".join(opts)
-    load_statement = ("python -m cgatcore.csv2DB {db_options} {options} --table={tablename}".format(**locals()))
+    load_statement = ("python -m cgatcore.csv2db {db_options} {options} --table={tablename}".format(**locals()))
 
     return load_statement
 
