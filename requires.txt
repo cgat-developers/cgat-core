@@ -1,0 +1,7 @@
+gevent
+pytest
+pandas
+ruffus
+pep8
+yaml
+paramiko
