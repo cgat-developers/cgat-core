@@ -131,6 +131,16 @@ class TestexecutionRunLocal(unittest.TestCase):
                               outfile=outfile),
                           to_cluster=self.to_cluster)
 
+    def test_job_should_pass_if_error_in_pipe_of_commands_but_ignore_pipe_error_set(self):
+        outfile = os.path.join(self.work_dir, "out")
+
+        benchmark_data = P.run(
+            "ls | unknown_command | cat".format(
+                outfile=outfile),
+            to_cluster=self.to_cluster,
+            ignore_pipe_errors=True)
+        self.assertTrue(benchmark_data)
+
     def test_job_should_fail_with_wrong_arguments(self):
         outfile = os.path.join(self.work_dir, "out")
         self.assertRaises(OSError,
