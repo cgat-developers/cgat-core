@@ -397,7 +397,7 @@ def merge_and_load(infiles,
 
     if row_wise:
         transform = """| perl -p -e "s/bin/track/"
-        | python -m cgatcore.Table --transpose"""
+        | python -m cgatcore.table --transpose"""
     else:
         transform = ""
 
@@ -406,7 +406,7 @@ def merge_and_load(infiles,
         options="--add-index=track " + options,
         retry=retry)
 
-    statement = """python -m cgatcore.Tables
+    statement = """python -m cgatcore.tables
     %(header_stmt)s
     --skip-titles
     --missing-value=0
