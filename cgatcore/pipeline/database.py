@@ -157,20 +157,20 @@ def load(infile,
 
     if collapse:
         statement.append(
-            "python -m cgatcore.Table "
+            "python -m cgatcore.table "
             "--log=%(outfile)s.collapse.log "
             "--collapse=%(collapse)s")
 
     if transpose:
         statement.append(
-            "python -m cgatcore.Table "
+            "python -m cgatcore.table "
             "--log=%(outfile)s.transpose.log "
             "--transpose "
             "--set-transpose-field=%(transpose)s")
 
     if shuffle:
         statement.append(
-            "python -m cgatcore.Table "
+            "python -m cgatcore.table "
             "--log=%(outfile)s.shuffle.log "
             "--method=randomize-rows")
 
@@ -275,7 +275,7 @@ def concatenate_and_load(infiles,
                                           options=load_options,
                                           retry=retry)
 
-    statement = '''python -m cgatcore.Tables
+    statement = '''python -m cgatcore.tables
     --cat=%(cat)s
     --missing-value=%(missing_value)s
     %(cat_options)s
