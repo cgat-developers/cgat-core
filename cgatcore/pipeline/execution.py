@@ -184,7 +184,7 @@ def execute(statement, **kwargs):
     logger.debug("running %s" % (statement % kwargs))
 
     if "cwd" not in kwargs:
-        cwd = get_params()["workingdir"]
+        cwd = get_params()["work_dir"]
     else:
         cwd = kwargs["cwd"]
 
@@ -416,8 +416,7 @@ def will_run_on_cluster(options):
     run_on_cluster = options.get("to_cluster", True) and \
         not options.get("without_cluster", False) and \
         HAS_DRMAA and \
-        GLOBAL_SESSION
-
+        GLOBAL_SESSION is not None
     return run_on_cluster
 
 
@@ -471,12 +470,12 @@ class Executor(object):
 
         self.options = kwargs
 
-        self.workingdir = get_params()["workingdir"]
+        self.work_dir = get_params()["work_dir"]
 
         self.shellfile = kwargs.get("shell_logfile", None)
         if self.shellfile:
             if not self.shellfile.startswith(os.sep):
-                self.shellfile = os.path.join(self.workingdir, os.path.basename(self.shellfile))
+                self.shellfile = os.path.join(self.work_dir, os.path.basename(self.shellfile))
 
     def __enter__(self):
         return self
@@ -584,7 +583,7 @@ class Executor(object):
 
         returns (name_of_script, stdout_path, stderr_path)
         '''
-        tmpfilename = get_temp_filename(dir=self.workingdir, clear=True)
+        tmpfilename = get_temp_filename(dir=self.work_dir, clear=True)
         tmpfilename = tmpfilename + ".sh"
 
         expanded_statement, cleanup_funcs = self.expand_statement(statement)
@@ -599,7 +598,7 @@ class Executor(object):
 
             os.chmod(tmpfilename, stat.S_IRWXG | stat.S_IRWXU)
 
-            tmpfile.write("\ncd {}\n".format(self.workingdir))
+            tmpfile.write("\ncd {}\n".format(self.work_dir))
             if self.output_directories is not None:
                 for outdir in self.output_directories:
                     if outdir:
@@ -804,39 +803,41 @@ class GridExecutor(Executor):
             raise ValueError("no Grid Session found")
 
         # if running on cluster, use a working directory on shared drive
-        self.workingdir_is_local = iotools.is_local(self.workingdir)
+        self.work_dir_is_local = iotools.is_local(self.work_dir)
 
         # connect to global session
         pid = os.getpid()
-        self.logger.debug('task: pid={}, grid-session={}, workingdir={}'.format(
-            pid, str(self.session), self.workingdir))
+        self.logger.debug('task: pid={}, grid-session={}, work_dir={}'.format(
+            pid, str(self.session), self.work_dir))
 
     def __enter__(self):
         # for cluster execution, the working directory can not be
         # local.  Use a temporary shared location instead and copy
-        # files over after job has completed.
-        if self.workingdir_is_local:
-            self.original_dir = self.workingdir
-            self.workingdir = get_temp_dir(shared=True)
+        # files over after job has completed. Note that this assumes
+        # that all paths of input files are absolute and reside in a
+        # shared directory.
+        if self.work_dir_is_local:
+            self.original_dir = self.work_dir
+            self.work_dir = get_temp_dir(shared=True)
 
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
 
-        if self.workingdir_is_local:
+        if self.work_dir_is_local:
             destdir = self.original_dir
             self.logger.debug("moving files from {} to {}".format(
-                self.workingdir, destdir))
+                self.work_dir, destdir))
 
-            for root, dirs, files in os.walk(self.workingdir):
+            for root, dirs, files in os.walk(self.work_dir):
                 for d in dirs:
                     if not os.path.exists(os.path.join(destdir, d)):
                         os.makedirs(d)
                 for fn in files:
                     shutil.move(os.path.join(root, fn),
-                                os.path.join(self.workingdir, root, fn))
+                                os.path.join(self.work_dir, root, fn))
 
-            shutil.rmtree(self.workingdir)
+            shutil.rmtree(self.work_dir)
 
     def collect_single_job_from_cluster(self,
                                         job_id,
@@ -955,7 +956,7 @@ class GridExecutor(Executor):
                                         job_name=self.job_name,
                                         job_memory=self.job_memory,
                                         job_threads=self.job_threads,
-                                        working_directory=self.workingdir,
+                                        working_directory=self.work_dir,
                                         **options)
 
     def wait_for_job_completion(self, job_ids):
@@ -978,7 +979,7 @@ class GridArrayExecutor(GridExecutor):
 
         benchmark_data = []
         # run statements through array interface
-        jobsfile = get_temp_filename(dir=self.workingdir,
+        jobsfile = get_temp_filename(dir=self.work_dir,
                                      clear=True) + ".jobs"
 
         with open(jobsfile, "w") as outf:
@@ -1090,7 +1091,7 @@ class LocalExecutor(Executor):
                 os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
                 process = subprocess.Popen(
                     full_statement,
-                    cwd=self.workingdir,
+                    cwd=self.work_dir,
                     shell=True,
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
@@ -1252,8 +1253,8 @@ def run(statement, **kwargs):
           and not ``hl`` for ``host:local``. Note that qrsh/qsub directly
           still works.
 
-    The job will be executed within PARAMS["workingdir"], unless
-    PARAMS["workingdir"] is not local. In that case, the job will
+    The job will be executed within PARAMS["work_dir"], unless
+    PARAMS["work_dir"] is not local. In that case, the job will
     be executed in a shared temporary directory.
 
     Arguments

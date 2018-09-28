@@ -200,13 +200,6 @@ from cgatcore.pipeline.execution import *
 from cgatcore.pipeline.utils import *
 from cgatcore.pipeline.parameters import *
 
-# PARAMS is defined in Parameters.py
-# PARAMS = get_params()
-
-# set working directory at process launch to prevent repeated calls to
-# os.getcwd failing if network is busy
-PARAMS["workingdir"] = os.getcwd()
-
 
 # __all__ = [
 #     # backwards incompatibility
