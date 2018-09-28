@@ -816,6 +816,7 @@ def update_params_with_commandline_options(params, options):
     else:
         params["work_dir"] = params["start_dir"]
 
+
 @contextlib.contextmanager
 def cache_os_functions():
     os.stat = cached_os_stat
