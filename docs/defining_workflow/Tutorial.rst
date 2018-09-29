@@ -162,14 +162,14 @@ To run the pipeline navigate to the working directory and then run the pipeline.
 The pipeline will then execute and count the words in the yml file.
 
 
-Modifying quickstart to build your own workflows
-================================================
+Modifying the test pipeline to build your own workflows
+=======================================================
 
 The next step is to modify the basic code in the pipeline to fit your particular
 NGS workflow needs. For example, say we wanted to convert a sam file into a bam
 file then perform flag stats on that output bam file. The basic quickstart pipeline
 framework can be easily modified to perform this. We would remove all of the code under
-the Specific pipeline tasks and write our own.
+the specific pipeline tasks and write our own.
 
 The first step would be to add a first function to the pipeline to identify all
 sam file in a data.dir directory. This first function would accept a sam file then
@@ -205,13 +205,13 @@ parameter in the full task. i.e. :code:`@follows(bamFlagstats)`.
 
 To run the pipeline::
 
-    cgatflow make full
+    python /path/to/file/pipeline_test.py make full -v5
 
 
 The bam files and flagstats outputs should then be generated.
 
 
-Parameterising the code using the .ini file
+Parameterising the code using the .yml file
 ===========================================
 
 Having written the basic function of our pipleine, as a philosophy,
@@ -225,7 +225,7 @@ can be added as a customisable parameter. This could allow the user to
 specify any fasta file depending on the genome build used to map and 
 generate the bam file.
 
-In order to do this the :file:`pipeline.ini` file needs to be modifiedand this
+In order to do this the :file:`pipeline.yml` file needs to be modifiedand this
 can be performed in the following way:
 
 Configuration values are accessible via the :py:data:`PARAMS`
@@ -234,10 +234,10 @@ configuration parameters to values. Keys are in the format
 ``section_parameter``. For example, the key ``genome_fasta`` will
 provide the configuration value of::
 
-    [genome]
-    fasta=/ifs/mirror/genomes/plain/hg19.fasta
+    genome:
+        fasta: /ifs/mirror/genomes/plain/hg19.fasta
 
-In the pipeline.ini, add the above code to the file and in the pipeline_test.py
+In the pipeline.yml, add the above code to the file and in the pipeline_test.py
 code the value can be accessed via ``PARAMS["genome_fasta"]``.
 
 Therefore the code we wrote before for parsing bam files can be modified to
@@ -266,6 +266,6 @@ Therefore the code we wrote before for parsing bam files can be modified to
        P.run()
 
 
-Running the code again should generate the same output but if next time you
-had bam files that came from a different genome build then the parameter in the ini file
+Running the code again should generate the same output. However, if you
+had bam files that came from a different genome build then the parameter in the yml file
 can be modified easily.
