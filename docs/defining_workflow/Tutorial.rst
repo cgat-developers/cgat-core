@@ -5,21 +5,17 @@
 Writing a workflow- Tutorial
 ============================
 
-The explicit aim of CGAT-core is to allow users to quickly and easily build their own computational pipelines that will speed up your analysis workflow.
+The explicit aim of cgat-core is to allow users to quickly and easily build their own computational pipelines that will speed up your analysis workflow.
 
 However, we also have bioler plate code that helps automate and  build computational pipelines more easily.
 You can find this template here: LINK!!! This script creates a new pipeline according to the CGAT
 pipeline layout and is useful when starting a new pipeline from scratch.
 
-**Installation of CGAT code**
+**Installation of cgat-core**
 
-In order to begin writing a pipeline you will need to install the cgatcore code 
+In order to begin writing a pipeline you will need to install the cgat-core code 
 (see :ref:`getting_started-Installation`) for installation instructions.
 
-To run pipeline_quickstart.py (thecode to generate the boiler plate layout) please install the
-quickstart pipeline from CGAT-flow by following these instructions::
-
-   Add code steps here
 
 Tutorial start
 --------------
@@ -27,52 +23,44 @@ Tutorial start
 Setting up the pipleine
 =======================
 
-**1.** First navigate to a directory where you want to run your code and run quickstart::
+**1.** First navigate to a directory where you want to start building your code::
 
-   cd /location/where/you/want/the/analysis/performed
-   cgatflow quickstart --set-name=test
+   mkdir test && touch test/pipeline.yml && touch pipeline_test.py && touch ModuleTest.py
 
 This will create a directory called test in the current directory with the following layout::
 
-   |-- work
-   |   |-- conf.py -> ../src/pipeline_test/conf.py
-   |   `-- pipeline.ini -> ../src/pipeline_test/pipeline.ini
-   `-- src
-       |-- pipeline_test
-       |   conf.py
-       |   pipeline.ini
-       |-- pipeline_test.py
-       `-- pipeline_docs
+   |-- test
+   |   `-- pipeline.yml
+   `-- pipeline_test.py
+    -- ModuleTest.py
 
 
 The layout has the following components::
 
-work
-   Directory for running the pipeline. Links to configuration files in
-   the src directory. This directory exists to separate code
-   from data and results.
-src
-   Directory for pipeline code. This directory should be put under
-   version control and backed-up.
-src/pipeline_test.py
-   The main pipeline script
-src/pipeline_test/
-   Directory for the pipeline configuration files
-src/pipeline_docs/pipeline_test/
-   Directory for the CGAT pipeline report - CGATReport is no longer supported and is here for legacy reasons
-src/pipeline_docs/themes
-   The CGAT report theme - CGATReport is no longer supported and is here for legacy reasons
+pipeline_test.py
+   This is the file that will contain all of the ruffus workflows, the file needs
+   the format pipeline_<name>.py
+test/
+   Directory containing the configuration yml file. The directory needs to be named
+   the same as the pipeline_<name>.py file
+ModuleTest.py
+   This file will contain functions that will be imported into the main ruffus
+   workflow file, pipeline_test.py
 
-**2.** View the source code within src/pipeline_test.py
+**2.** View the source code within pipeline_test.py
 
 This is the code that you use to write your pipeline with. The code begins with a doc
-string detailing the pipeline functionality. You should use this to document your
-pipeline. It also contains utility functions that help wth executing the pipeline.
+string detailing the pipeline functionality.You should use this section to document your
+pipeline.::
 
-**Config parser:** This code helps with parsing the pipeline.ini file::
+    '''This pipeline is a test and this is where the documentation goes '''
+
+The pipeline then needs a few utility functions to help with executing the pipeline.
+
+**Config parser:** This code helps with parsing the pipeline.yml file::
 
     # load options from the config file
-    PARAMS = P.getParameters(
+    PARAMS = P.get_parameters(
         ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      	"../pipeline.ini",
      	"pipeline.ini"])
@@ -112,11 +100,12 @@ pipeline. It also contains utility functions that help wth executing the pipelin
 
 
 
-Running quickstart pipeline
-===========================
+Running test pipeline
+=====================
 
-The code that is generated using cgatflow quickstart contains two ruffus_
-**@transform** tasks that parse the pipeline.ini and conf.py files (see code below). The first function
+You now have the bare bones layout of the pipeline and you now need code to execute. Below you will
+find example code that you can copy and paste into your pipeline_test.py file. The code 
+two ruffus_ **@transform** tasks that parse the pipeline.yml. The first function
 called :code:`countWords` is then called which contains a statement that counts the
 number of words in the file. The statement is then ran using :code:`P.run()` function.
 
@@ -131,7 +120,7 @@ whole workflow.
 
    # ---------------------------------------------------
    # Specific pipeline tasks
-   @transform(("pipeline.ini", "conf.py"),
+   @transform("pipeline.yml",
 	      regex("(.*)\.(.*)"),
 	      r"\1.counts")
    def countWords(infile, outfile):
@@ -150,7 +139,7 @@ whole workflow.
        # configuration files or variable that are declared in the calling
        # function.  For example, %(infile)s will we substituted with the
        # contents of the variable "infile".
-       P.run()
+       P.run(statement)
 
 
    @transform(countWords,
@@ -166,14 +155,11 @@ whole workflow.
    def full():
        pass
 
-To run the pipeline navigate to the working directory and then run the cgatflow
-command.
-::
+To run the pipeline navigate to the working directory and then run the pipeline.::
 
-   cd Work/
-   cgatflow test make full
+   python /location/to/code/pipeline_test.py  make full -v5
 
-The pipeline will then execute and count the words in the ini and conf.py files.
+The pipeline will then execute and count the words in the yml file.
 
 
 Modifying quickstart to build your own workflows
