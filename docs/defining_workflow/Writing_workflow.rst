@@ -30,29 +30,27 @@ Archivability
 Building a pipeline
 -------------------
 
-The best way to build a pipeline is to start from an example. In the `cgat-developers <https://github.com/cgat-developers/>`_ repository 
-we have a number of our production workflows in the `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ sub-repository. There are several 
-pipelines available, however the easiest way to build your own pipeline is to use `pipeline_quickstart.py <https://github.com/cgat-developers/cgat-flow/blob/master/CGATpipelines/pipeline_quickstart.py>`_. 
+The best way to build a pipeline is to start from an example. In `cgat-showcase <>`_ we have two pipelines that
+show users how simple and complex workflows can be generated to aid computational analysis. 
 
-For a step by step tutorial on how to run the pipeline_quickstart.py pipeline please refer to our `tutorials <>`_.
+For a step by step tutorial on how to run the pipelines please refer to our :ref:`getting_started-Tutorial`.
 
-For help on how our pipelines are constructed please continue reading for more information.
+For help on how to construct pipelines from scratch please continue reading for more information.
 
-To start a new project, move to a new directory and type::
+In an empty directory you will need to make a new directory and then a python file
+with the same name. For example::
 
-   cgatflow quickstart --set-name=test
+   make test && touch test
 
-This will create a report directory and an src directory.
+All pipelines require a yml configuration file contained within the test/ directory::
 
-If you navigate to the src directory you will observe that there are two folders
-``pipeline_docs/``, ``pipline_test/`` and a ``pipeline_test.py`` pipeline task file.
+   touch test/pipeline.yml
 
 In order to help with debugging and reading our code, our pipelines are written so that
 a pipeline task file contains Ruffus tasks and calls functions in an associated module file,
 which contains all of the code to transform and analyse the data.
 
-The module file is not generated during running of the pipeline_testing.py script. Therefore,
-if you wish to create a module file, we usually save this file in the following convention,
+Therefore, if you wish to create a module file, we usually save this file in the following convention,
 ``ModuleTest.py`` and it can be imported into the main pipeline task file (``pipeline_test.py``)as:
 
 .. code-block:: python
@@ -60,7 +58,7 @@ if you wish to create a module file, we usually save this file in the following 
    import ModuleTest
 
 This section describes how pipelines can be constructed using the
-:mod:`pipeline` module in CGAT-core. The pipeline.py module contains a variety of
+:mod:`pipeline` module in cgat-core. The pipeline.py module contains a variety of
 useful functions for pipeline construction.
 
 .. _defining_workflow-p-input:
@@ -72,7 +70,7 @@ pipelines are executed within a dedicated working
 directory. They usually require the following files within this
 directory:
 
-   * a pipeline configuration file :file:`pipeline.ini`
+   * a pipeline configuration file :file:`pipeline.yml`
    * input data files, usually listed in the documentatuion of each pipeline
 
 Other files that might be used in a pipeline are:
@@ -99,7 +97,7 @@ hierarchies with many files, while others prefer deep directories.
 Guidelines
 ----------
 
-To preserve disk space, please always work use compressed files as
+To preserve disk space, we always use compressed files as
 much as possible.  Most data files compress very well, for example
 fastq files often compress by a factor of 80% or more: a 10Gb file
 will use just 2Gb.
@@ -342,7 +340,7 @@ Reports
 MultiQC
 =======
 
-When using CGAT-core to build pipelines we recomend using `MultiQC <http://multiqc.info/>`_ 
+When using cgat-core to build pipelines we recomend using `MultiQC <http://multiqc.info/>`_ 
 as the default reporting tool for generic thrid party computational biology software.
 
 To run multiQC in our pipelines you only need to run a statement as a commanline
@@ -357,45 +355,6 @@ task. For example we impliment this in our pipelines as::
                    mv multiqc_report.html MultiQC_report.dir/'''
 
     P.run(statement) 
-
-
-CGATReport
-==========
-
-In additon to multiQC we also have CGATReports implimented in most of our pipelines. However,
-we are currently phasing this out and replacing workflow specific reports with Jupyter notebook
-or Rmarkdown implimentations.
-
-For CGATReport:
-
-The :meth:`pipeline.run_report` method builds or updates reports using
-CGATreport_. Usually, a pipeline will simply contain the following::
-
-    @follows( mkdir( "report" ) )
-    def build_report():
-	'''build report from scratch.'''
-
-	E.info( "starting report build process from scratch" )
-	P.run_report( clean = True )
-
-    @follows( mkdir( "report" ) )
-    def update_report():
-	'''update report.'''
-
-	E.info( "updating report" )
-	P.run_report( clean = False )
-
-This will add the two tasks ``build_report`` and ``update_report`` to
-the pipeline. The former completely rebuilds a report, while the
-latter only updates changed pages. The report will be in the directory
-:file:`report`.
-
-Note that report building requires the file :file:`conf.py` in the
-:term:`working directory`. This file is read by sphinx_ and can be
-used to report building options. By default, the file is a stub
-reading in common options from the CGAT code base.
-
-The section :ref:`WritingReports` contains more information.
 
 .. _ConfigurationValues:
 
@@ -417,8 +376,8 @@ read lastly have higher priority.
 
 Here is the order in which the configuration values are read:
 
-1. Hard-coded values in :file:`CGATpipelines/pipeline.parameters.py`.
-2. Parameters stored in :file:`pipeline.ini` files in different locations.
+1. Hard-coded values in :file:`cgatcore/pipeline/parameters.py`.
+2. Parameters stored in :file:`pipeline.yml` files in different locations.
 3. Variables declared in the ruffus tasks calling ``P.run()``;
    e.g. ``job_memory=32G``
 4. ``cluster_*`` options specified in the command line;
@@ -430,7 +389,7 @@ command-line options will have the highest priority. Therefore::
    python pipeline_example.py --cluster-parallel=dedicated make full
 
 will overwrite any ``cluster_parallel`` configuration values given
-in :file:`pipeline.ini` files. Type::
+in :file:`pipeline.yml` files. Type::
 
    python pipeline_example.py --help
 
@@ -441,35 +400,28 @@ of your pipeline script to setup proper configuration values for
 your analyses::
 
    # load options from the config file
-   import CGATpipelines.pipeline as P
-   PARAMS =
-     P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0]])
+   from cgatcore import pipeline as P
+   # load options from the config file
+   P.get_parameters(
+    ["%s/pipeline.yml" % os.path.splitext(__file__)[0],
+     "../pipeline.yml",
+     "pipeline.yml"])
 
 The method :meth:`pipeline.getParameters` reads parameters from
-the :file:`pipeline.ini` located in the current :term:`working directory`
+the :file:`pipeline.yml` located in the current :term:`working directory`
 and updates :py:data:`PARAMS`, a global dictionary of parameter values.
 It automatically guesses the type of parameters in the order of ``int()``,
 ``float()`` or ``str()``. If a configuration variable is empty (``var=``),
 it will be set to ``None``.
 
-However, as explained above, there are other :file:`pipeline.ini`
+However, as explained above, there are other :file:`pipeline.yml`
 files that are read by the pipeline at start up. In order to get the
 priority of them all, you can run::
 
    python pipeline_example.py printconfig
 
-to see a complete list of :file:`pipeline.ini` files and their priorities.
+to see a complete list of :file:`pipeline.yml` files and their priorities.
 
-Configuration values from another pipeline can be added in a separate
-namespace::
-
-   PARAMS_ANNOTATIONS = P.peekParameters(
-       PARAMS["annotations_dir"],
-       "pipeline_annotations.py")
-
-The statement above will load the parameters from a
-:mod:`pipeline_annotations` pipeline with :term:`working directory`
-``annotations_dir``.
 
 Using configuration values
 ==========================
@@ -480,8 +432,8 @@ configuration parameters to values. Keys are in the format
 ``section_parameter``. For example, the key ``bowtie_threads`` will
 provide the configuration value of::
 
-   [bowtie]
-   threads=4
+   bowtie:
+       threads: 4
 
 In a script, the value can be accessed via
 ``PARAMS["bowtie_threads"]``.
@@ -500,7 +452,7 @@ Task specific parameters
 ------------------------
 
 Task specific parameters can be set by creating a task specific section in
-the :file:`pipeline.ini`. The task is identified by the output filename.
+the :file:`pipeline.yml`. The task is identified by the output filename.
 For example, given the following task::
 
    @files( '*.fastq', suffix('.fastq'), '.bam')
@@ -512,10 +464,10 @@ and the files :file:`data1.fastq` and :file:`data2.fastq` in the
 :file:`data2.bam` will be created on executing ``mapWithBowtie``. Both
 will use the same parameters. To set parameters specific to the
 execution of :file:`data1.fastq`, add the following to
-:file:`pipeline.ini`::
+:file:`pipeline.yml`::
 
-   [data1.fastq]
-   bowtie_threads=16
+   data1.fastq:
+       bowtie_threads: 16
 
 This will set the configuration value ``bowtie_threads`` to 16 when
 using the command line substitution method in :meth:`pipeline.run`. To
@@ -523,7 +475,7 @@ get an task-specific parameter values in a python task, use::
 
    @files( '*.fastq', suffix('.fastq'), '.bam')
    def mytask( infile, outfile ):
-       MY_PARAMS = P.substituteParameters( locals() )
+       MY_PARAMS = P.substitute_parameters( locals() )
        
 Thus, task specific are implemented generically using the
 :meth:`pipeline.run` mechanism, but pipeline authors need to
