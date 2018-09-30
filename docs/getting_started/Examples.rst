@@ -32,7 +32,7 @@ It really helps if you are familiar with:
 Setting up a pipeline
 ======================
 
-**Step 1**: Install CGAT-flow (our collection of cgatcore pieplines):
+**Step 1**: Install cgat-showcase (our collection of cgat-core example pipelines):
 
 Check that your computing environment is appropriate and follow installation instructions (see Installation instructions).
 The directory in which the CGAT code repository is located is the
