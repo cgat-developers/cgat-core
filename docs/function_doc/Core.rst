@@ -7,9 +7,9 @@ Add links to the other core documentation
 
 .. toctree::
 
-   Core/experiment.rst
+   Core/Experiment.rst
    Core/CSV.rst
-   Core/CSV2DB.rst
-   Core/database.rst
-   Core/iotools.rst
+   Core/csv2db.rst
+   Core/Database.rst
+   Core/IOTools.rst
    Core/Logfile.rst
