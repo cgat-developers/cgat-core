@@ -40,7 +40,7 @@ For help on how to construct pipelines from scratch please continue reading for 
 In an empty directory you will need to make a new directory and then a python file
 with the same name. For example::
 
-   make test && touch test
+   mkdir test && touch test
 
 All pipelines require a yml configuration file contained within the test/ directory::
 
