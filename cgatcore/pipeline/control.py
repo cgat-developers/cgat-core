@@ -1038,7 +1038,7 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
         parameters dictionary.
 
     Additional keyword arguments will be passed to the
-    :func:`~.parse_commandline` function.
+    :func:`~.parse_commandline` function to set command-line defaults.
 
     """
     if argv is None:
@@ -1055,13 +1055,10 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
 
     options, args = parse_commandline(argv, **kwargs)
 
-    if "config_file" not in kwargs:
-        kwargs["config_file"] = options.config_file
-
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
          "../pipeline.yml",
-         kwargs["config_file"]],
+         options.config_file],
         defaults=defaults)
 
     global GLOBAL_OPTIONS
