@@ -742,7 +742,7 @@ def parse_commandline(argv=None, **kwargs):
         variables_to_set=[],
         is_test=False,
         ruffus_checksums_level=0,
-        config_file="benchmark.yml",
+        config_file="pipeline.yml",
         work_dir=None,
         always_mount=False,
         only_info=False,
@@ -810,6 +810,11 @@ def update_params_with_commandline_options(params, options):
             if prefix in params:
                 suffix = "_".join(parts[x:])
                 params[prefix][suffix] = value
+
+    if options.work_dir:
+        params["work_dir"] = os.path.abspath(options.work_dir)
+    else:
+        params["work_dir"] = params["start_dir"]
 
 
 @contextlib.contextmanager
@@ -1048,8 +1053,10 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
         except AttributeError as ex:
             path = "unknown"
 
+    options, args = parse_commandline(argv, **kwargs)
+
     if "config_file" not in kwargs:
-        kwargs["config_file"] = "pipeline.yml"
+        kwargs["config_file"] = options.config_file
 
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
@@ -1057,14 +1064,13 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
          kwargs["config_file"]],
         defaults=defaults)
 
-    options, args = parse_commandline(argv, **kwargs)
-
     global GLOBAL_OPTIONS
     global GLOBAL_ARGS
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     logger = logging.getLogger("cgatcore.pipeline")
 
-    logger.info("started in workingdir: {}".format(get_params().get("workingdir")))
+    logger.info("started in directory: {}".format(get_params().get("start_dir")))
+
     # At this point, the PARAMS dictionary has already been
     # built. It now needs to be updated with selected command
     # line options as these should always take precedence over
@@ -1074,6 +1080,15 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
     code_location, version = get_version()
     logger.info("code location: {}".format(code_location))
     logger.info("code version: {}".format(version))
+
+    logger.info("working directory is: {}".format(get_params().get("work_dir")))
+    work_dir = get_params().get("work_dir")
+    if not os.path.exists(work_dir):
+        E.info("working directory {} does not exist - creating".format(work_dir))
+        os.makedirs(work_dir)
+    logger.info("changing directory to {}".format(work_dir))
+    os.chdir(work_dir)
+
     logger.info("pipeline has been initialized")
 
     return options, args
@@ -1105,6 +1120,7 @@ def run_workflow(options, args, pipeline=None):
 
     """
     logger = logging.getLogger("cgatcore.pipeline")
+
     if args:
         options.pipeline_action = args[0]
         if len(args) > 1:
@@ -1199,7 +1215,8 @@ def run_workflow(options, args, pipeline=None):
                         # create the session proxy
                         start_session()
 
-                    logger.info("working directory is: {}".format(get_params()["workingdir"]))
+                    logger.info("current directory is {}".format(os.getcwd()))
+
                     ruffus.pipeline_run(
                         options.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,

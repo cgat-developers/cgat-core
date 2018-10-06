@@ -108,6 +108,10 @@ HARDCODED_PARAMS = {
     'jobs_limit_R': 1,
     # operating system we are running on
     'os': platform.system(),
+    # set start and work directory at process launch to prevent
+    # repeated calls to os.getcwd failing if network is busy
+    "start_dir": os.getcwd(),
+    "work_dir": os.getcwd()
 }
 
 # After all configuration files have been read, some
@@ -362,7 +366,7 @@ def get_parameters(filenames=None,
 
     # reset working directory. Set in PARAMS to prevent repeated calls to
     # os.getcwd() failing if network is busy
-    PARAMS["workingdir"] = os.getcwd()
+    PARAMS["start_dir"] = os.path.abspath(os.getcwd())
     # location of pipelines - set via location of top frame (cgatflow command)
     if '__file__' in caller_locals:
         PARAMS["pipelinedir"] = os.path.dirname(caller_locals["__file__"])
