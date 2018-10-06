@@ -7,7 +7,7 @@ from functools import reduce
 import numpy
 
 import cgatcore.experiment as E
-import cgatcore.csv as CSV
+import cgatcore.csvutils as CSV
 import cgatcore.iotools as iotools
 
 
