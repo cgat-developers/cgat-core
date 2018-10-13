@@ -141,15 +141,16 @@ def setup_drmaa_job_template(drmaa_session,
         # default (for backwards compatibility).
 
         resource_requests = list()
-        
+
         if job_memory != "unlimited":
             for resource in kwargs.get("memory_resource", "mem").split(","):
                 resource_requests.append("{}={}".format(resource, job_memory))
 
         if multithread:
             # don't know if this is standard resource names or if
-            # it varies site to site. For now, I will assume "nodes" is standard
-            # and name of resource for multiple CPUs is stored in "parrellel environment"
+            # it varies site to site. For now, I will assume "nodes" is
+            # standard and name of resource for multiple CPUs is stored in
+            # "parrellel environment"
             pe = kwargs.get("parallel_environment", "ppn")
             resource_requests.append("nodes=1")
             resource_requests.append("{}={}".format(pe, job_threads))
@@ -161,14 +162,14 @@ def setup_drmaa_job_template(drmaa_session,
             spec.append("-q {}".format(kwargs["pe_queue"]))
         elif kwargs['queue'] != "NONE":
             spec.append("-q {}".format(kwargs["queue"]))
-
                                     
         spec.append(kwargs.get("options", ""))
 
         # There is no equivalent to sge -V option for pbs-drmaa
         # recreating this...
         jt.jobEnvironment = os.environ
-        jt.jobEnvironment.update({'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
+        jt.jobEnvironment.update({'BASH_ENV': os.path.join(os.path.expanduser("~"),
+                                                           '.bashrc')})
 
     elif queue_manager.lower() == "pbspro":
 
