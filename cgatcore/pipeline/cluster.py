@@ -134,9 +134,35 @@ def setup_drmaa_job_template(drmaa_session,
         # PBS Torque native specifictation:
         # http://apps.man.poznan.pl/trac/pbs-drmaa
 
-        spec = ["-N {}".format(job_name),
-                "-l mem={}".format(job_memory), ]
+        spec = ["-N {}".format(job_name), ]
 
+        # again, I don't know if mem is same across all sites, or just a
+        # common default, so allow to be set via memory_resource, with "mem"
+        # default (for backwards compatibility).
+
+        resource_requests = list()
+        
+        if job_memory != "unlimited":
+            for resource in kwargs.get("memory_resource", "mem").split(","):
+                resource_requests.append("{}={}".format(resource, job_memory))
+
+        if multithread:
+            # don't know if this is standard resource names or if
+            # it varies site to site. For now, I will assume "nodes" is standard
+            # and name of resource for multiple CPUs is stored in "parrellel environment"
+            pe = kwargs.get("parallel_environment", "ppn")
+            resource_requests.append("nodes=1")
+            resource_requests.append("{}={}".format(pe, job_threads))
+
+        if resource_requests:
+            spec.append("-l " + ":".join(resource_requests))
+            
+        if "pe_queue" in kwargs and multithread:
+            spec.append("-q {}".format(kwargs["pe_queue"]))
+        elif kwargs['queue'] != "NONE":
+            spec.append("-q {}".format(kwargs["queue"]))
+
+                                    
         spec.append(kwargs.get("options", ""))
 
         # There is no equivalent to sge -V option for pbs-drmaa
