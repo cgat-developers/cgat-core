@@ -6,11 +6,20 @@ Installation
 ============
 
 The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/Installingpipelines.html>`_ .
-Please note that installing the apps and flow will also install cgatcore as part of this process.
+the CGAT-apps (scripts) please follow these instructions `here <https://www.cgat.org/downloads/public/cgat/documentation/>`_ .
+Please note that installing the apps will also install cgatcore as part of this process.
 
-We distinguish between two different installation types: production and development. The former refers to a well tested subset of pipelines, and is the recommended installation.
-The latter refers to the whole collection of pipelines developed at CGAT, which may contain code under active development.
+.. _getting_started-Conda:
+
+Conda Installation
+------------------
+
+The our preffered method of installation is using conda. If you dont have conda installed then
+please install conda using `miniconda <https://conda.io/miniconda.html>`_ or `anaconda <https://www.anaconda.com/download/#macos>`_.
+
+cgatcore is currently installed using the bioconda channel and the recipe can be found on `github <https://github.com/bioconda/bioconda-recipes/tree/b1a943da5a73b4c3fad93fdf281915b397401908/recipes/cgat-core>`_. To install cgatcore::
+
+    conda install cgatcore
 
 .. _getting_started-Automated:
 
@@ -18,7 +27,7 @@ Automated installation
 ----------------------
 
 The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/Installingpipelines.html>`_ .
+the CGAT-apps (scripts) please follow these instructions on the gihub `README <https://github.com/cgat-developers/cgat-apps>`_ page.
 
 The preferred method to install the cgatcore is using the installation script,
 which uses `conda <https://conda.io/docs/>`_.
