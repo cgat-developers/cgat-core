@@ -523,13 +523,16 @@ def setup_logging(options, pipeline=None):
     return logger
 
 
+VersionData = collections.namedtuple("VersionData", ("code_location", "version"))
+
+
 def get_version():
     # get script that has called P.main()
     code_location = os.path.dirname(get_caller(1).__file__)
     # try git for runs from repository
     stdout = E.run(
-        "git rev-parse HEAD", cwd=code_location, return_stdout=True, on_error="ignore").strip()
-    return code_location, stdout
+        "git rev-parse HEAD 2> /dev/null", cwd=code_location, return_stdout=True, on_error="ignore").strip()
+    return VersionData(code_location=code_location, version=stdout)
 
 
 USAGE = '''
