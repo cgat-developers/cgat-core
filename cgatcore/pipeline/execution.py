@@ -796,16 +796,6 @@ class Executor(object):
 
 class GridExecutor(Executor):
 
-    status_job_ended = (drmaa.JobState.DONE,
-                        drmaa.JobState.FAILED)
-    status_job_active = (drmaa.JobState.RUNNING,
-                         drmaa.JobState.QUEUED_ACTIVE,
-                         drmaa.JobState.SYSTEM_ON_HOLD,
-                         drmaa.JobState.USER_ON_HOLD,
-                         drmaa.JobState.USER_SYSTEM_ON_HOLD,
-                         drmaa.JobState.SYSTEM_SUSPENDED,
-                         drmaa.JobState.USER_SUSPENDED)
-
     def __init__(self, **kwargs):
         Executor.__init__(self, **kwargs)
         self.session = GLOBAL_SESSION
@@ -931,7 +921,6 @@ class GridExecutor(Executor):
             # give back control for bulk submission
             gevent.sleep(GEVENT_TIMEOUT_STARTUP)
 
-        self.logger.debug("{} jobs have been submitted".format(len(job_ids)))
         self.wait_for_job_completion(job_ids)
 
         end_time = time.time()
@@ -977,15 +966,11 @@ class GridExecutor(Executor):
         while running_job_ids:
             for job_id in list(running_job_ids):
                 status = self.session.jobStatus(job_id)
-                if status in self.status_job_ended:
+                if status in (drmaa.JobState.DONE, drmaa.JobState.FAILED):
                     running_job_ids.remove(job_id)
-                elif status in self.status_job_active:
+                else:
                     gevent.sleep(GEVENT_TIMEOUT_WAIT)
                     break
-                else:
-                    self.logger.debug("job {} has undetermined status: {}".format(job_id, status))
-                    running_job_ids.remove(job_id)
-        self.logger.debug("{} jobs have been collected".format(len(job_ids)))
 
 
 class GridArrayExecutor(GridExecutor):
