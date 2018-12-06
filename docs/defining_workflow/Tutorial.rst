@@ -7,10 +7,6 @@ Writing a workflow- Tutorial
 
 The explicit aim of cgat-core is to allow users to quickly and easily build their own computational pipelines that will speed up your analysis workflow.
 
-However, we also have bioler plate code that helps automate and  build computational pipelines more easily.
-You can find this template here: LINK!!! This script creates a new pipeline according to the CGAT
-pipeline layout and is useful when starting a new pipeline from scratch.
-
 **Installation of cgat-core**
 
 In order to begin writing a pipeline you will need to install the cgat-core code 

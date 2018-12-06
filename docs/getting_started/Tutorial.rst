@@ -26,48 +26,47 @@ Tutorial start
 
 **1.** First download the tutorial data::
 
-   mkdir pipeline_showcase
-   cd pipeline_showcase/
-   wget 
-   tar -zxvf tutorial_showcase.tar.gz
+   mkdir showcase
+   cd showcase
+   wget https://www.cgat.org/downloads/public/showcase/showcase_test_data.tar.gz
+   tar -zxvf showcase_test_data.tar.gz
 
-**2.** The next thing is to generate the pipeline configuration file by::
+**2.** Next we will generate a configuration yml file so the pipeline output can be modified::
 
-   cgatshowcase transdiffexprs config
+   cd showcase_test_data
+   cgatshowcase transdiffexpres config
 
-**3.** This will generate a **pipeline.yml** configuration file. This is the file that can be modified to
-alter the workflow of the pipline. However, for this tutorial you do not need to modify the parameters to run the pipeline. In the modify_config section below I have detailed how you can modify the config file to change the output of the pipeline. To run the pipeline do the following::
+or you can alternatively call the workflow file directly::
 
-   cgatshowcase transdiffexprs make full -v 5 --local
+   python /path/to/file/pipeline_transdiffexpres.py config
 
-This ``--local`` will run the pipeline locally if you do not have access to a cluster. Alternatively, if you have access to a
-cluster then you can remove the ``--local`` option. The pipeline will then  distribute your jobs accross the cluster.
+This will generate a **pipeline.yml** file containing the configuration parameters than can be used to modify
+the output of the pipleine. However, for this tutorial you do not need to modify the parameters to run the 
+pipeline. In the :ref:`modify_config` section below I have detailed how you can modify the config file to
+change the output of the pipeline.
 
-.. note:: 
+**3.** Next we will run the pipleine::
 
-   Depending upon the installation procedure you used, you may have to install software to
-   run the pipeline. We recomend using `conda` to install these.
+   cgatshowcase transdiffexpres make full -v5 --no-cluster
 
-**4.** The **final step** is to generate the report. We have a preference for multiqc to generate reports
-for general statistics and Rmarkdown for custom report generation. To generate MultiQC and Rmarkdown reports run the command::
+This ``--no-cluster`` will run the pipeline locally if you do not have access to a cluster. Alternatively if you have a
+cluster remove the ``--no-cluster`` option and the pipleine will distribute your jobs accross the cluster.
 
-   cgatshowcase transdiffexprs make build_report -v 5 --local
+.. note::
 
-This will generate a multiqc report in the folder MultiQC_report.dir and a Rmarkdown report in ??.
+   There are many commandline options available to run the pipeline. To see available options please run :code:`cgatshowcase --help`.
 
-**5.** Modify the pipeline.yml file to change the output of the pipeline.
+**4.** Generate a report
 
-The ability to modify the output of the pipeline is an important feature of our pipelines. We aim
-to remove all hardcoded references within the pipeline code wherever possible. For example, for the
-transdiffexprs pipeline can be ran using the wald test or the LRT test. This can be modified by altering the
-pipeline.yml, without the need for modifying the pipeline code.
+The final step is to generate a report to display the output of the pipeline. We have a preference for using MultiQC
+for generate bioinformatics tools (such as mappers and pseudoaligners) and Rmarkdown for generating custom reports.
+In order to generate these run the command::
 
-The following is the contents of the pipeline.yml file ::
+    cgatshowcase transdiffexprs make build_report -v 5 --no-cluster
 
-   Insert the yml file here
+This will generate a MultiQC report in the folder `MultiQC_report.dir/` and an Rmarkdown report in `R_report.dir/`. 
 
-**6.** Rerun the pipeline with the new configurations::
 
-   cgatshowcase transdiffexprs make full -v5 --local
 
-this completes the tutorial for running the transdiffexprs pipeline. 
+This completes the tutorial for running the transdiffexprs pipeline for cgat-showcase, hope you find it as useful as
+we do for writing workflows within python. 

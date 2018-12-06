@@ -30,7 +30,7 @@ Archivability
 Building a pipeline
 -------------------
 
-The best way to build a pipeline is to start from an example. In `cgat-showcase <>`_ we have two pipelines that
+The best way to build a pipeline is to start from an example. In `cgat-showcase <https://cgat-showcase.readthedocs.io/en/latest/index.html>`_ we have two pipelines that
 show users how simple and complex workflows can be generated to aid computational analysis. 
 
 For a step by step tutorial on how to run the pipelines please refer to our :ref:`getting_started-Tutorial`.
