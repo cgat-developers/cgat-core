@@ -97,6 +97,7 @@ def load(infile,
          retry=True,
          limit=0,
          shuffle=False,
+         to_cluster=False,
          job_memory=None):
     """import data from a tab-separated file into database.
 
@@ -137,6 +138,8 @@ def load(infile,
     shuffle : bool
         If set, randomize lines before loading. Together with `limit`
         this permits loading a sample of rows.
+    to_cluster: bool
+        If True, the statement will be submitted as a job on a compute node.
     job_memory : string
         Amount of memory to allocate for job. If unset, uses the global
         default.
@@ -186,7 +189,6 @@ def load(infile,
 
     statement = " | ".join(statement) + " > %(outfile)s"
 
-    to_cluster = False
     run(statement)
 
 
@@ -200,6 +202,7 @@ def concatenate_and_load(infiles,
                          retry=True,
                          tablename=None,
                          options="",
+                         to_cluster=False,
                          job_memory=None):
     """concatenate multiple tab-separated files and upload into database.
 
@@ -243,10 +246,11 @@ def concatenate_and_load(infiles,
         Name to use for table. If unset derive from outfile.
     options : string
         Command line options for the `csv2db.py` script.
+    to_cluster: bool
+        If True, the statement will be submitted as a job on a compute node.
     job_memory : string
         Amount of memory to allocate for job. If unset, uses the global
         default.
-
     """
     if job_memory is None:
         job_memory = get_params()["cluster_memory_default"]
@@ -283,7 +287,6 @@ def concatenate_and_load(infiles,
     | %(load_statement)s
     > %(outfile)s'''
 
-    to_cluster = False
     run(statement)
 
 
@@ -295,7 +298,9 @@ def merge_and_load(infiles,
                    row_wise=True,
                    retry=True,
                    options="",
-                   prefixes=None):
+                   prefixes=None,
+                   to_cluster=False,
+                   job_memory=None):
     '''merge multiple categorical tables and load into a database.
 
     The tables are merged and entered row-wise, i.e, the contents of
@@ -362,6 +367,11 @@ def merge_and_load(infiles,
         If given, the respective prefix will be added to each
         column. The number of `prefixes` and `infiles` needs to be the
         same.
+    to_cluster: bool
+        If True, the statement will be submitted as a job on a compute node.
+    job_memory : string
+        Amount of memory to allocate for job. If unset, uses the global
+        default.
 
     '''
     if len(infiles) == 0:
@@ -416,7 +426,7 @@ def merge_and_load(infiles,
     | %(load_statement)s
     > %(outfile)s
     """
-    to_cluster = False
+    
     run(statement)
 
 
