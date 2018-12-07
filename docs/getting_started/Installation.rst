@@ -35,13 +35,13 @@ which uses `conda <https://conda.io/docs/>`_.
 Here are the steps::
 
    # download installation script:
-   curl -O https://raw.githubusercontent.com/cgat-developers/cgat-core/master/install-CGAT-tools.sh
+   curl -O https://raw.githubusercontent.com/cgat-developers/cgat-core/master/install.sh
 
    # see help:
-   bash install-CGAT-tools.sh
+   bash install.sh
 
    # install the development version (recommended, no production version yet):
-   bash install-CGAT-tools.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
+   bash install.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
 
    # the code is downloaded in zip format by default. If you want to get a git clone, use:
    --git # for an HTTPS clone
@@ -53,9 +53,9 @@ Here are the steps::
    conda activate base
    conda activate cgat-c
 
-The installation script will put everything under the specified location. It needs 1.2 GB of disk space.
+The installation script will put everything under the specified location. It needs 1.2 GB of disk space (although this will be reduced in v0.4.0).
 The aim of the script is to provide a portable installation that does not interfere with the existing
-software. As a result, you will have a conda environment working with the CGAT-core which can be enabled
+software. As a result, you will have a conda environment working with the cgat-core which can be enabled
 on demand according to your needs.
 
 .. _getting_started-Manual:

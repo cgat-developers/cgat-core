@@ -7,7 +7,7 @@ Running a pipeline
 
 
 This section provides a tutorial-like introduction of how to run CGAT workflows/pipelines. As an example of how we use cgatcore to 
-build computational pipelines, please refer to the code detailed in our cgat-flow repository here_ .
+build computational pipelines, please refer to the code detailed in our `cgat-flow repository <https://github.com/cgat-developers/cgat-flow>`_.
 
 .. _getting_started-Intro:
 
@@ -16,7 +16,7 @@ Introduction
 
 A pipeline takes input data and performs a series of automated steps on it to produce some output data.
 
-Each pipeline is usually coupled with a report (usually a MultiQC report) document to
+Each pipeline is usually coupled with a report (usually a MultiQC or Rmarkdown report) document to
 summarize and visualize the results.
 
 It really helps if you are familiar with:
@@ -32,25 +32,27 @@ It really helps if you are familiar with:
 Setting up a pipeline
 ======================
 
-**Step 1**: Install cgat-showcase (our collection of cgat-core example pipelines):
+**Step 1**: Install cgat-showcase (our toy example of a cgatcore pipeline):
 
-Check that your computing environment is appropriate and follow installation instructions (see Installation instructions).
-The directory in which the CGAT code repository is located is the
-source directory. It will be abbreviated ``<cgat>`` in the
-following commands. 
+Check that your computing environment is appropriate and follow installation instructions (see `Installation instructions <https://cgat-showcase.readthedocs.io/en/latest/getting_started/Installation.html>`_).
 
+**Step2**: Clone the repository::
+
+   git clone https://github.com/cgat-developers/cgat-showcase.git
+
+When inspecting the respoitory:
 The source directory will contain the pipeline master script named
-:file:`CGATpipelines/pipeline_<name>.py`
+:file:`cgatshowcase/pipeline_<name>.py`
 
 The default configuration files will be contained in the folder
-:file:`CGATpipelines/pipeline<Name>/`
+:file:`cgatshowcase/pipeline<Name>/`
 
 All our pipelines are written to be lightweight. Therefore, a module file
 assoaiated with the pipeline master script, typically named
-:file:`CGATpipelines/pipeline<Name>.py`, is usually where code required to run the tasks
+:file:`cgatshowcase/Module<Name>.py`, is usually where code required to run the tasks
 of the pipleine is located. 
 
-**Step 2**: To run a pipeline you will need to create a working directory
+**Step 3**: To run a pipeline you will need to create a working directory
 and enter it. For example::
 
    mkdir version1
@@ -59,19 +61,19 @@ and enter it. For example::
 This is where the pipeline will be executed and files will be generated in this
 directory.
 
-**Step 3**: Our pipelines are written to be ran with minimal hard coded
+**Step 4**: Our pipelines are written to be ran with minimal hard coded
 options. Therefore, to run a pipeline an initial configuration file needs to be
 generated. A configuration file with all the default values can be obtained by
 running::
 
-      cgatflow <name> config
+      cgatshowcase <name> config
 
-For example, if you wanted to run the QC pipeline you would run::
+For example, if you wanted to run the transdiffexprs pipeline you would run::
 
-      cgatflow readqc config
+      cgatshowcase transdiffexprs config
 
 
-This will create a new :file:`pipeline.ini` file. **YOU MUST EDIT THIS
+This will create a new :file:`pipeline.yml` file. **YOU MUST EDIT THIS
 FILE**. The default values are likely to use the wrong genome or
 point to non-existing locations of indices and databases. The
 configuration file should be well documented and the format is
@@ -79,16 +81,16 @@ simple. The documenation for the `ConfigParser
 <http://docs.python.org/library/configparser.html>`_ python module
 contains the full specification.
 
-**Step 4**: Add the input files. The required input is specific for each
-pipeline in the documentation stringat the; read the pipeline documentation to find out exactly which
+**Step 5**: Add the input files. The required input is specific for each
+pipeline in the documentation string at the; read the pipeline documentation to find out exactly which
 files are needed and where they should be put. Commonly, a pipeline
 works from input files linked into the working directory and
 named following pipeline specific conventions.
 
-**Step 5**: You can check if all the external dependencies to tools and
+**Step 6**: You can check if all the external dependencies to tools and
 R packages are satisfied by running::
 
-      cgatflow <name> check
+      cgatshowcase <name> check
 
 .. _getting_started-pipelineRunning:
 
@@ -98,15 +100,15 @@ Running a pipeline
 pipelines are controlled by a single python script called
 :file:`pipeline_<name>.py` that lives in the source directory. Command line usage information is available by running::
 
-   cgatflow <name> --help
+   cgatshowcase <name> --help
 
 The basic syntax for ``pipeline_<name>.py`` is::
 
-   cgatflow <name> [workflow options] [workflow arguments]
+   cgatshowcase <name> [workflow options] [workflow arguments]
 
 For example, to run the readqc pipeline you would run the following::
 
-   cgatflow readqc make full
+   cgatshowcase readqc make full
 
 ``workflow options`` can be one of the following:
 
@@ -143,7 +145,7 @@ clone <srcdir>
 In case you are running a long pipeline, make sure you start it
 appropriately, for example::
 
-   nice -19 nohup cgatflow <name> make full -v5 -c1
+   nice -19 nohup cgatshowcase <name> make full -v5 -c1
 
 This will keep the pipeline running if you close the terminal.
 
@@ -151,13 +153,13 @@ Fastq naming convention
 -----------------------
 
 Most of our pipelines assume that input fastq files follows the following
-naming convention::
+naming convention (with the read inserted between the fastq and the gz. The reason
+for this is so that regular expressions do not have to acount for the read within the name.
+It is also more explicit::
 
    sample1-condition-R1.fastq.1.gz
    sample1-condition-R2.fastq.2.gz
 
-If that is not the case, please make sure you use the cgat_tsv2links.py_ script
-before running a CGAT pipeline.
 
 Additional pipeline options
 ---------------------------
@@ -196,23 +198,21 @@ when running the pipelines. These will modify the way the pipeline in ran.
 Building pipeline reports
 ================================
 
-Some of the pipelines are associated with an automated report
-generator to display summary information as a set of nicely formatted
+We always associate some for of reporting with our pipelines to display summary information as a set of nicely formatted
 html pages. 
 
-Currently in CGAT we have 4 different types of report generation.
+Currently in CGAT we have 3 preferred types of report generation.
 
-   * MultiQC report
-   * R markdown
-   * IPython notebook
-   * CGAT reports
+   * MultiQC report (for general alignment and tool reporting)
+   * R markdown (for bespoke reporting)
+   * IPython notebook (for bespoke reporting)
 
 To determine which type of reporting is implimented for each pipeline, refer to
 the specific pipeline documentation at the beginning of the script.
 
 Reports are generated using the following command once a workflow has completed::
 
-    cgatflow <name> make build_report
+    cgatshowcase <name> make build_report
 
 MultiQC report
 --------------
@@ -231,35 +231,6 @@ Jupyter notebook
 ----------------
 Jupyter notebook is a second approach that we use to produce bespoke reports. An example is
 also implimented in our bamstats workflow.
-
-CGAT Reports
-------------
-CGAT reports in an in house reporting tool that we have used in the majority of our pipelines.
-However, we are depricating its use in the future and most reports will be replaced with either
-MultiQC, Rmarkdown or Jupyter reports.
-
-To run CGAT reports:
-
-In order to build the documentation, drop the appropriate
-:file:`conf.py` and :file:`cgatreport.ini` configuration files into
-the working directory and run the pipeline command::
-
-   nice -19 cgatflow <name> make build_report
-
-This will create the report from scratch in the current directory. The
-report can be viewed opening the file
-:file:`<work>/report/html/contents.html` in your browser.
-
-CGATReport is powerful and can take its time on large projects that
-need to generate a multitude of plots and tables. In order to speed up
-this process, there are some advanced features that CGATReport offers:
-
-   * caching of results
-   * multiprocessing
-   * incremental builds
-   * separate build directory
-
-Please see the CGATReport_ documentation for more information.
 
 .. _getting_started-Troubleshooting:
 
@@ -308,7 +279,7 @@ One of the most common errors when runnig the pipeline is::
     NameError: name 'drmaa' is not defined
 
 This error occurrs because you are not connected to the cluster. Alternatively
-you can run the pipleine in local mode by adding --local as a command line option.
+you can run the pipleine in local mode by adding `--no-cluster` as a command line option.
 
 Updating to the latest code version
 -----------------------------------
@@ -322,5 +293,3 @@ repository and the second command updates your local version with
 these changes.
 
 .. _pipelineReporting:
-.. _cgat_tsv2links.py: https://github.com/CGATOxford/CGATpipelines/blob/master/scripts/cgat_tsv2links.py
-.. _here: https://github.com/cgat-developers/cgat-flow/tree/master/CGATpipelines 

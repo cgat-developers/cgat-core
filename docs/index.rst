@@ -59,7 +59,9 @@ Support
 Examples
 --------
 
-**CGAT-flow**
+**cgat-showcase**
+   This is a toy example of how to develop a simple workflow. Please refer to the `github page <https://github.com/cgat-developers/cgat-showcase>`_ and the `documentation <https://cgat-showcase.readthedocs.io/en/latest/>`_.
+**cgat-flow**
    As an example of the flexibility and functionality of CGAT-core, we have developed a set of fully tested production pipelines for automating the analysis of our NGS data. Please refer to the `github <https://github.com/cgat-developers/cgat-flow>`_ page for information on how to install and use our code.
 **Single cell RNA-seq**
    The sansom lab use the CGAT-core workflow engine to develop single cell `sequencing analysis workflows <https://github.com/sansomlab/tenx>`_.
