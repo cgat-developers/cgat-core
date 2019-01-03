@@ -140,7 +140,12 @@ def get_mounted_location(filename):
 
 @E.cached_function
 def get_conda_environment_directory(env_name):
-    stdout = E.run("conda env list", return_stdout=True).strip()
+    if "CONDA_EXE" in os.environ:
+        stdout = E.run("{} env list".format(os.environ["CONDA_EXE"]),
+                       return_stdout=True).strip()
+    else:
+        stdout = E.run("conda env list", return_stdout=True).strip()
+
     env_map = {}
     for line in stdout.splitlines():
         if line.startswith("#"):
