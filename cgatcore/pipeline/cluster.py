@@ -11,17 +11,11 @@ Reference
 '''
 
 import re
+import math
 import os
 import stat
 import time
 import logging
-import cgatcore.experiment as E
-
-try:
-    import drmaa
-    HAS_DRMAA = True
-except (ImportError, RuntimeError):
-    HAS_DRMAA = False
 
 
 def get_logger():
@@ -116,9 +110,9 @@ def setup_drmaa_job_template(drmaa_session,
         # for consistency with the implemented SGE approach
 
         if job_memory.endswith("G"):
-            job_memory_per_cpu = int(job_memory[:-1]) * 1000
+            job_memory_per_cpu = int(math.ceil(float(job_memory[:-1]) * 1000))
         elif job_memory.endswith("M"):
-            job_memory_per_cpu = int(job_memory[:-1])
+            job_memory_per_cpu = int(math.ceil(float(job_memory[:-1])))
         else:
             raise ValueError('job memory unit not recognised for SLURM, '
                              'must be either "M" (for Mb) or "G" (for Gb),'
