@@ -89,7 +89,7 @@ HARDCODED_PARAMS = {
         'memory_default': "4G",
         # ensure requested memory is not exceeded via ulimit (this is
         # not compatible with and/or needed  for all cluster configurations)
-        'memory_ulimit': True,
+        'memory_ulimit': False,
         # general cluster options
         'options': "",
         # parallel environment to use for multi-threaded jobs
