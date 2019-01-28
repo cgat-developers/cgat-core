@@ -197,7 +197,7 @@ def setup_drmaa_job_template(drmaa_session,
         # default values. Likely means setting for longest job with
         # trade-off of longer waiting times for resources to be
         # available for other jobs.
-        spec.append(kwargs["options"], "")
+        spec.append(kwargs.get("options", ""))
 
         if multithread:
             # TO DO 'select=1' determines de number of nodes. Should
@@ -215,7 +215,8 @@ def setup_drmaa_job_template(drmaa_session,
         elif kwargs['queue'] != "NONE":
             spec.append("-q {}".format(kwargs["queue"]))
 
-        # As for torque, there is no equivalent to sge -V option for pbs-drmaa:
+        # The directive #PBS -V exists and works in a qsub script but here I
+        # get an error so using the following as for torque:
         jt.jobEnvironment = os.environ
         jt.jobEnvironment.update(
             {'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
