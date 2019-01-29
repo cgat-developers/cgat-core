@@ -32,7 +32,7 @@ class BaseTest(unittest.TestCase):
         shutil.rmtree(self.work_dir)
 
 
-class TestexecutionRun(BaseTest):
+class TestExecutionRun(BaseTest):
 
     def setUp(self):
         P.get_parameters()
@@ -72,7 +72,7 @@ class TestexecutionRun(BaseTest):
         self.assertEqual(hostname, execution_hostname)
 
 
-class TestexecutionRunLocal(unittest.TestCase):
+class TestExecutionRunLocal(unittest.TestCase):
 
     test_memory_size = 100000000
     base_memory_size = 3000000000
@@ -165,6 +165,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                     memory=self.test_memory_size,
                     outfile=outfile),
                 to_cluster=self.to_cluster,
+                cluster_memory_ulimit=True,                
                 job_memory="{}G".format(
                     0.5 * self.test_memory_size / 10**9))
         else:
@@ -189,6 +190,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                     infile=infile,
                     outfile=outfile),
                 to_cluster=self.to_cluster,
+                cluster_memory_ulimit=True,
                 job_memory="{}G".format(
                     0.5 * self.test_memory_size / 10**9))
         else:
@@ -205,6 +207,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                 memory=self.test_memory_size,
                 outfile=outfile),
             to_cluster=self.to_cluster,
+            cluster_memory_ulimit=True,
             job_memory="{}G".format(
                 (self.base_memory_size + self.test_memory_size) / 10**9))
 
@@ -227,6 +230,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                 memory=self.test_memory_size,
                 outfile=outfile),
             to_cluster=self.to_cluster,
+            cluster_memory_ulimit=True,
             job_memory="unlimited".format())
         self.assertTrue(benchmark_data)
 
@@ -315,12 +319,8 @@ class TestexecutionRunLocal(unittest.TestCase):
         self.assertGreaterEqual(data.wall_t, 0)
         self.assertGreaterEqual(data.user_t, 0)
         self.assertGreaterEqual(data.sys_t, 0)
-        self.assertLess(data.cpu_t, data.total_t)
-        # Not always true? 15.052 vs 15.0
-        # self.assertLess(data.cpu_t, data.wall_t)
-        self.assertLess(data.wall_t, data.total_t)
         self.assertLess(data.start_time, data.end_time)
-        self.assertLess(data.submit_time, data.end_time)
+        self.assertLess(data.submission_time, data.end_time)
         self.assertEqual(data.statement, statement)
 
     def test_single_job_returns_runtime_information(self):
@@ -365,15 +365,15 @@ class TestexecutionRunLocal(unittest.TestCase):
             self.validate_benchmark_data(d, s)
 
 
-class TestexecutionRuncluster(TestexecutionRunLocal):
+class TestExecutionRuncluster(TestExecutionRunLocal):
     to_cluster = True
 
     def setUp(self):
-        TestexecutionRunLocal.setUp(self)
+        TestExecutionRunLocal.setUp(self)
         P.start_session()
 
     def tearDown(self):
-        TestexecutionRunLocal.tearDown(self)
+        TestExecutionRunLocal.tearDown(self)
         P.close_session()
 
     def file_exists(self, filename, hostname=None, expect=False):
