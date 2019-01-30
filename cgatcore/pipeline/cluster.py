@@ -368,7 +368,7 @@ class SlurmCluster(DRMAACluster):
         return spec
 
     def get_resource_usage(self, job_id, retval, hostname):
-        statement = "sacct --noheader -l -P --format={} -j {} ".format(
+        statement = "sacct --noheader --units=K --parseable2 --format={} -j {} ".format(
             ",".join(self.map_drmaa2benchmark_data.values()),
             job_id)
 
@@ -389,7 +389,11 @@ class SlurmCluster(DRMAACluster):
                 # exit code: 0:0
                 return int(v.split(":")[0])
             elif v.endswith("K"):
-                return int(v[:-1]) * 1000
+                return float(v[:-1]) * 1000
+            elif v.endswith("M"):
+                return float(v[:-1]) * 1000000
+            elif v.endswith("G"):
+                return float(v[:-1]) * 1000000000
             try:
                 v = int(v)
             except ValueError:
