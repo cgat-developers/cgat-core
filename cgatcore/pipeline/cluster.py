@@ -216,8 +216,9 @@ class DRMAACluster(object):
                 try:
                     return tpe(v)
                 except ValueError as ex:
-                    raise ValueError("could not convert {} with value '{}' to {}: {}".format(
+                    E.warning("could not convert {} with value '{}' to {}: {}".format(
                         key, v, tpe, ex))
+                    return v
 
         return dict([(key,
                       _convert(key, resource_usage.get(self.map_drmaa2benchmark_data.get(key, key), None), tpe))
@@ -368,7 +369,7 @@ class SlurmCluster(DRMAACluster):
         return spec
 
     def get_resource_usage(self, job_id, retval, hostname):
-        statement = "sacct --noheader --units=K --parseable2 --format={} -j {} ".format(
+        statement = "sacct --noheader --units=K --parsable2 --format={} -j {} ".format(
             ",".join(self.map_drmaa2benchmark_data.values()),
             job_id)
 
