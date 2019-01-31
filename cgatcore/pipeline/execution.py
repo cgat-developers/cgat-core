@@ -19,6 +19,7 @@ import pickle
 import re
 import json
 import stat
+import socket
 import logging
 import subprocess
 import sys
@@ -32,10 +33,7 @@ import cgatcore.iotools as iotools
 from cgatcore.pipeline.utils import get_caller_locals, get_caller, get_calling_function
 from cgatcore.pipeline.files import get_temp_filename, get_temp_dir
 from cgatcore.pipeline.parameters import substitute_parameters, get_params
-from cgatcore.pipeline.cluster import setup_drmaa_job_template, \
-    get_drmaa_job_stdout_stderr, \
-    set_drmaa_job_paths
-
+from cgatcore.pipeline.cluster import get_queue_manager, JobInfo
 
 # talking to a cluster
 try:
@@ -50,6 +48,45 @@ GLOBAL_SESSION = None
 # Timeouts for event loop
 GEVENT_TIMEOUT_STARTUP = 5
 GEVENT_TIMEOUT_WAIT = 1
+
+
+# dictionary mapping job metrics to data type
+DATA2TYPE = dict([
+    ("task", str),
+    ("statement", str),
+    ("hostname", str),
+    ("job_id", str),
+    ("engine", str),
+    ("submission_time", float),
+    ("start_time", float),
+    ("end_time", float),
+    ("slots", float),
+    ("exit_status", float),
+    ("total_t", float),
+    ("cpu_t", float),
+    ("wall_t", float),
+    ("user_t", float),
+    ("sys_t", float),
+    ("child_user_t", float),
+    ("child_sys_t", float),
+    ("shared_data", float),
+    ("io_input", float),
+    ("io_output", float),
+    ("average_memory_total", float),
+    ("percent_cpu", float),
+    ("average_rss", float),
+    ("max_rss", float),
+    ("max_vmem", float),
+    ("minor_page_faults", float),
+    ("swapped", float),
+    ("context_switches_involuntarily", float),
+    ("context_switches_voluntarily", float),
+    ("average_uss", float),
+    ("signal", str),
+    ("socket_received", float),
+    ("socket_sent", float),
+    ("major_page_faults", float),
+    ("unshared_data", float)])
 
 
 def get_logger():
@@ -338,85 +375,6 @@ def join_statements(statements, infile, outfile=None):
     return last_file, result, "rm -f %s*" % prefix
 
 
-BENCHMARK_DATA2TYPE = [
-    ("task", str),
-    ("statement", str),
-    ("hostname", str),
-    ("job_id", str),
-    ("engine", str),
-    ("submit_time", float),
-    ("start_time", float),
-    ("end_time", float),
-    ("slots", float),
-    ("exit_status", float),
-    ("total_t", float),
-    ("cpu_t", float),
-    ("wall_t", float),
-    ("user_t", float),
-    ("sys_t", float),
-    ("child_user_t", float),
-    ("child_sys_t", float),
-    ("shared_data", float),
-    ("io_input", float),
-    ("io_output", float),
-    ("average_memory_total", float),
-    ("percent_cpu", float),
-    ("average_rss", float),
-    ("max_rss", float),
-    ("max_vmem", float),
-    ("minor_page_faults", float),
-    ("swapped", float),
-    ("context_switches_involuntarily", float),
-    ("context_switches_voluntarily", float),
-    ("average_uss", float),
-    ("signal", float),
-    ("socket_received", float),
-    ("socket_sent", float),
-    ("major_page_faults", float),
-    ("unshared_data", float)]
-
-
-MAP_DRMAA2BENCHMARK_DATA = {
-    "task": "task",
-    "statement": "statement",
-    "hostname": "hostname",
-    "job_id": "job_id",
-    "engine": "engine",
-    "submit_time": "submit_time",
-    "start_time": "start_time",
-    "end_time": "end_time",
-    "slots": "slots",
-    "exit_status": "exit_status",
-    "total_t": "total_t",
-    "wall_t": "ru_wallclock",
-    "cpu_t": "cpu",
-    "user_t": "ru_utime",
-    "sys_t": "ru_stime",
-    # "child_user_t":
-    # "child_sys_t",
-    "shared_data": "ru_ixrss",
-    "io_input": "ru_inblock",
-    "io_output": "ru_oublock",
-    # SGE this is integral memory usage (memory * time)
-    "average_memory_total": "mem",
-    # needs to be set manually as user + system times divided by the total running time
-    "percent_cpu": "percent_cpu",
-    # SGE this is integral memory usage
-    "average_rss": "mem",
-    "max_rss": "ru_maxrss",
-    "max_vmem": "maxvmem",
-    "minor_page_faults": "ru_minflt",
-    "swapped": "ru_nswap",
-    "context_switches_involuntarily": "ru_nvcsw",
-    "context_switches_voluntarily": "ru_nivcsw",
-    "average_uss": "ru_isrss",
-    "signal": "signal",
-    "socket_received": "ru_msgrcv",
-    "socket_sent": "ru_msgsnd",
-    "major_page_faults": "ru_majflt",
-    "unshared_data": "ru_idrss"}
-
-
 def will_run_on_cluster(options):
     run_on_cluster = options.get("to_cluster", True) and \
         not options.get("without_cluster", False) and \
@@ -430,9 +388,8 @@ class Executor(object):
     def __init__(self, **kwargs):
 
         self.logger = get_logger()
-
+        self.queue_manager = None
         self.run_on_cluster = will_run_on_cluster(kwargs)
-
         self.job_threads = kwargs.get("job_threads", 1)
 
         if "job_memory" in kwargs and "job_total_memory" in kwargs:
@@ -641,7 +598,7 @@ class Executor(object):
             tmpfile.write("\ntrap clean_all EXIT\n\n")
 
             if self.job_memory not in("unlimited", "etc") and \
-               get_params()["cluster_memory_ulimit"]:
+               self.options.get("cluster_memory_ulimit", False):
                 # restrict virtual memory
                 # Note that there are resources in SGE which could do this directly
                 # such as v_hmem.
@@ -703,99 +660,44 @@ class Executor(object):
         return statement, job_path
 
     def collect_benchmark_data(self,
-                               stdout,
                                statements,
-                               start_time,
-                               end_time,
-                               time_data_file=None,
-                               resource_usage=None):
-        """collect benchmark data from a job's stdout.
+                               resource_usage):
+        """collect benchmark data from a job's stdout and any resource usage
+        information that might be present.
 
         If time_data is given, read output from time command.
         """
 
-        def parse_time(t):
-            minutes, seconds = re.search(r"(\d+)m(\S*)s", t).groups()
-            return int(minutes) * 60 + float(seconds)
-
         benchmark_data = []
 
-        BenchmarkData = collections.namedtuple(
-            "BenchmarkData", ([x[0] for x in BENCHMARK_DATA2TYPE]))
+        # build resource usage data structure - part native, part
+        # mapped to common fields
+        for jobinfo, statement in zip(resource_usage, statements):
 
-        logger = get_logger()
+            # add some common fields
+            data = {"task": self.task_name,
+                    "engine": self.__class__.__name__,
+                    "statement": statement,
+                    "job_id": jobinfo.jobId,
+                    "slots": self.job_threads}
 
-        # todo: this is obsolete, instead rely on time_data_file
-        if len(stdout) < 4 or not stdout[-4].startswith("benchmark"):
-            logger.warn("could not retrieve performance metrics "
-                        "from stdout: {}".format(stdout))
-            hostname = "unknown"
-        else:
-            hostname = stdout[-3][:-1]
-            user_t, sys_t = [parse_time(t) for t in stdout[-2].split()]
-            child_user_t, child_sys_t = [parse_time(t) for t in stdout[-1].split()]
-            cpu_t = user_t + sys_t + child_user_t + child_sys_t
+            # native specs
+            data.update(jobinfo.resourceUsage)
 
-        if resource_usage is None:
-            # if no time_data file is present, default values will be 0
-            data = collections.defaultdict(int)
+            # translate specs
+            if self.queue_manager:
+                data.update(self.queue_manager.map_resource_usage(data, DATA2TYPE))
 
-            if time_data_file is not None and os.path.exists(time_data_file):
-                with open(time_data_file) as inf:
-                    data = [x[:-1].split("\t") for x in inf if x]
-                    # remove any non-key-value pairs
-                    data = dict([x for x in data if len(x) == 2])
-                # remove % sign
-                data.update(
-                    {"percent_cpu": int(re.sub("%", "", data.get("percent_cpu", 0))),
-                     "cpu_t": float(data["user_t"]) + float(data["sys_t"])})
+            data.update({
+                # avoid division by 0 error
+                "percent_cpu": (
+                    100.0 * float(data.get("cpu_t", 0)) /
+                    max(1.0, float(data.get("end_time", 0)) - float(data.get("start_time", 0))) /
+                    self.job_threads),
+                "total_t": float(data.get("end_time", 0)) - float(data.get("start_time", 0))
+            })
 
-            data.update(
-                {"task": self.task_name,
-                 "statement": ";".join(statements),
-                 "hostname": hostname,
-                 "engine": self.__class__.__name__,
-                 "start_time": start_time,
-                 "end_time": end_time,
-                 "submit_time": start_time,
-                 "total_t": end_time - start_time,
-                 "slots": self.job_threads})
-
-            # a local job
-            benchmark_data.append(BenchmarkData._make((
-                (data.get(x, "0") for x in BenchmarkData._fields))))
-
-        elif resource_usage is not None:
-            # save data from DRMAA return values
-            for jobinfo, statement in zip(resource_usage, statements):
-                # augment return values with additional data
-                data = jobinfo.resourceUsage
-                data.update(
-                    {"task": self.task_name,
-                     "hostname": hostname,
-                     "statement": statement,
-                     "job_id": jobinfo.jobId,
-                     "engine": self.__class__.__name__,
-                     "slots": self.job_threads,
-                     "total_t": end_time - start_time,
-                     # avoid division by 0 error
-                     "percent_cpu": (
-                         100.0 * float(data.get("cpu", 0)) /
-                         max(1.0, float(data.get("end_time", 0)) - float(data.get("start_time", 0))) /
-                         self.job_threads)})
-                # map fields to BenchmarkData fields
-                benchmark_data.append(
-                    BenchmarkData._make(
-                        [data.get(MAP_DRMAA2BENCHMARK_DATA.get(key, None), 0)
-                         for key in BenchmarkData._fields]))
-
-        # type conversion
-        data2type = dict(BENCHMARK_DATA2TYPE)
-        for x, d in enumerate(benchmark_data):
-            benchmark_data[x] = BenchmarkData._make(
-                [data2type[key](val) for key, val in zip(
-                    BenchmarkData._fields, d)])
-
+            benchmark_data.append(data)
         return benchmark_data
 
 
@@ -814,6 +716,11 @@ class GridExecutor(Executor):
         pid = os.getpid()
         self.logger.debug('task: pid={}, grid-session={}, work_dir={}'.format(
             pid, str(self.session), self.work_dir))
+
+        self.queue_manager = get_queue_manager(
+            kwargs.get("cluster_queue_manager"),
+            self.session,
+            ignore_errors=self.ignore_errors)
 
     def __enter__(self):
         # for cluster execution, the working directory can not be
@@ -844,71 +751,11 @@ class GridExecutor(Executor):
 
             shutil.rmtree(self.work_dir)
 
-    def collect_single_job_from_cluster(self,
-                                        job_id,
-                                        statement,
-                                        stdout_path, stderr_path,
-                                        job_path):
-        '''runs a single job on the cluster.'''
-        try:
-            retval = self.session.wait(job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-        except Exception as msg:
-            # ignore message 24, indicates jobs that have been qdel'ed
-            if not str(msg).startswith("code 24"):
-                raise
-            retval = None
-
-        stdout, stderr = get_drmaa_job_stdout_stderr(stdout_path, stderr_path)
-        resource_usage = None
-
-        if retval is not None and not self.ignore_errors:
-            if retval.exitStatus != 0:
-                raise OSError(
-                    "---------------------------------------\n"
-                    "Job {} exited with error code {}: \n"
-                    "The stderr was: \n{}\n{}\n"
-                    "-----------------------------------------".format(
-                        job_id, retval.exitStatus, "".join(stderr), statement))
-
-            elif retval.hasSignal:
-                raise OSError(
-                    "---------------------------------------\n"
-                    "Job {} was terminated by signal {}: \n"
-                    "The stderr was: \n{}\n{}\n"
-                    "-----------------------------------------".format(
-                        job_id, retval.terminatedSignal, "".join(stderr), statement))
-
-            elif retval.hasExited is False or retval.wasAborted is True:
-                raise OSError(
-                    "-------------------------------------------------\n"
-                    "cluster job was aborted ({}) and/or failed to exit ({}) "
-                    "while running the following statement:\n"
-                    "\n{}\n"
-                    "(Job may have been cancelled by the user or the scheduler)\n"
-                    "----------------------------------------------------------\n"
-                    .format(retval.wasAborted, not retval.hasExited, statement))
-
-            try:
-                resource_usage = [retval]
-            except AttributeError:
-                pass
-
-        try:
-            os.unlink(job_path)
-        except OSError:
-            self.logger.warn(
-                ("temporary job file %s not present for "
-                 "clean-up - ignored") % job_path)
-
-        return stdout, stderr, resource_usage
-
     def run(self, statement_list):
 
         # submit statements to cluster individually.
         benchmark_data = []
         jt = self.setup_job(self.options["cluster"])
-
-        self.logger.debug("job-options: %s" % jt.nativeSpecification)
 
         start_time = time.time()
         job_ids, filenames = [], []
@@ -917,7 +764,7 @@ class GridExecutor(Executor):
 
             full_statement, job_path = self.build_job_script(statement)
 
-            stdout_path, stderr_path = set_drmaa_job_paths(jt, job_path)
+            stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(jt, job_path)
 
             job_id = self.session.runJob(jt)
             job_ids.append(job_id)
@@ -936,7 +783,7 @@ class GridExecutor(Executor):
                                             filenames):
             job_path, stdout_path, stderr_path = paths
             # TODO: collect timings from individual jobs
-            stdout, stderr, resource_usage = self.collect_single_job_from_cluster(
+            stdout, stderr, resource_usage = self.queue_manager.collect_single_job_from_cluster(
                 job_id,
                 statement,
                 stdout_path,
@@ -946,23 +793,23 @@ class GridExecutor(Executor):
             # end time is meaningless
             end_time = time.time()
             benchmark_data.extend(
-                self.collect_benchmark_data(stdout,
-                                            [statement],
-                                            start_time,
-                                            end_time,
-                                            resource_usage=resource_usage))
+                self.collect_benchmark_data([statement],
+                                            resource_usage))
 
         self.session.deleteJobTemplate(jt)
         return benchmark_data
 
     def setup_job(self, options):
 
-        return setup_drmaa_job_template(self.session,
-                                        job_name=self.job_name,
-                                        job_memory=self.job_memory,
-                                        job_threads=self.job_threads,
-                                        working_directory=self.work_dir,
-                                        **options)
+        jt = self.queue_manager.setup_drmaa_job_template(
+            self.session,
+            job_name=self.job_name,
+            job_memory=self.job_memory,
+            job_threads=self.job_threads,
+            working_directory=self.work_dir,
+            **options)
+        self.logger.debug("job-options: %s" % jt.nativeSpecification)
+        return jt
 
     def wait_for_job_completion(self, job_ids):
 
@@ -997,21 +844,15 @@ class GridArrayExecutor(GridExecutor):
         full_statement, job_path = self.build_job_script(master_statement)
 
         jt = self.setup_job(self.options["cluster"])
+        stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(jt, job_path)
 
-        stdout_path, stderr_path = set_drmaa_job_paths(jt, job_path)
-
-        start_time = time.time()
         job_id, stdout, stderr, resource_usage = self.run_array_job(
             self.session, jt, stdout_path, stderr_path,
             full_statement, start=0, end=len(statement_list),
             increment=1)
-        end_time = time.time()
 
         benchmark_data.extend(
-            self.collect_benchmark_data(stdout,
-                                        statement_list,
-                                        start_time,
-                                        end_time,
+            self.collect_benchmark_data(statement_list,
                                         resource_usage=resource_usage))
         try:
             os.unlink(jobsfile)
@@ -1045,14 +886,40 @@ class GridArrayExecutor(GridExecutor):
         resource_usage = []
         for job in job_ids:
             r = session.wait(job, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+            r.resourceUsage["hostname"] = "unknown"
             resource_usage.append(r)
 
-        stdout, stderr = get_drmaa_job_stdout_stderr(stdout_path, stderr_path)
+        stdout, stderr = self.queue_manager.get_drmaa_job_stdout_stderr(
+            stdout_path, stderr_path)
         job_id = job_ids[0]
         return job_id, stdout, stderr, resource_usage
 
 
 class LocalExecutor(Executor):
+
+    def collect_metric_data(self, process, start_time, end_time, time_data_file):
+        data = {"start_time": start_time,
+                "end_time": end_time,
+                "submission_time": start_time,
+                "hostname": socket.gethostname(),
+                "total_t": end_time - start_time}
+
+        if time_data_file is not None and os.path.exists(time_data_file):
+            with open(time_data_file) as inf:
+                pairs = [x[:-1].split("\t") for x in inf if x]
+
+            def _convert(key, v):
+                return iotools.str2val(v)
+
+            # remove any non-key-value pairs
+            data.update(dict([(x[0], _convert(x[0], x[1])) for x in pairs if len(x) == 2]))
+
+            # remove % sign
+            data.update(
+                {"percent_cpu": int(re.sub("%", "", data.get("percent_cpu", 0))),
+                 "cpu_t": float(data["user_t"]) + float(data["sys_t"])})
+
+        return JobInfo(jobId=process.pid, resourceUsage=data)
 
     def run(self, statement_list):
 
@@ -1116,7 +983,6 @@ class LocalExecutor(Executor):
                     continue
 
                 break
-
             stdout = stdout.decode("utf-8")
             stderr = stderr.decode("utf-8")
 
@@ -1128,13 +994,15 @@ class LocalExecutor(Executor):
                     "-----------------------------------------" %
                     (-process.returncode, stderr, statement))
 
+            resource_usage = self.collect_metric_data(process,
+                                                      start_time,
+                                                      end_time,
+                                                      time_data_file=job_path + ".times")
+
             benchmark_data.extend(
                 self.collect_benchmark_data(
-                    stdout.splitlines(True),
                     [statement],
-                    start_time,
-                    end_time,
-                    time_data_file=job_path + ".times"))
+                    resource_usage=[resource_usage]))
 
             try:
                 os.unlink(job_path)
@@ -1161,7 +1029,6 @@ def make_runner(**kwargs):
     # * command line option without_cluster is set to False
     # * an SGE session is present
     run_on_cluster = will_run_on_cluster(kwargs)
-
     if run_on_cluster:
         if run_as_array:
             runner = GridArrayExecutor(**kwargs)
@@ -1277,7 +1144,6 @@ def run(statement, **kwargs):
     # combine options using priority
     options = dict(list(get_params().items()))
     caller_options = get_caller_locals()
-
     options.update(list(caller_options.items()))
 
     if "self" in options:
@@ -1335,15 +1201,15 @@ def run(statement, **kwargs):
 
     # execute statement list
     runner = make_runner(**options)
-
     with runner as r:
         benchmark_data = r.run(statement_list)
 
     # log benchmark_data
     for data in benchmark_data:
-        logger.info(json.dumps(data._asdict()))
+        logger.info(json.dumps(data))
 
-    return benchmark_data
+    BenchmarkData = collections.namedtuple('BenchmarkData', sorted(benchmark_data[0]))
+    return [BenchmarkData(**d) for d in benchmark_data]
 
 
 def submit(module,
