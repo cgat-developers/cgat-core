@@ -495,7 +495,7 @@ class PBSProCluster(DRMAACluster):
         # default values. Likely means setting for longest job with
         # trade-off of longer waiting times for resources to be
         # available for other jobs.
-        spec.append(kwargs["options"], "")
+        spec.append(kwargs.get("options", ""))
 
         if job_threads > 1:
             # TO DO 'select=1' determines de number of nodes. Should
@@ -514,7 +514,8 @@ class PBSProCluster(DRMAACluster):
             spec.append("-q {}".format(kwargs["queue"]))
 
     def update_template(self, jt):
-        # As for torque, there is no equivalent to sge -V option for pbs-drmaa:
+        # The directive #PBS -V exists and works in a qsub script but errors here
+        # so using the following as for torque:
         jt.jobEnvironment = os.environ
         jt.jobEnvironment.update(
             {'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
