@@ -23,6 +23,17 @@ cgatcore is currently installed using the bioconda channel and the recipe can be
 
 .. _getting_started-Automated:
 
+
+Pip installation
+----------------
+We recommend installation through conda because it manages the dependancies. However, cgatcore is 
+generally lightweight and can be installed easily using pip package manager. However, you may also have to
+install other dependancies manually::
+
+	pip install cgatcore
+
+.. _getting_started-pip:
+
 Automated installation
 ----------------------
 
