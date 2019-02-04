@@ -37,11 +37,10 @@ install other dependancies manually::
 Automated installation
 ----------------------
 
-The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) please follow these instructions on the gihub `README <https://github.com/cgat-developers/cgat-apps>`_ page.
+The following sections describe how to install the cgatcore framework. 
 
-The preferred method to install the cgatcore is using the installation script,
-which uses `conda <https://conda.io/docs/>`_.
+The preferred method to install the cgatcore is using conda but we have also created a bash installation script,
+which uses `conda <https://conda.io/docs/>`_ under the hood.
 
 Here are the steps::
 
@@ -64,7 +63,7 @@ Here are the steps::
    conda activate base
    conda activate cgat-c
 
-The installation script will put everything under the specified location. It needs 1.2 GB of disk space (although this will be reduced in v0.4.0).
+The installation script will put everything under the specified location.
 The aim of the script is to provide a portable installation that does not interfere with the existing
 software. As a result, you will have a conda environment working with the cgat-core which can be enabled
 on demand according to your needs.
