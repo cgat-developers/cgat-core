@@ -37,34 +37,7 @@ Installation
 The following sections describe how to install the cgatcore framework. For instructions on how to install
 the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions `here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html>`_ .
 
-The preferred method to install the cgatcore is using the installation script,
-which uses `conda <https://conda.io/docs/>`_.
-
-Here are the steps::
-
-   # download installation script:
-   curl -O https://raw.githubusercontent.com/cgat-developers/cgat-core/master/install-CGAT-tools.sh
-
-   # see help:
-   bash install-CGAT-tools.sh
-
-   # install the development version (recommended, no production version yet):
-   bash install-CGAT-tools.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
-
-   # the code is downloaded in zip format by default. If you want to get a git clone, use:
-   --git # for an HTTPS clone
-   --git-ssh # for a SSH clone (you need to be a cgat-developer contributor on GitHub to do this)
-
-   # enable the conda environment as requested by the installation script
-   # NB: you probably want to automate this by adding the instructions below to your .bashrc
-   source </full/path/to/folder/without/trailing/slash>/conda-install/etc/profile.d/conda.sh
-   conda activate base
-   conda activate cgat-c
-
-The installation script will put everything under the specified location. It needs 1.2 GB of disk space.
-The aim of the script is to provide a portable installation that does not interfere with the existing
-software. As a result, you will have a conda environment working with the CGAT-core which can be enabled
-on demand according to your needs.
+The preferred method to install the cgatcore is using conda, by following the instructions on _`read the docs <https://cgat-core.readthedocs.io/en/latest/getting_started/Installation.html`_. However, there are a few other methods to install cgatcore, including pip and our own bash script installer.
 
 Linux vs OS X
 =============
@@ -74,3 +47,5 @@ Linux vs OS X
 * ssh.connect times out in OSX. Exception `caught <https://github.com/cgat-developers/cgat-core/commit/d4d9b9fb75525873b291028a622aac70c44a5065>`_
 
 * Linux uses /proc/meminfo and OS X uses `vm_stat <https://github.com/cgat-developers/cgat-core/compare/bb1c75df8f42...575f0699b326>`_
+
+* Currently our testing framework is broken for OSX, however we are working to fix this. However, we dont envisage any issues running the code at present.
