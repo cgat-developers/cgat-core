@@ -6,8 +6,9 @@ Running a pipeline
 ==================
 
 
-This section provides a tutorial-like introduction of how to run CGAT workflows/pipelines. As an example of how we use cgatcore to 
-build computational pipelines, please refer to the code detailed in our `cgat-flow repository <https://github.com/cgat-developers/cgat-flow>`_.
+This section provides a tutorial-like introduction of how to run CGAT pipelines. As an example of how we build simple
+computational pipelines please refer to `cgat-showcase <https://github.com/cgat-developers/cgat-showcase>`_. As an example of how we use cgatcore to 
+build more complex computational pipelines, please refer to the code detailed in our `cgat-flow repository <https://github.com/cgat-developers/cgat-flow>`_.
 
 .. _getting_started-Intro:
 
@@ -16,7 +17,7 @@ Introduction
 
 A pipeline takes input data and performs a series of automated steps on it to produce some output data.
 
-Each pipeline is usually coupled with a report (usually a MultiQC or Rmarkdown report) document to
+Each pipeline is usually coupled with a report (usually MultiQC or Rmarkdown) document to
 summarize and visualize the results.
 
 It really helps if you are familiar with:
@@ -24,7 +25,7 @@ It really helps if you are familiar with:
    * the unix command line to run and debug the pipeline
    * python_ in order to understand what happens in the pipeline
    * ruffus_ in order to understand the pipeline code
-   * sge_ in order to monitor your jobs
+   * sge_ (or any other workflow manager) in order to monitor your jobs
    * git_ in order to up-to-date code
 
 .. _getting_started-setting-up-pipeline:
@@ -34,9 +35,11 @@ Setting up a pipeline
 
 **Step 1**: Install cgat-showcase (our toy example of a cgatcore pipeline):
 
-Check that your computing environment is appropriate and follow installation instructions (see `Installation instructions <https://cgat-showcase.readthedocs.io/en/latest/getting_started/Installation.html>`_).
+Check that your computing environment is appropriate and follow cgat-showcase installation instructions (see `Installation instructions <https://cgat-showcase.readthedocs.io/en/latest/getting_started/Installation.html>`_).
 
-**Step2**: Clone the repository::
+**Step2**: Clone the repository
+
+To inspect the code and the layout clone the repository::
 
    git clone https://github.com/cgat-developers/cgat-showcase.git
 
@@ -61,8 +64,21 @@ and enter it. For example::
 This is where the pipeline will be executed and files will be generated in this
 directory.
 
-**Step 4**: Our pipelines are written to be ran with minimal hard coded
-options. Therefore, to run a pipeline an initial configuration file needs to be
+However, the cgat-showcase example comes with test data and this can be downloaded by running::
+
+	wget https://www.cgat.org/downloads/public/showcase/showcase_test_data.tar.gz
+	tar -zxvf showcase_test_data.tar.gz
+	cd showcase_test_data
+
+**Step 4**: Configure the cluster
+
+Running pipelines on a cluster required the drmaa API settings to be configures and passed
+to cgatcore. The default cluster engine is SGE, however we also support SLURM and Torque/PBSpro.
+In order to execute using a non SGE cluster you will need to setup a `.cgat.yml` file in your
+home directory and specify parameters according to the `cluster configuration documentation <https://cgat-core.readthedocs.io/en/latest/getting_started/Cluster_config.html>`_.
+
+**Step 5**: Our pipelines are written with minimal hard coded options. Therefore,
+to run a pipeline an initial configuration file needs to be
 generated. A configuration file with all the default values can be obtained by
 running::
 
@@ -74,20 +90,19 @@ For example, if you wanted to run the transdiffexprs pipeline you would run::
 
 
 This will create a new :file:`pipeline.yml` file. **YOU MUST EDIT THIS
-FILE**. The default values are likely to use the wrong genome or
-point to non-existing locations of indices and databases. The
+FILE**. The default values are unlikely to be configured correctly for your data. The
 configuration file should be well documented and the format is
 simple. The documenation for the `ConfigParser
 <http://docs.python.org/library/configparser.html>`_ python module
 contains the full specification.
 
-**Step 5**: Add the input files. The required input is specific for each
+**Step 6**: Add the input files. The required input is specific for each
 pipeline in the documentation string at the; read the pipeline documentation to find out exactly which
 files are needed and where they should be put. Commonly, a pipeline
 works from input files linked into the working directory and
 named following pipeline specific conventions.
 
-**Step 6**: You can check if all the external dependencies to tools and
+**Step 7**: You can check if all the external dependencies to tools and
 R packages are satisfied by running::
 
       cgatshowcase <name> check
@@ -101,6 +116,10 @@ pipelines are controlled by a single python script called
 :file:`pipeline_<name>.py` that lives in the source directory. Command line usage information is available by running::
 
    cgatshowcase <name> --help
+   
+Alternatively, you can call the python script directly::
+
+	python /path/to/code/cgatshowcase/pipeline_<name>.py --help
 
 The basic syntax for ``pipeline_<name>.py`` is::
 
@@ -239,17 +258,9 @@ Troubleshooting
 
 Many things can go wrong while running the pipeline. Look out for
 
-   * bad input format. The pipeline does not perform sanity checks on
-       the input format.  If the input is bad, you might see wrong or
-       missing results or an error message.
-   * pipeline disruptions. Problems with the cluster, the file system
-       or the controlling terminal might all cause the pipeline to
-       abort.
-   * bugs. The pipeline makes many implicit assumptions about the
-       input files and the programs it runs. If program versions
-       change or inputs change, the pipeline might not be able to deal
-       with it.  The result will be wrong or missing results or an
-       error message.
+   * bad input format. The pipeline does not perform sanity checks on the input format.  If the input is bad, you might see wrong or missing results or an error message.
+   * pipeline disruptions. Problems with the cluster, the file system or the controlling terminal might all cause the pipeline to abort.
+   * bugs. The pipeline makes many implicit assumptions about the input files and the programs it runs. If program versions change or inputs change, the pipeline might not be able to deal with it.  The result will be wrong or missing results or an error message.
 
 If the pipeline aborts, locate the step that caused the error by
 reading the logfiles and the error messages on stderr
@@ -279,7 +290,7 @@ One of the most common errors when runnig the pipeline is::
     NameError: name 'drmaa' is not defined
 
 This error occurrs because you are not connected to the cluster. Alternatively
-you can run the pipleine in local mode by adding `--no-cluster` as a command line option.
+you can run the pipleine in local mode by adding `- -no-cluster` as a command line option.
 
 Updating to the latest code version
 -----------------------------------

@@ -4,6 +4,12 @@
 CGAT-core documentation!
 ========================
 
+.. image:: https://img.shields.io/github/license/cgat-developers/cgat-core.svg
+    :alt: Licence
+
+.. image:: https://img.shields.io/conda/v/bioconda/cgatcore.svg
+    :alt: Conda
+
 .. image:: https://readthedocs.org/projects/cgat-core/badge/?version=latest
     :target: http://cgat-core.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
