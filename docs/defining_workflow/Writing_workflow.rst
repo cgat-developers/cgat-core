@@ -15,23 +15,23 @@ The explicit aim of CGAT-core is to allow users to quickly and easily build thei
 When building pipelines it is often useful to keep in mind the following philosophy:
 
 Flexibility
-    There are always new tools and insights that could be incorporated into a pipeline. Ultimately, a pipeline should be flexible and the code should not constraining you implimenting new features.
+    There are always new tools and insights that could be incorporated into a pipeline. Ultimately, a pipeline should be flexible and the code should not constrain you when implimenting new features.
 Scriptability
-    The pipeline should be scriptable, i.e, the whole pipeline can be run within another pipeline. Similarly, parts of a pipeline can be duplicated to process several data streams in parallel. This is a crucial feature in genome studies as a single analysis will not permit making inferences by itself. For example, consider you find in ChIP-Seq data from a particular transcription factor that it binds frequently in introns. You will need to run the same analysis on data from other transcription factors in order to assess if intronic binding is remarkable. When CGAT write a pipeline we usually write a command line script and then run this script as a command line statement in the pipeline.
+    The pipeline should be scriptable, i.e, the whole pipeline can be run within another pipeline. Similarly, parts of a pipeline can be duplicated to process several data streams in parallel. This is a crucial feature in genome studies as a single analysis will not permit making inferences by itself. When we write a pipeline we usually attempt to write a command line script (and include it in the CGAT-apps repository) and then run this script as a command line statement in the pipeline.
 Reproducibility
     The pipeline is fully automated. The same inputs and configuration will produce the same outputs.
 Reusability
-    The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (pipeline.ini).
+    The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (pipeline.yml).
 Archivability
-    Once finished, the whole project should be able to archived without too many major dependencies on external data. This should be a simple process and hence all project data should be self-contained. It should not involve going through various directories or databases to figure out which files and tables belong to a project or a project depends on.
+    Once finished, the whole project should be able to be archived without too many major dependencies on external data. This should be a simple process and hence all project data should be self-contained. It should not involve going through various directories or databases to figure out which files and tables belong to a project or a project depends on.
 
 .. _defining_workflow-building:
 
 Building a pipeline
 -------------------
 
-The best way to build a pipeline is to start from an example. In `cgat-showcase <https://cgat-showcase.readthedocs.io/en/latest/index.html>`_ we have two pipelines that
-show users how simple and complex workflows can be generated to aid computational analysis. 
+The best way to build a pipeline is to start from an example. In `cgat-showcase <https://cgat-showcase.readthedocs.io/en/latest/index.html>`_ we have a toy example of an RNA-seq 
+analysis pipeline that aims to show users how simple workflows can be generated with minimal code. `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ demonstrates a set of complex workflows. 
 
 For a step by step tutorial on how to run the pipelines please refer to our :ref:`getting_started-Tutorial`.
 
@@ -40,9 +40,10 @@ For help on how to construct pipelines from scratch please continue reading for 
 In an empty directory you will need to make a new directory and then a python file
 with the same name. For example::
 
-   mkdir test && touch test
+   mkdir test && touch pipeline_test.py
 
-All pipelines require a yml configuration file contained within the test/ directory::
+All pipelines require a yml configuration file that will allow you to add configurable values to modify the behaviour of your code.
+This is placed within the test/ directory::
 
    touch test/pipeline.yml
 
@@ -58,7 +59,7 @@ Therefore, if you wish to create a module file, we usually save this file in the
    import ModuleTest
 
 This section describes how pipelines can be constructed using the
-:mod:`pipeline` module in cgat-core. The pipeline.py module contains a variety of
+:mod:`pipeline` module in cgat-core. The `pipeline <https://github.com/cgat-developers/cgat-core/tree/master/cgatcore/pipeline>`_ module contains a variety of
 useful functions for pipeline construction.
 
 .. _defining_workflow-p-input:
@@ -66,7 +67,7 @@ useful functions for pipeline construction.
 pipeline input
 --------------
 
-pipelines are executed within a dedicated working
+Pipelines are executed within a dedicated working
 directory. They usually require the following files within this
 directory:
 
@@ -117,13 +118,23 @@ Import statements
 
 In order to run our pipelines you will need to import the cgatcore python
 modules into your pipeline. For every CGAT pipeline we recommend importing the
-basic modules as follows.
+basic modules as follows. Then any additional modules can be imported as required.
 
 .. code-block:: python
 
    import cgatcore.experiment as E
    from cgatcore import pipeline as P
    import cgatcore.iotools as iotools
+
+Selecting the appropriate Ruffus decorator
+------------------------------------------
+
+Before starting to write a pipeline it is always best to map out
+on a whiteboard the the steps and flow of your potential pipeline. This will allow you
+to identify the input and outputs of each task. Once you have assessed this then the next step is
+to identify which Ruffus decorator you require. Documentation on each decorator can be found in the
+`ruffus documentation <http://www.ruffus.org.uk/decorators/decorators.html>`_
+
 
 
 Running commands within tasks
@@ -132,7 +143,7 @@ Running commands within tasks
 To run a command line program within a pipeline task, build a
 statement and call the :meth:`pipeline.run` method::
 
-   @files( '*.unsorted', suffix('.unsorted'), '.sorted')
+   @transform( '*.unsorted', suffix('.unsorted'), '.sorted')
    def sortFile( infile, outfile ):
 
        statement = '''sort %(infile)s > %(outfile)s'''
@@ -147,7 +158,7 @@ are substituted with the values of the variables ``infile`` and
 
 The same mechanism also permits setting configuration parameters, for example::
 
-   @files( '*.unsorted', suffix('.unsorted'), '.sorted')
+   @transform( '*.unsorted', suffix('.unsorted'), '.sorted')
    def sortFile( infile, outfile ):
 
        statement = '''sort -t %(tmpdir)s %(infile)s > %(outfile)s'''
@@ -164,7 +175,7 @@ command is used to check for an error. Thus, if an upstream command
 fails, it will go unnoticed.  To detect these errors, insert
 ``&&`` between commands. For example::
 
-   @files( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted)
+   @transform( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted)
    def sortFile( infile, outfile ):
 
        statement = '''gunzip %(infile)s %(infile)s.tmp &&
@@ -175,7 +186,7 @@ fails, it will go unnoticed.  To detect these errors, insert
 Of course, the statement aboved could be executed more efficiently
 using pipes::
 
-   @files( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted.gz')
+   @transform( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted.gz')
    def sortFile( infile, outfile ):
 
        statement = '''gunzip < %(infile)s 
@@ -256,7 +267,7 @@ files will remain after aborted runs to be cleaned up manually.
 
 .. _defining_workflow-databases:
 
-databases
+Databases
 ---------
 
 Loading data into the database
@@ -380,8 +391,10 @@ Here is the order in which the configuration values are read:
 2. Parameters stored in :file:`pipeline.yml` files in different locations.
 3. Variables declared in the ruffus tasks calling ``P.run()``;
    e.g. ``job_memory=32G``
-4. ``cluster_*`` options specified in the command line;
+4. :file:`.cgat.yml` file in the home directory
+5. ``cluster_*`` options specified in the command line;
    e.g. ``python pipeline_example.py --cluster-parallel=dedicated make full``
+
 
 This means that configuration values for the cluster provided as
 command-line options will have the highest priority. Therefore::
@@ -480,3 +493,21 @@ get an task-specific parameter values in a python task, use::
 Thus, task specific are implemented generically using the
 :meth:`pipeline.run` mechanism, but pipeline authors need to
 explicitely code for track specific parameters.
+
+Using different conda environments
+----------------------------------
+
+In addition to running a pipeline using your default conda environment, specifying `job_condaenv="<name of conda environment>"` to the
+P.run() function allows you run the statement using a different conda environment. For example::
+
+    @follows(mkdir("MultiQC_report.dir"))
+    @originate("MultiQC_report.dir/multiqc_report.html")
+    def renderMultiqc(infile):
+    '''build mulitqc report'''
+
+    statement = '''LANG=en_GB.UTF-8 multiqc . -f;
+                   mv multiqc_report.html MultiQC_report.dir/'''
+
+    P.run(statement, job_condaenv="multiqc")
+
+This can be extremely useful when you have python 2 only code but are running in a python 3 environment.
