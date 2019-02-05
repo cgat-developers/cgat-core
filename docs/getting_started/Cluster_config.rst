@@ -31,5 +31,5 @@ The .cgat.yml is placed in your home directory and when a pipeline is executed i
     parallel_environment:  "dedicated"
     
 
-
+ 
 
