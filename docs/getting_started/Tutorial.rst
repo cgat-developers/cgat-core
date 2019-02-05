@@ -9,7 +9,7 @@ Running a pipeline - Tutorial
 Before beginning this tutorial make sure you have the CGAT-core installed correctly,
 please see here (see :ref:`getting_started-Installation`) for installation instructions.
 
-As a tutorial example of how to run a CGAT workflow we will run the cgat-showcase piepline. Therefore,
+As a tutorial example of how to run a CGAT workflow we will run the cgat-showcase pipeline. Therefore,
 you will also need to install the cgat-showcase (see `instructions <https://cgat-showcase.readthedocs.io/en/latest/getting_started/Tutorial.html>`_)
 
 The aim of this pipeline is to perform pseaudoalignment using kallisto. The pipeline can be ran locally or
