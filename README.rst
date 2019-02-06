@@ -4,7 +4,7 @@
 
 ----------------------------------------
 
-![Licence](https://img.shields.io/github/license/cgat-developers/cgat-core.svg?sanitize=true) ![Conda](https://img.shields.io/conda/v/bioconda/cgatcore.svg?sanitize=true)
+<img src="https://img.shields.io/github/license/cgat-developers/cgat-core.svg?sanitize=true"> <img src="https://img.shields.io/conda/v/bioconda/cgatcore.svg?sanitize=true>
 
 .. image:: https://readthedocs.org/projects/cgat-core/badge/?version=latest
     :target: http://cgat-core.readthedocs.io/en/latest/?badge=latest
