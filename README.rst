@@ -17,15 +17,6 @@
 .. image:: https://img.shields.io/travis/cgat-developers/cgat-core.svg
     :alt: Travis
 
-.. image:: https://img.shields.io/twitter/follow/CGAT_Oxford.svg?style=social&logo=twitter&label=Follow
-    :alt: Twitter Followers
-    :target: https://twitter.com/cgat_oxford?lang=en
-
-.. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter
-    :alt: Twitter URL
-    :target: https://twitter.com/cgat_oxford?lang=en
-
-
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis. 
@@ -58,3 +49,4 @@ Linux vs OS X
 * Linux uses /proc/meminfo and OS X uses `vm_stat <https://github.com/cgat-developers/cgat-core/compare/bb1c75df8f42...575f0699b326>`_
 
 * Currently our testing framework is broken for OSX, however we are working to fix this. However, we dont envisage any issues running the code at present.
+
