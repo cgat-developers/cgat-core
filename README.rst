@@ -4,11 +4,7 @@
 
 ----------------------------------------
 
-.. image:: https://img.shields.io/github/license/cgat-developers/cgat-core.svg
-    :alt: Licence
-
-.. image:: https://img.shields.io/conda/v/bioconda/cgatcore.svg
-    :alt: Conda
+![Licence](https://img.shields.io/github/license/cgat-developers/cgat-core.svg "licence") ![Conda](https://img.shields.io/conda/v/bioconda/cgatcore.svg "Conda")
 
 .. image:: https://readthedocs.org/projects/cgat-core/badge/?version=latest
     :target: http://cgat-core.readthedocs.io/en/latest/?badge=latest
@@ -17,6 +13,13 @@
 .. image:: https://img.shields.io/travis/cgat-developers/cgat-core.svg
     :alt: Travis
 
+.. image:: https://img.shields.io/twitter/follow/CGAT_Oxford.svg?style=social&logo=twitter&label=Follow
+    :alt: Twitter Followers
+    :target: https://twitter.com/cgat_oxford?lang=en
+
+.. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter
+    :alt: Twitter URL
+    :target: https://twitter.com/cgat_oxford?lang=en
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis. 
