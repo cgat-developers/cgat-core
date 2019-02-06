@@ -1,5 +1,5 @@
 
-.. image:: https://github.com/cgat-developers/cgat-core/docs/img/CGAT_logo.svg
+.. image:: https://github.com/cgat-developers/cgat-core/blob/master/docs/img/CGAT_logo.svg
    :alt: Conda Logo
 
 ----------------------------------------
