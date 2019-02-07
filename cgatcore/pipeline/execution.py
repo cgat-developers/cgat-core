@@ -571,10 +571,37 @@ class Executor(object):
 
             cluster_tmpdir = get_params()["cluster_tmpdir"]
 
-            if self.run_on_cluster and cluster_tmpdir:
+            # some clusters create temporary directories by default and 
+            # error if a location or env var is passed directly
+            # eg PBSPro, although this may be site specific
+            # PBSPro does not seem to allow writing other than in the form
+            # of eg '/tmp/pbs.job_id'
+            # with an env var such as $TMPDIR this works fine
+            # so set cluster option to cluster_tmpdir = $TMPDIR
+            # this is a temporary workaround
+            # setting 'pbspro' in cluster_queue_manager
+            # changes temp dir creation and cleanup:
+            cluster_queue_manager = get_params()["cluster_queue_manager"]
+
+            # cluster that allows writing tmp dirs and cleanup:
+            cluster_tmp_write = (self.run_on_cluster and
+                                 cluster_tmpdir and
+                                 cluster_queue_manager != 'pbspro')
+
+            # cluster that errors with mkdtemp and cleanup functions:
+            cluster_no_tmp_write = (self.run_on_cluster and
+                                    cluster_tmpdir and
+                                    cluster_queue_manager == 'pbspro')
+
+            if cluster_tmp_write == True:
                 tmpdir = cluster_tmpdir
                 tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
                 tmpfile.write("export TMPDIR\n")
+
+            elif cluster_no_tmp_write == True:
+                tmpdir = cluster_tmpdir
+                tmpfile.write("export TMPDIR\n")
+
             else:
                 tmpdir = get_temp_dir(dir=get_params()["tmpdir"],
                                       clear=True)
@@ -592,8 +619,15 @@ class Executor(object):
             for cleanup_func, cleanup_code in cleanup_funcs:
                 tmpfile.write("\n{}() {}\n".format(cleanup_func, cleanup_code))
 
-            tmpfile.write("\nclean_all() {{ {}; }}\n".format(
-                "; ".join([x[0] for x in cleanup_funcs])))
+            # Do proper cleanup of temporary files:
+            if cluster_tmp_write == True:
+                tmpfile.write("\nclean_all() {{ {}; }}\n".format(
+                    "; ".join([x[0] for x in cleanup_funcs])))
+
+            # Don't try to remove tmp files as this may error in some
+            # clusters (eg pbspro):
+            elif cluster_no_tmp_write == True:
+                tmpfile.write("\nclean_all() { info; }\n")
 
             tmpfile.write("\ntrap clean_all EXIT\n\n")
 
