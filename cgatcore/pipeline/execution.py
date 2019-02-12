@@ -670,6 +670,12 @@ class Executor(object):
 
         benchmark_data = []
 
+        def get_val(d, v, alt):
+            val = d.get(v, alt)
+            if val == "unknown":
+                val = alt
+            return val
+        
         # build resource usage data structure - part native, part
         # mapped to common fields
         for jobinfo, statement in zip(resource_usage, statements):
@@ -688,15 +694,15 @@ class Executor(object):
             if self.queue_manager:
                 data.update(self.queue_manager.map_resource_usage(data, DATA2TYPE))
 
+            cpu_time = float(get_val(data, "cpu_t", 0))
+            start_time = float(get_val(data, "start_time", 0))
+            end_time = float(get_val(data, "end_time", 0))
             data.update({
                 # avoid division by 0 error
                 "percent_cpu": (
-                    100.0 * float(data.get("cpu_t", 0)) /
-                    max(1.0, float(data.get("end_time", 0)) - float(data.get("start_time", 0))) /
-                    self.job_threads),
-                "total_t": float(data.get("end_time", 0)) - float(data.get("start_time", 0))
+                    100.0 * cpu_time / (max(1.0, end_time) - start_time) / self.job_threads),
+                "total_t": end_time - start_time
             })
-
             benchmark_data.append(data)
         return benchmark_data
 
