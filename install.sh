@@ -292,6 +292,7 @@ conda_install() {
 	    sed -i'' -e '/REPO_REQUIREMENT/,/pass/d' setup.py
 	    sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
 	    log "installing cgat-core repo"
+	    exit 1
 	    python setup.py develop
 
 	    if [[ $? -ne 0 ]] ; then
@@ -311,7 +312,7 @@ conda_install() {
 	    [[ $CODE_DOWNLOAD_TYPE -ge 1 ]] && git checkout -- setup.py
 
 	    # environment pinning
-	    python scripts/conda.py
+	    # python scripts/conda.py
 
 	fi # if INSTALL_DEVEL
 
