@@ -26,20 +26,18 @@ CGAT-core documentation!
     :alt: Twitter URL
 
 
-
-other shields:
-Conda
-
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis.
 
-Used in combination with CGAT-apps, we have deomonstrated the functionality of our
-flexible implementation using a set of well documented, easy to install and easy to use workflows,
-called CGAT-flow.
+Used in combination with `CGAT-apps <https://github.com/cgat-developers/cgat-apps>`_, we have deomonstrated the functionality of our
+flexible workflow management system using a simple RNA-seq pipeline in `cgat-showcase <https://github.com/cgat-developers/cgat-showcase>`_.
 
 CGAT-core is open-sourced, powerful and user-friendly, and has been continually developed
 as a Next Generation Sequencing (NGS) workflow management system over the past 10 years.
+
+For more advanced examples of cgatcore utilities please refer to our `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ repository, however
+please be aware that this is in constant development and has many software dependancies.
 
 
 .. _manual-quick_example:
@@ -57,7 +55,6 @@ Support
 -------
 
 - Please refer to our :ref:`FAQ` section
-- In case of questions, please add these to `stack overflow <https://stackoverflow.com/search?q=cgat>`_
 - For bugs and issues, please raise an issue on `github <https://github.com/cgat-developers/cgat-core>`_
 - For contributions, please refer to our contributor section and `github <https://github.com/cgat-developers/cgat-core>`_ source code.
 
@@ -70,6 +67,7 @@ Examples
 **cgat-flow**
    As an example of the flexibility and functionality of CGAT-core, we have developed a set of fully tested production pipelines for automating the analysis of our NGS data. Please refer to the `github <https://github.com/cgat-developers/cgat-flow>`_ page for information on how to install and use our code.
 **Single cell RNA-seq**
+   The cribbs lab use CGAT-core to develop pseudoalignment pipelines for single cell `dropseq methods <https://github.com/Acribbs/single-cell>`_ 
    The sansom lab use the CGAT-core workflow engine to develop single cell `sequencing analysis workflows <https://github.com/sansomlab/tenx>`_.
 
 
