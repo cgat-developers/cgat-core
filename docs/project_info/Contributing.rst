@@ -8,7 +8,7 @@ The following individuals are the main developers of the cgatcore
 
 Andreas Heger
 
-Adam Cribbs
+`Adam Cribbs <http://www.acribbs.co.uk>`_
 
 Sebastian Luna Valero
 
