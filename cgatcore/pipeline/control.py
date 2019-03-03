@@ -822,19 +822,22 @@ def update_params_with_commandline_options(params, options):
 
 @contextlib.contextmanager
 def cache_os_functions():
-    os.stat = cached_os_stat
-    os.path.abspath = cached_os_path_abspath
-    os.path.realpath = cached_os_path_realpath
-    os.path.relpath = cached_os_path_relpath
-    os.path.islink = cached_os_path_islink
-
     yield
+    # Turn off caching - see ruffus issue:
+    # https://github.com/cgat-developers/cgat-core/issues/75
+    # os.stat = cached_os_stat
+    # os.path.abspath = cached_os_path_abspath
+    # os.path.realpath = cached_os_path_realpath
+    # os.path.relpath = cached_os_path_relpath
+    # os.path.islink = cached_os_path_islink
 
-    os.stat = SAVED_OS_STAT
-    os.path.abspath = SAVED_OS_PATH_ABSPATH
-    os.path.realpath = SAVED_OS_PATH_REALPATH
-    os.path.relpath = SAVED_OS_PATH_RELPATH
-    os.path.islink = SAVED_OS_PATH_ISLINK
+    # yield
+
+    # os.stat = SAVED_OS_STAT
+    # os.path.abspath = SAVED_OS_PATH_ABSPATH
+    # os.path.realpath = SAVED_OS_PATH_REALPATH
+    # os.path.relpath = SAVED_OS_PATH_RELPATH
+    # os.path.islink = SAVED_OS_PATH_ISLINK
 
 
 class LoggingFilterProgress(logging.Filter):

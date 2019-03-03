@@ -369,14 +369,15 @@ class SlurmCluster(DRMAACluster):
         return spec
 
     def get_resource_usage(self, job_id, retval, hostname):
+        # delay to help with sync'ing of book-keeping
+        time.sleep(5)
         statement = "sacct --noheader --units=K --parsable2 --format={} -j {} ".format(
             ",".join(self.map_drmaa2benchmark_data.values()),
             job_id)
 
         stdout = E.run(statement, return_stdout=True).splitlines()
         if len(stdout) != 2:
-            raise ValueError("expected 2 lines in {}, but got {}".format(
-                statement, len(stdout)))
+            E.warn("expected 2 lines in {}, but got {}".format(statement, len(stdout)))
 
         def convert_value(v):
             if "-" in v and ":" in v:
