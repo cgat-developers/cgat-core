@@ -187,7 +187,7 @@ In addition to running the pipeline with default command line options, running a
 pipeline with --help will allow you to see additional options for ``workflow arguments``
 when running the pipelines. These will modify the way the pipeline in ran.
 
-`- -local`
+`- -no-cluster`
 
     This option allows the pipeline to run locally.
 
@@ -224,7 +224,7 @@ Currently in CGAT we have 3 preferred types of report generation.
 
    * MultiQC report (for general alignment and tool reporting)
    * R markdown (for bespoke reporting)
-   * IPython notebook (for bespoke reporting)
+   * Jupyter notebook (for bespoke reporting)
 
 To determine which type of reporting is implimented for each pipeline, refer to
 the specific pipeline documentation at the beginning of the script.
