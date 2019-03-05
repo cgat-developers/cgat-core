@@ -700,10 +700,11 @@ class Executor(object):
             data.update({
                 # avoid division by 0 error
                 "percent_cpu": (
-                    100.0 * cpu_time / (max(1.0, end_time) - start_time) / self.job_threads),
+                    100.0 * cpu_time / max(1.0, (end_time - start_time)) / self.job_threads),
                 "total_t": end_time - start_time
             })
             benchmark_data.append(data)
+            E.warn(data)
         return benchmark_data
 
 
