@@ -1,23 +1,20 @@
 
-.. image:: https://github.com/cgat-developers/cgat-core/blob/master/docs/img/CGAT_logo.svg
-   :alt: Conda Logo
+![CGAT-core](https://github.com/cgat-developers/cgat-core/blob/master/docs/img/CGAT_logo.png)
+----------------------------------------
+
+<p align="left">
+	<a href="https://readthedocs.org/projects/cgat-core/badge/?version=latest", alt="Documentation">
+		<img src="https://readthedocs.org/projects/cgat-core/badge/?version=latest" /></a>
+	<a href="https://travis-ci.org/cgat-developers/cgat-core", alt="Travis">
+		<img src="https://img.shields.io/travis/cgat-developers/cgat-core.svg" /></a>
+	<a href="https://twitter.com/cgat_oxford?lang=en", alt="Twitter followers">
+		<img src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter" /></a>
+	<a href="https://twitter.com/cgat_oxford?lang=en", alt="Twitter followers">
+		<img src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter" /></a>
+</p>
 
 ----------------------------------------
 
-.. image:: https://readthedocs.org/projects/cgat-core/badge/?version=latest
-    :target: http://cgat-core.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-
-.. image:: https://img.shields.io/travis/cgat-developers/cgat-core.svg
-    :alt: Travis
-
-.. image:: https://img.shields.io/twitter/follow/CGAT_Oxford.svg?style=social&logo=twitter&label=Follow
-    :alt: Twitter Followers
-    :target: https://twitter.com/cgat_oxford?lang=en
-
-.. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter
-    :alt: Twitter URL
-    :target: https://twitter.com/cgat_oxford?lang=en
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis. 
