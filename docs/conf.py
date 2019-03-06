@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'cgatcore'
-copyright = '2018, CGAT Developers'
+copyright = '2018-2019, CGAT Developers'
 author = 'CGAT Developers'
 
 # The version info for the project you're documenting, acts as replacement for
