@@ -43,7 +43,7 @@ with the same name. For example::
    mkdir test && touch pipeline_test.py
 
 All pipelines require a yml configuration file that will allow you to add configurable values to modify the behaviour of your code.
-This is placed within the test/ directory::
+This is placed within the test/ directory, which should have the same name as the name of your pipeline_test.py file::
 
    touch test/pipeline.yml
 
@@ -365,7 +365,51 @@ task. For example we impliment this in our pipelines as::
     statement = '''LANG=en_GB.UTF-8 multiqc . -f;
                    mv multiqc_report.html MultiQC_report.dir/'''
 
-    P.run(statement) 
+    P.run(statement)
+
+
+Rmarkdown
+=========
+
+MultiQC is very useful for running third generation computational biology tools. However, currently
+it is very difficult to use it as a bespoke reporting tool. Therefore, one was of running
+bespoke reports is using the Rmarkdown framework and using the render functionality of knitr.
+
+Rendering an Rmarkdown document is very easy if you place the .Rmd file in the same test/ directory as the pipeline.yml.
+Then the file can easily run using::
+
+    @follows(mkdir("Rmarkdown.dir"))
+    @originate("Rmarkdown.dir/report.html")
+    def render_rmarkdown(outfile):
+
+    NOTEBOOK_ROOT = os.path.join(os.path.dirname(__file__), "test")
+
+    statement = '''cp %(NOTEBOOK_ROOT)s/report.Rmd Rmarkdown.dir &&
+                   cd Rmarkdown.dir/ && R -e "rmarkdown::render('report.Rmd',encoding = 'UTF-8')" '''
+
+    P.run(statement)
+
+This should generate an html output of whatever report your wrote for your particular task.
+
+
+Jupyter notebook
+================
+
+Another bespoke reporting that we also perform for our pipelines is to use a Jupyter notebook
+implimentation and execture it in using the commandline. All that is required is that you
+place your jupyter notebook into the same test/ directory as the pipeline.yml and call the following::
+
+    @follows(mkdir("jupyter_report.dir"))
+    @originate("jupyter_report.dir/report.html")
+    def render_jupyter(outfile):
+    
+    NOTEBOOK_ROOT = os.path.join(os.path.dirname(__file__), "test")
+
+    statement = '''cp %(NOTEBOOK_ROOT)s/report.ipynb jupyter_report.dir/ && cd jupyter_report.dir/ &&
+                    jupyter nbconvert --ExecutePreprocessor.timeout=None --to html --execute *.ipynb --allow-errors;
+
+    P.run(statement)
+
 
 .. _ConfigurationValues:
 
@@ -510,4 +554,6 @@ P.run() function allows you run the statement using a different conda environmen
 
     P.run(statement, job_condaenv="multiqc")
 
-This can be extremely useful when you have python 2 only code but are running in a python 3 environment.
+This can be extremely useful when you have python 2 only code but are running in a python 3 environment. Or
+more importantly, when you have conflicting dependancies in software and you need to seperate them out into
+two different environments.xs

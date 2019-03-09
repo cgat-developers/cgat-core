@@ -5,9 +5,7 @@
 Installation
 ============
 
-The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) please follow these instructions `here <https://www.cgat.org/downloads/public/cgat/documentation/>`_ .
-Please note that installing the apps will also install cgatcore as part of this process.
+The following sections describe how to install the cgatcore framework. 
 
 .. _getting_started-Conda:
 
