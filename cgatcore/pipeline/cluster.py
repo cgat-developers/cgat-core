@@ -368,43 +368,47 @@ class SlurmCluster(DRMAACluster):
 
         return spec
 
+    @classmethod
+    def parse_accounting_data(cls, data, retval):
+
+        def convert_value(*pair):
+            k, v = pair[0]
+            if k in ("UserCPU", "SystemCPU"):
+                n = 0
+                for x, f in zip(re.split("[-:]", v)[::-1], (1, 60, 3600, 86400)):
+                    n += float(x) * f
+                v = n
+            elif k in ("Start", "End", "Submit"):
+                v = time.mktime(datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S").timetuple())
+            elif k in ("ExitCode", ):
+                v = int(v.split(":")[0])
+            elif v.endswith("K"):
+                v = float(v[:-1]) * 1000
+            elif v.endswith("M"):
+                v = float(v[:-1]) * 1000000
+            elif v.endswith("G"):
+                v = float(v[:-1]) * 1000000000
+            try:
+                v = int(v)
+            except ValueError:
+                pass
+            return k, v
+
+        d = dict(map(convert_value, zip(cls.map_drmaa2benchmark_data.values(), data.split("|"))))
+        retval = retval._replace(resourceUsage=d)
+        return [retval]
+
     def get_resource_usage(self, job_id, retval, hostname):
         # delay to help with sync'ing of book-keeping
         time.sleep(5)
         statement = "sacct --noheader --units=K --parsable2 --format={} -j {} ".format(
-            ",".join(self.map_drmaa2benchmark_data.values()),
-            job_id)
+            ",".join(self.map_drmaa2benchmark_data.values()), job_id)
 
         stdout = E.run(statement, return_stdout=True).splitlines()
         if len(stdout) != 2:
             E.warn("expected 2 lines in {}, but got {}".format(statement, len(stdout)))
 
-        def convert_value(v):
-            if "-" in v and ":" in v:
-                return time.mktime(datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S").timetuple())
-            elif ":" in v and "." in v:
-                n = 0
-                for x, f in zip(re.split("[:.]", v)[::-1], (1.0/60, 1, 60, 3600, 86400)):
-                    n += float(x) * f
-                return n
-            elif ":" in v:
-                # exit code: 0:0
-                return int(v.split(":")[0])
-            elif v.endswith("K"):
-                return float(v[:-1]) * 1000
-            elif v.endswith("M"):
-                return float(v[:-1]) * 1000000
-            elif v.endswith("G"):
-                return float(v[:-1]) * 1000000000
-            try:
-                v = int(v)
-            except ValueError:
-                pass
-            return v
-
-        d = dict(zip(self.map_drmaa2benchmark_data.values(), map(convert_value, stdout[-1].split("|"))))
-        retval = retval._replace(resourceUsage=d)
-        return [retval]
+        return self.parse_accounting_data(stdout[-1], retval)
 
 
 class TorqueCluster(DRMAACluster):
