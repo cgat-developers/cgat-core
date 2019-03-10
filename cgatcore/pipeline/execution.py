@@ -764,7 +764,6 @@ class GridExecutor(Executor):
         benchmark_data = []
         jt = self.setup_job(self.options["cluster"])
 
-        start_time = time.time()
         job_ids, filenames = [], []
         for statement in statement_list:
             self.logger.debug("running statement:\n%s" % statement)
@@ -782,8 +781,6 @@ class GridExecutor(Executor):
 
         self.wait_for_job_completion(job_ids)
 
-        end_time = time.time()
-
         # collect and clean up
         for job_id, statement, paths in zip(job_ids,
                                             statement_list,
@@ -797,12 +794,9 @@ class GridExecutor(Executor):
                 stderr_path,
                 job_path)
 
-            # end time is meaningless
-            end_time = time.time()
             benchmark_data.extend(
                 self.collect_benchmark_data([statement],
                                             resource_usage))
-
         self.session.deleteJobTemplate(jt)
         return benchmark_data
 

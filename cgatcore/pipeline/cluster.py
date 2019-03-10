@@ -103,7 +103,6 @@ class DRMAACluster(object):
             retval = None
 
         stdout, stderr = self.get_drmaa_job_stdout_stderr(stdout_path, stderr_path)
-        resource_usage = None
 
         if retval is not None and not self.ignore_errors:
             if retval.exitStatus != 0:
@@ -132,9 +131,13 @@ class DRMAACluster(object):
                     "----------------------------------------------------------\n"
                     .format(job_id, retval.wasAborted, not retval.hasExited, statement))
 
-            # get hostname from job script
-            hostname = stdout[-3][:-1]
+        # get hostname from job script
+        hostname = stdout[-3][:-1]
+        try:
             resource_usage = self.get_resource_usage(job_id, retval, hostname)
+        except (ValueError, KeyError, TypeError, IndexError) as ex:
+            E.warn("could not collect resource usage for job {}: {}".format(job_id, ex))
+            resource_usage = [None]
 
         try:
             os.unlink(job_path)
