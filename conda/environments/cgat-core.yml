@@ -15,7 +15,7 @@ dependencies:
 - paramiko
 - pep8
 - pytest
-- python-drmaa
+- drmaa
 - pyyaml
 - ruffus
 - setuptools
