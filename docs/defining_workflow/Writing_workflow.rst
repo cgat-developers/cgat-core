@@ -122,6 +122,7 @@ basic modules as follows. Then any additional modules can be imported as require
 
 .. code-block:: python
 
+   from ruffus import *
    import cgatcore.experiment as E
    from cgatcore import pipeline as P
    import cgatcore.iotools as iotools
