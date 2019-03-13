@@ -55,6 +55,21 @@ pipeline. ::
 
 The pipeline then needs a few utility functions to help with executing the pipeline.
 
+**Import statements** You will need to import ruffus and cgatcore utilities ::
+
+  from ruffus import *
+  import cgatcore.experiment as E
+  from cgatcore import pipeline as P
+
+Importing ruffus allows ruffus decorators to be used within out pipeline
+
+Importing experiment from cgatcore is a module that contains ultility functions for argument parsion, logging and record keeping
+within scripts.
+
+Importing pipeline from cgatcore allows users to run utility functions for interfacing with CGAT ruffus pipelines
+with an HPC cluster, uploading data to a database, provides paramaterisation and more.
+
+
 **Config parser:** This code helps with parsing the pipeline.yml file::
 
     # load options from the config file
