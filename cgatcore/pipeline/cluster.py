@@ -503,7 +503,6 @@ class PBSProCluster(DRMAACluster):
         # default values. Likely means setting for longest job with
         # trade-off of longer waiting times for resources to be
         # available for other jobs.
-        spec.append(kwargs.get("options", ""))
 
         if job_threads > 1:
             # TO DO 'select=1' determines de number of nodes. Should
@@ -515,9 +514,10 @@ class PBSProCluster(DRMAACluster):
             # exist.
             # mem outside of -l select errors (ie passing -l mem=4G errors)
             # TO DO: Kill if long waiting time?
-
-            spec = ["-N {}".format(job_name[0:15]),
-                    "-l select=1:ncpus=%s:mem=%s".format(job_threads, job_memory)]
+            spec.append("-l select=1:ncpus=%s:mem=%s".format(job_threads,
+                                                             job_memory
+                                                             )
+                        )
 
         if "pe_queue" in kwargs and job_threads > 1:
             spec.append("-q {}".format(kwargs["pe_queue"]))
