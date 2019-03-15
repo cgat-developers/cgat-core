@@ -493,7 +493,7 @@ class PBSProCluster(DRMAACluster):
         # PBSPro only takes the first 15 characters, throws
         # uninformative error if longer.  mem is maximum amount of RAM
         # used by job; mem_free doesn't seem to be available.
-        spec = ["-N {}".format(job_name[0:15])]
+        spec = ["-N {}".format(job_name[0:15]), ]
 
         if "mem" not in kwargs["options"]:
             spec.append("-l mem={}".format(job_memory))
@@ -503,7 +503,6 @@ class PBSProCluster(DRMAACluster):
         # default values. Likely means setting for longest job with
         # trade-off of longer waiting times for resources to be
         # available for other jobs.
-        spec.append(kwargs.get("options", ""))
 
         if job_threads > 1:
             # TO DO 'select=1' determines de number of nodes. Should
@@ -512,14 +511,21 @@ class PBSProCluster(DRMAACluster):
             # select=NN:ncpus=NN:mem=NN{gb|mb}' is sufficient for
             # parallel jobs (OpenMP, MPI).  Also architecture
             # dependent, jobs could be hanging if resource doesn't
-            # exist.  TO DO: Kill if long waiting time?
-            spec = ["-N {}".format(job_name[0:15]),
-                    "-l select=1:ncpus=%s:mem=%s".format(job_threads, job_memory)]
+            # exist.
+            # mem outside of -l select errors (ie passing -l mem=4G errors)
+            # TO DO: Kill if long waiting time?
+            spec.append("-l select=1:ncpus=%s:mem=%s".format(job_threads,
+                                                             job_memory
+                                                             )
+                        )
 
         if "pe_queue" in kwargs and job_threads > 1:
             spec.append("-q {}".format(kwargs["pe_queue"]))
         elif kwargs['queue'] != "NONE":
             spec.append("-q {}".format(kwargs["queue"]))
+
+        spec.append(kwargs.get("options", ""))
+        return spec
 
     def update_template(self, jt):
         # The directive #PBS -V exists and works in a qsub script but errors here
@@ -527,7 +533,6 @@ class PBSProCluster(DRMAACluster):
         jt.jobEnvironment = os.environ
         jt.jobEnvironment.update(
             {'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
-
 
 def get_queue_manager(queue_manager, *args, **kwargs):
 
