@@ -32,8 +32,8 @@ as a Next Generation Sequencing (NGS) workflow management system over the past 1
 Installation
 ============
 
-The following sections describe how to install the cgatcore framework. For instructions on how to install
-the CGAT-apps (scripts) and CGAT-flow (workflows/pipelines) please follow these instructions [here](https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html).
+The following sections describe how to install the [cgatcore](https://cgat-core.readthedocs.io/en/latest/index.html) framework. For instructions on how to install
+our other repos, CGAT-apps (scripts) and CGAT-flow (workflows/pipelines), please follow these instructions [here](https://www.cgat.org/downloads/public/cgatpipelines/documentation/InstallingPipelines.html).
 
 The preferred method to install the cgatcore is using conda, by following the instructions on [read the docs](https://cgat-core.readthedocs.io/en/latest/getting_started/Installation.html). However, there are a few other methods to install cgatcore, including pip and our own bash script installer.
 
