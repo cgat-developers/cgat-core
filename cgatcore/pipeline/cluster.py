@@ -540,6 +540,7 @@ class PBSProCluster(DRMAACluster):
         jt.jobEnvironment.update(
             {'BASH_ENV': os.path.join(os.path.expanduser("~"), '.bashrc')})
 
+
 def get_queue_manager(queue_manager, *args, **kwargs):
 
     qm = queue_manager.lower()
