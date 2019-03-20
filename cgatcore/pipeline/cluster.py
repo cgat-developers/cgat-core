@@ -19,6 +19,7 @@ import stat
 import time
 import datetime
 import logging
+import gevent
 import cgatcore.experiment as E
 
 try:
@@ -32,6 +33,11 @@ def get_logger():
 
 
 JobInfo = collections.namedtuple("JobInfo", ("jobId", "resourceUsage"))
+
+
+# Timeouts for event loop
+GEVENT_TIMEOUT_SACCT = 5
+GEVENT_TIMEOUT_WAIT = 1
 
 
 class DRMAACluster(object):
@@ -162,14 +168,14 @@ class DRMAACluster(object):
         while x >= 0:
             if os.path.exists(stdout_path):
                 break
-            time.sleep(1)
+            gevent.sleep(GEVENT_TIMEOUT_WAIT)
             x -= 1
 
         x = tries
         while x >= 0:
             if os.path.exists(stderr_path):
                 break
-            time.sleep(1)
+            gevent.sleep(GEVENT_TIMEOUT_WAIT)
             x -= 1
 
         try:
@@ -403,7 +409,7 @@ class SlurmCluster(DRMAACluster):
 
     def get_resource_usage(self, job_id, retval, hostname):
         # delay to help with sync'ing of book-keeping
-        time.sleep(5)
+        gevent.sleep(GEVENT_TIMEOUT_SACCT)
         statement = "sacct --noheader --units=K --parsable2 --format={} -j {} ".format(
             ",".join(self.map_drmaa2benchmark_data.values()), job_id)
 
