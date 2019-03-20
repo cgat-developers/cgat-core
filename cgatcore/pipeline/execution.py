@@ -223,7 +223,7 @@ def execute(statement, **kwargs):
     kwargs = dict(list(get_params().items()) + list(kwargs.items()))
 
     logger = get_logger()
-    logger.debug("running %s" % (statement % kwargs))
+    logger.info("running %s" % (statement % kwargs))
 
     if "cwd" not in kwargs:
         cwd = get_params()["work_dir"]
@@ -675,7 +675,7 @@ class Executor(object):
             if val == "unknown" or val == None:
                 val = alt
             return val
-        
+
         # build resource usage data structure - part native, part
         # mapped to common fields
         for jobinfo, statement in zip(resource_usage, statements):
@@ -721,7 +721,7 @@ class GridExecutor(Executor):
 
         # connect to global session
         pid = os.getpid()
-        self.logger.debug('task: pid={}, grid-session={}, work_dir={}'.format(
+        self.logger.info('task: pid={}, grid-session={}, work_dir={}'.format(
             pid, str(self.session), self.work_dir))
 
         self.queue_manager = get_queue_manager(
@@ -745,7 +745,7 @@ class GridExecutor(Executor):
 
         if self.work_dir_is_local:
             destdir = self.original_dir
-            self.logger.debug("moving files from {} to {}".format(
+            self.logger.info("moving files from {} to {}".format(
                 self.work_dir, destdir))
 
             for root, dirs, files in os.walk(self.work_dir):
@@ -766,7 +766,7 @@ class GridExecutor(Executor):
 
         job_ids, filenames = [], []
         for statement in statement_list:
-            self.logger.debug("running statement:\n%s" % statement)
+            self.logger.info("running statement:\n%s" % statement)
 
             full_statement, job_path = self.build_job_script(statement)
 
@@ -775,7 +775,7 @@ class GridExecutor(Executor):
             job_id = self.session.runJob(jt)
             job_ids.append(job_id)
             filenames.append((job_path, stdout_path, stderr_path))
-            self.logger.debug("job has been submitted with job_id %s" % str(job_id))
+            self.logger.info("job has been submitted with job_id %s" % str(job_id))
             # give back control for bulk submission
             gevent.sleep(GEVENT_TIMEOUT_STARTUP)
 
@@ -809,12 +809,12 @@ class GridExecutor(Executor):
             job_threads=self.job_threads,
             working_directory=self.work_dir,
             **options)
-        self.logger.debug("job-options: %s" % jt.nativeSpecification)
+        self.logger.info("job-options: %s" % jt.nativeSpecification)
         return jt
 
     def wait_for_job_completion(self, job_ids):
 
-        self.logger.debug("waiting for %i jobs to finish " % len(job_ids))
+        self.logger.info("waiting for %i jobs to finish " % len(job_ids))
         running_job_ids = set(job_ids)
         while running_job_ids:
             for job_id in list(running_job_ids):
@@ -866,23 +866,23 @@ class GridArrayExecutor(GridExecutor):
                       statement, start, end, increment):
 
         logger = get_logger()
-        logger.debug("starting an array job: %i-%i,%i" %
-                     (start, end, increment))
+        logger.info("starting an array job: %i-%i,%i" %
+                    (start, end, increment))
 
         jt.outputPath = ":" + stdout_path
         jt.errorPath = ":" + stderr_path
 
-        logger.debug("job submitted with %s" % jt.nativeSpecification)
+        logger.info("job submitted with %s" % jt.nativeSpecification)
 
         # sge works with 1-based, closed intervals
         job_ids = session.runBulkJobs(jt, start + 1, end, increment)
-        logger.debug("%i array jobs have been submitted as job_id %s" %
-                     (len(job_ids), job_ids[0]))
+        logger.info("%i array jobs have been submitted as job_id %s" %
+                    (len(job_ids), job_ids[0]))
 
         self.wait_for_job_completion(job_ids)
 
-        logger.debug("%i array jobs for job_id %s have completed" %
-                     (len(job_ids), job_ids[0]))
+        logger.info("%i array jobs for job_id %s have completed" %
+                    (len(job_ids), job_ids[0]))
 
         resource_usage = []
         for job in job_ids:
@@ -926,7 +926,7 @@ class LocalExecutor(Executor):
 
         benchmark_data = []
         for statement in statement_list:
-            self.logger.debug("running statement:\n%s" % statement)
+            self.logger.info("running statement:\n%s" % statement)
 
             full_statement, job_path = self.build_job_script(statement)
 

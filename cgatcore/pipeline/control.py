@@ -1060,7 +1060,6 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
             path = "unknown"
 
     options, args = parse_commandline(argv, **kwargs)
-
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
          "../pipeline.yml",
@@ -1071,7 +1070,6 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
     global GLOBAL_ARGS
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     logger = logging.getLogger("cgatcore.pipeline")
-
     logger.info("started in directory: {}".format(get_params().get("start_dir")))
 
     # At this point, the PARAMS dictionary has already been
@@ -1123,11 +1121,12 @@ def run_workflow(options, args, pipeline=None):
 
     """
     logger = logging.getLogger("cgatcore.pipeline")
-
     if args:
         options.pipeline_action = args[0]
         if len(args) > 1:
             options.pipeline_targets.extend(args[1:])
+
+    logger.debug("starting run_workflow with action {}".format(options.pipeline_action))
 
     if options.force_run:
         if options.force_run == "all":
@@ -1149,7 +1148,7 @@ def run_workflow(options, args, pipeline=None):
             # file exists
             pass
 
-    logger.debug("temporary directory is {}".format(get_params()["tmpdir"]))
+    logger.info("temporary directory is {}".format(get_params()["tmpdir"]))
 
     # set multiprocess to a sensible setting if there is no cluster
     run_on_cluster = HAS_DRMAA is True and not options.without_cluster
