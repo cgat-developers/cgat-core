@@ -380,7 +380,7 @@ def get_parameters(filenames=None,
             filename))
 
         with open(filename) as inf:
-            p = yaml.load(inf)
+            p = yaml.load(inf, Loader=yaml.FullLoader)
             if p:
                 nested_update(PARAMS, p)
 
