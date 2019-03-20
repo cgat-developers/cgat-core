@@ -672,7 +672,7 @@ class Executor(object):
 
         def get_val(d, v, alt):
             val = d.get(v, alt)
-            if val == "unknown" or val == None:
+            if val == "unknown" or val is None:
                 val = alt
             return val
 
