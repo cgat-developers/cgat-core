@@ -704,7 +704,7 @@ class Executor(object):
                 "total_t": end_time - start_time
             })
             benchmark_data.append(data)
-            E.warn(data)
+
         return benchmark_data
 
 
