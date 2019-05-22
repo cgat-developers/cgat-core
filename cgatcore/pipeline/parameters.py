@@ -379,7 +379,7 @@ def get_parameters(filenames=None,
         get_logger().info("reading config from file {}".format(
             filename))
 
-        with open(filename) as inf:
+        with open(filename, 'rt', encoding='utf8') as inf:
             p = yaml.load(inf, Loader=yaml.FullLoader)
             if p:
                 nested_update(PARAMS, p)
