@@ -17,7 +17,7 @@ please install conda using `miniconda <https://conda.io/miniconda.html>`_ or `an
 
 cgatcore is currently installed using the bioconda channel and the recipe can be found on `github <https://github.com/bioconda/bioconda-recipes/tree/b1a943da5a73b4c3fad93fdf281915b397401908/recipes/cgat-core>`_. To install cgatcore::
 
-    conda install cgatcore
+    conda install -c conda-forge -c bioconda cgatcore
 
 .. _getting_started-Automated:
 

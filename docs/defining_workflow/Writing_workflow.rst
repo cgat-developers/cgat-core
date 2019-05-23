@@ -268,6 +268,57 @@ files will remain after aborted runs to be cleaned up manually.
 
 .. _defining_workflow-databases:
 
+
+Useful information regarding decorators
+---------------------------------------
+
+To see a full list of ruffus decorators that control the flow of the pipeline please
+see the `ruffus documentation <http://www.ruffus.org.uk/decorators/decorators.html>`_.
+
+However, during peer review it was pointed out that it would be helpful to include a few examples of
+how you can modify the infile name and transform it to the output filename. There are a few ways of doing this:
+
+The first way is to capture the suffix so the outfile is placed into the same folder as the infile::
+
+  # pairs are a tuple of read pairs (read1, read2) 
+  @transform(pairs,
+             suffix(.fastq.gz),
+	     ("_trimmed.fastq.gz", "_trimmed.fastq.gz"))
+
+This will transform an input <name_of_file>.fastq.gz and result in an output
+with a new siffix <name_of_file>_trimmed.fastq.gz.
+
+Another way to add a output file into aother filer is to use a regex::
+
+   @follows(mkdir("new_folder.dir"))
+   @transform(pairs,
+             regex((\S+).fastq.gz),
+	     (r"new_folder.dir/\1_trimmed.fastq.gz", r"new_folder.dir/\1_trimmed.fastq.gz"))
+
+This can also be achieved using the formatter function::
+
+  @follows(mkdir("new_folder.dir"))
+   @transform(pairs,
+             formatter((\S+).fastq.gz),
+	     ("new_folder.dir/{SAMPLE[0]}_trimmed.fastq.gz", r"new_folder.dir/{SAMPLE[0]}_trimmed.fastq.gz"))
+
+
+Combining commands together
+---------------------------
+
+In order to combine commands together you will need to use `&&`
+to make sure your commands are chained correctly. For example::
+
+  statement = """
+              module load cutadapt &&
+	      cutadapt ....
+              """
+
+  P.run(statement)
+  
+If you didnt have the `&&` then the command will fail because the cutadapt command will be
+executed as part of the module load statement.
+	     
 Databases
 ---------
 

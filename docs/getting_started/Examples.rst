@@ -176,10 +176,10 @@ naming convention (with the read inserted between the fastq and the gz. The reas
 for this is so that regular expressions do not have to acount for the read within the name.
 It is also more explicit::
 
-   sample1-condition-R1.fastq.1.gz
-   sample1-condition-R2.fastq.2.gz
+   sample1-condition.fastq.1.gz
+   sample1-condition.fastq.2.gz
 
-
+	
 Additional pipeline options
 ---------------------------
 
