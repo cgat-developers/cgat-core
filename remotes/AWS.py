@@ -11,10 +11,23 @@ except ImportError as e:
 class S3RemoteObject():
     '''This is a class that will interact with an AWS object store.'''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,*args, **kwargs):
+        super(S3RemoteObject, self).__init__(*args, **kwargs)
 
-        self._S3object = S3Connect(*args, **kwargs)
+        self._S3object = S3Connection(*args, **kwargs)
 
+    def exists(self):
+        if self._matched_s3_path:
+            return self._S3object.exists_in_bucket(self.bucket_name, self.key)
+        else:
+            raise S3FileException("The file cannot be parsed as an s3 path in form 'bucket/key': %s" % self.local_file())
+
+    def download(self, bucket_name, key, file_dir):
+        self._S3object.remote_download(bucket_name, key, file_dir)
+        os.sync() # ensure flush to disk
+
+    def upload(self, bucket_name, key, file_dir):
+        self._S3object.remote_upload(bucket_name, file_dir, key)
 
 
 class S3Connection():
@@ -42,20 +55,20 @@ class S3Connection():
         if not bucket_name:
             raise ValueError("Bucket name must be specified to download file")
         if not key:
-            raise ValueError("Kay must be specified to download file")
+            raise ValueError("Key must be specified to download file")
 
         if dest_dir:
-            dest_path = os.path.join(os.getcwd(), os.path.basename(key))
+            dest_path = os.path.realpath(os.path.expanduser(dest_dir))
 
         f = self.S3.Object(bucket_name, key)
 
         try:
             f.download_file(dest_path)
-
-            return dest_path
+            return "%s" % dest_dir
         except:
             raise Exception('''no file was downloaded, make sure the correct
                             file or path is specified. It currently is: {}'''.format(dest_path))
+        
 
     def remote_upload(self,
                       bucket_name,
@@ -69,7 +82,7 @@ class S3Connection():
             raise ValueError("Bucket name must be specified to upload file")
         if not os.path.exists(file_dir):
             raise ValueError("File path specified does not exitis: {}".format(file_path))
-        if not ps.path.isfile(file_dir):
+        if not os.path.isfile(file_dir):
             raise ValueError("File path specified is not a file: {}".format(file_path))
 
         if not self.bucket_exists(bucket_name):
@@ -78,21 +91,10 @@ class S3Connection():
         f = self.S3.Object(bucket_name, key)
 
         try:
-            f.upload_file(file_dir, bucket_name, key)
+            f.upload_file(file_path)
         except:
             raise Exception("filename is not correctly specified: {}".format(file_dir))
 
-        return file_dir
-
-        
-    def delete_object_bucket(self,
-                               bucket_name,
-                               key):
-        '''delete data/file from an S3 bucket '''
-
-    def exists_object_bucket(self,
-                             bucket_name,
-                             key):
-        '''Returns True if data/file exists in an S3 bucket.'''
+        return "%s" % file_dir
 
 
