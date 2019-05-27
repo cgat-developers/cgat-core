@@ -34,10 +34,28 @@ class S3Connection():
             return False
 
     def remote_download(self,
-                          bucket_name,
-                          file_dir):
+                        bucket_name,
+                        key,
+                        dest_dir):
         '''Download data/file from an S3 bucket.'''
 
+        if not bucket_name:
+            raise ValueError("Bucket name must be specified to download file")
+        if not key:
+            raise ValueError("Kay must be specified to download file")
+
+        if dest_dir:
+            dest_path = os.path.join(os.getcwd(), os.path.basename(key))
+
+        f = self.S3.Object(bucket_name, key)
+
+        try:
+            f.download_file(dest_path)
+
+            return dest_path
+        except:
+            raise Exception('''no file was downloaded, make sure the correct
+                            file or path is specified. It currently is: {}'''.format(dest_path))
 
     def remote_upload(self,
                         bucket_name,
