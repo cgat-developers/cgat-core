@@ -331,6 +331,7 @@ from cgatcore.pipeline.cluster import *
 from cgatcore.pipeline.execution import *
 from cgatcore.pipeline.utils import *
 from cgatcore.pipeline.parameters import *
+from cgatcore.pipeline.aws import *
 
 
 # __all__ = [
