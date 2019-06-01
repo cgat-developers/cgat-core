@@ -34,8 +34,8 @@ class S3RemoteObject(AbstractRemoteObject):
         return file_dir
 
     def delete_file(self, bucket_name, key):
-        key_name = self._S3object.remote_delete_file(bucket_name, key)
-        return key_name
+        self._S3object.remote_delete_file(bucket_name, key)
+        return key
 
 class S3Connection():
     '''This is a connection to a remote S3 bucket for AWS
@@ -100,15 +100,15 @@ class S3Connection():
         except:
             raise Exception("filename is not correctly specified: {}".format(file_dir))
 
-        def remote_delete_file(self, bucket_name, key):
-            '''Will remove the object from the remote S3 bucket'''
+    def remote_delete_file(self, bucket_name, key):
+        '''Will remove the object from the remote S3 bucket'''
 
-            if not bucket_name:
-                raise ValueError("Bucket name must be specified to download file")
-            if not key:
-                raise ValueError("Key must be specified to download file")
+        if not bucket_name:
+            raise ValueError("Bucket name must be specified to download file")
+        if not key:
+            raise ValueError("Key must be specified to download file")
 
-            f = self.S3.Object(bucket_name, key)
-            f_delete = k.delete()
+        f = self.S3.Object(bucket_name, key)
+        f_delete = f.delete()
 
-            return f_delete.name
+        return f_delete
