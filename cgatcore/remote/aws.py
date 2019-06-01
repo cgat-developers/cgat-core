@@ -7,11 +7,13 @@ try:
 except ImportError as e:
     raise WorkflowError("The boto3 package needs to be installed. %s" % e.msg)
 
+from cgatcore.remote import AbstractRemoteObject
 
-class S3RemoteObject():
+
+class S3RemoteObject(AbstractRemoteObject):
     '''This is a class that will interact with an AWS object store.'''
 
-    def __init__(self,*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(S3RemoteObject, self).__init__(*args, **kwargs)
 
         self._S3object = S3Connection(*args, **kwargs)
@@ -25,10 +27,15 @@ class S3RemoteObject():
     def download(self, bucket_name, key, file_dir):
         self._S3object.remote_download(bucket_name, key, file_dir)
         os.sync() # ensure flush to disk
+        return file_dir
 
     def upload(self, bucket_name, key, file_dir):
         self._S3object.remote_upload(bucket_name, file_dir, key)
+        return file_dir
 
+    def delete_file(self, bucket_name, key):
+        key_name = self._S3object.remote_delete_file(bucket_name, key)
+        return key_name
 
 class S3Connection():
     '''This is a connection to a remote S3 bucket for AWS
@@ -64,11 +71,9 @@ class S3Connection():
 
         try:
             f.download_file(dest_path)
-            return "%s" % dest_dir
         except:
             raise Exception('''no file was downloaded, make sure the correct
                             file or path is specified. It currently is: {}'''.format(dest_path))
-        
 
     def remote_upload(self,
                       bucket_name,
@@ -95,6 +100,15 @@ class S3Connection():
         except:
             raise Exception("filename is not correctly specified: {}".format(file_dir))
 
-        return "%s" % file_dir
+        def remote_delete_file(self, bucket_name, key):
+            '''Will remove the object from the remote S3 bucket'''
 
+            if not bucket_name:
+                raise ValueError("Bucket name must be specified to download file")
+            if not key:
+                raise ValueError("Key must be specified to download file")
 
+            f = self.S3.Object(bucket_name, key)
+            f_delete = k.delete()
+
+            return f_delete.name
