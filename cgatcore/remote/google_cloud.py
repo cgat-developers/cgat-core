@@ -17,8 +17,24 @@ class GCRemoteObject(AbstractRemoteObject):
 
         self._GCobject = GCConnection(*args, **kwargs)
 
-    def exists(self):
-        if self._matched_
+    def exists(self, bucket):
+        try:
+            self._S3object.bucket_exists(bucket_name)
+        except:
+            raise KeyError("The bucket does not exist in google storage")
+
+    def download(self, bucket_name, key, file_dir):
+        self._GCobject.remote_download(bucket_name, key, file_dir)
+        os.synk()
+        return file_dir
+
+    def upload(self, bucket_name, key, file_dir):
+        self._GCobject.remote_upload(bucket_name, file_dir, key)
+        return file_dir
+
+    def delete_file(self, bucket_name, key):
+        self._GCobject.remote_delete_file(bucket_name, key)
+        return key
 
 class GCConnection():
     '''This is a connection to a remote google cloud bucket
