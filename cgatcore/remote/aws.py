@@ -18,7 +18,7 @@ class S3RemoteObject(AbstractRemoteObject):
 
         self._S3object = S3Connection(*args, **kwargs)
 
-    def exists(self, bucket_name, key):
+    def exists(self, bucket_name):
         
         try:
             self._S3object.bucket_exists(bucket_name)
