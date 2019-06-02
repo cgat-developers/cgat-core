@@ -5,7 +5,7 @@ try:
     import boto3
     import botocore
 except ImportError as e:
-    raise WorkflowError("The boto3 package needs to be installed. %s" % e.msg)
+    raise WorkflowError("The boto3 package needs to be installed. %s" % (e.msg))
 
 from cgatcore.remote import AbstractRemoteObject
 
