@@ -8,6 +8,8 @@ except ImportError as e:
     raise WorkFlowError("The google cloud SDK needs to be installed. %s"
                         % e.msg)
 
+from cgatcore.remote import AbstractRemoteObject
+
 
 class GCRemoteObject(AbstractRemoteObject):
     '''This is a class that will interact with an Google cloud object store.'''
@@ -25,7 +27,7 @@ class GCRemoteObject(AbstractRemoteObject):
 
     def download(self, bucket_name, key, file_dir):
         self._GCobject.remote_download(bucket_name, key, file_dir)
-        os.synk()
+        os.sync()
         return file_dir
 
     def upload(self, bucket_name, key, file_dir):
@@ -44,7 +46,6 @@ class GCConnection():
         # 
 
         self.GC = storage.Client(*args, **kwargs)
-
         self.blob = None
 
     def bucket_exists(self, bucket_name):
