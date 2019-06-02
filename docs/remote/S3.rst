@@ -12,8 +12,8 @@ This is a work in progress and we would really like feedback for extra features 
 are any bugs then please report them as `issues on github <https://github.com/cgat-developers/cgat-core/issues>`_.
 
 
-Setting up credentils
----------------------
+Setting up credentials
+----------------------
 
 In order to use the AWS remote feature you will need to configure
 your credentials (The access key and secret key). You can set up
