@@ -25,3 +25,6 @@ dependencies:
 - coreutils
 - nomkl
 - time
+- boto3
+- google-cloud-storage
+- google-cloud-sdk

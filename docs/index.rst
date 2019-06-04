@@ -103,6 +103,14 @@ For a non-comprehensive list of citations please see our :citing and :ref:`proje
    defining_workflow/Tutorial.rst
 
 .. toctree::
+   :caption: Working with remote files
+   :name: build
+   :maxdepth: 1
+   :hidden:
+
+   remote/S3.rst
+
+.. toctree::
    :caption: cgatcore functions
    :name: function_doc
    :maxdepth: 1
