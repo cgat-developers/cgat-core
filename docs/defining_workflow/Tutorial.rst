@@ -218,7 +218,7 @@ This would be written as follows:
        statement = ''' samtools view -bT /ifs/mirror/genomes/plain/hg19.fasta 
                        %(infile)s > %(outfile)s'''
 
-       P.run()
+       P.run(statement)
 
    @transform(bamConvert,
 	      suffix(".bam"),
@@ -228,7 +228,7 @@ This would be written as follows:
 
        statement = '''samtools flagstat %(infile)s > %(outfile)s'''
 
-       P.run()
+       P.run(statement)
 
 
 To run the pipeline::
@@ -281,7 +281,7 @@ Therefore the code we wrote before for parsing bam files can be modified to
        statement = ''' samtools view -bT  %(genome_fasta)s
                        %(infile)s > %(outfile)s'''
 
-       P.run()
+       P.run(statement)
 
    @transform(bamConvert,
 	      suffix(".bam"),
@@ -291,7 +291,7 @@ Therefore the code we wrote before for parsing bam files can be modified to
 
        statement = '''samtools flagstat %(infile)s > %(outfile)s'''
 
-       P.run()
+       P.run(statement)
 
 
 Running the code again should generate the same output. However, if you
