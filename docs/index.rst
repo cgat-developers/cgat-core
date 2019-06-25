@@ -46,7 +46,10 @@ please be aware that this is in constant development and has many software depen
 Citation
 --------
 
-To be added....
+Our workflow management system is published in F1000 Research:
+
+Cribbs AP, Luna-Valero S, George C et al. CGAT-core: a python framework for building scalable, reproducible computational biology workflows [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2019, 8:377
+(`https://doi.org/10.12688/f1000research.18674.1 <https://doi.org/10.12688/f1000research.18674.1>`_)
 
 .. _manual-support:
 
@@ -100,6 +103,7 @@ For a non-comprehensive list of citations please see our :citing and :ref:`proje
    :hidden:
 
    defining_workflow/Writing_workflow.rst
+   defining_workflow/run_parameters.rst
    defining_workflow/Tutorial.rst
 
 .. toctree::
