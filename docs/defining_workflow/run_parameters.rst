@@ -29,4 +29,17 @@ job_array: If set True, run statement as an array job. Job_array should be
 Specifying parameters to job
 ----------------------------
 
-Parameters can set 
+Parameters can be set within a pipeline task as follows::
+
+  @transform( '*.unsorted', suffix('.unsorted'), '.sorted')
+  def sortFile( infile, outfile ):
+
+    statement = '''sort -t %(tmpdir)s %(infile)s > %(outfile)s'''
+
+    without_cluster = False
+    job_total_memory = 50G
+
+    P.run(statement,
+          job_condaenv="sort_environment",
+	  job_memory=30G,
+	  job_threads=2)
