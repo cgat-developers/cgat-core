@@ -1,8 +1,8 @@
 .. _defining_workflow-run_parameters:
 
-==============
-Run parameters
-==============
+======================
+Setting run parameters
+======================
 
 Our workflows are executed using defaults that specify parameters for
 setting requirements for memory, threads, environment, e.c.t. Each of these
