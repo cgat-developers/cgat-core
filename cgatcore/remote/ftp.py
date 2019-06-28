@@ -1,5 +1,7 @@
+# This implimentation was inspired by the SFTP in smakemake remotes repo
 import os
 import sys
+from contextlib import contextmanager
 
 try:
     import pysftp
@@ -9,47 +11,57 @@ except ImportError as e:
 from cgatcore.remote import AbstractRemoteObject
 
 
-class S3RemoteObject(AbstractRemoteObject):
-    '''This is a class that will interact with an an ftp server.'''
+class SFTPRemoteObject(AbstractRemoteObject):
+    '''This is a class that will interact with an a secure ftp server.'''
 
-    def __init__(self, *args, **kwargs):
-        super(FTPRemoteObject, self).__init__(*args, **kwargs)
+    def __init__(self, *args, keep_local=False, provider=None, **kwargs):
+        super(SFTPRemoteObject, self).__init__(*args, keep_local=keep_local, provider=provider, **kwargs)
 
-        self._FTPobject = FTPConnection(*args, **kwargs)
-
-    def exists(self):
-        
+    @contextmanager
+    def sftpc(self):
         try:
-            self._FTPobject.bucket_exists(bucket_name)
-        except botocore.exceptions.ClientError as e:
-                raise S3FileException("The file cannot be parsed as an s3 path in form 'bucket/key': %s" % self.local_file())
+            args_use = self.provider.args
+            if len(self.args):
+                args_use = self.args
 
-        return True
+            kwargs_use = {}
+            kwargs_use['host'] = self.host
+            kwargs_use['port'] = int(self.port) if self.port else 22
+            for k, v in self.provider.kwargs.items():
+                kwargs_use[k] = v
+            for k, v in self.kwargs.items():
+                kwargs_use[k] = v
 
-    def download(self, bucket_name, key, file_dir):
-        self._S3object.remote_download(bucket_name, key, file_dir)
-        os.sync() # ensure flush to disk
-        return file_dir
+            conn = pysftp.Connection(*args_use, **kwargs_use)
+            yield conn
+        finally:
+            conn.close()
 
-    def upload(self, bucket_name, key, file_dir):
-        self._S3object.remote_upload(bucket_name, file_dir, key)
-        return file_dir
-
-    def delete_file(self, bucket_name, key):
-        self._S3object.remote_delete_file(bucket_name, key)
-        return key
-
-class FTPConnection():
-    '''This is a connection to a remote ftp server using the
-       pysftp project.'''
-
-    def __init__(self, hostname, username, password, *args, **kwargs):
-
-        if hostname is None:
-            pass
+    def exists(self):        
+        if self._matched_address:
+            with self.sftpc as sftpc:
+                return sftpc.exists(self.remote_path)
+                if sftpc.exists(self.remote_path):
+                    return sftpc.isfile(self.remote_path)
+                return False
         else:
-            self.hostname = hostname
-        self.usersname = username
-        self.password = password
+            raise SFTPFileException("The file cannot be parsed as an STFP path in form 'host:port/path/to/file': %s" % self.local_file())
 
-        self.FTP = pysftp.Connection(self.hostname, username=self.username, password=self.password)
+    def download(self, make_dest_dir=True):
+        with self.sftpc() as sftpc:
+            if self.exists():
+                # if the dest path does not exist
+                if make_dest_dirs:
+                    os.makedirs(os.path.dirname(self.local_path, exists_ok=True))
+
+                sftpc.get(remotepath=self.remote_path, localpath=self.local_path, preserve_mtime=True)
+                os.sync()
+            else:
+                raise SFTPFileException("The file cannot be parsed as an STFP path in form 'host:port/path/to/file': %s" % self.local_file())
+
+    def upload(self):
+        with self.sftpc() as sftpc:
+            sftpc.put(localpath=self.local_path, remotepath=self.remote_path, confirm=True, preserve_mtime=True)
+
+    def delete_file(self):
+        raise NotImplementedError("Cannot delete files from an SFTP server") 
