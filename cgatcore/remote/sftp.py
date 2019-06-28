@@ -19,23 +19,22 @@ class SFTPRemoteObject(AbstractRemoteObject):
 
     @contextmanager
     def sftpc(self):
-        try:
-            args_use = self.provider.args
-            if len(self.args):
-                args_use = self.args
+        
+        args_use = self.provider.args
+        if len(self.args):
+            args_use = self.args
 
-            kwargs_use = {}
-            kwargs_use['host'] = self.host
-            kwargs_use['port'] = int(self.port) if self.port else 22
-            for k, v in self.provider.kwargs.items():
-                kwargs_use[k] = v
-            for k, v in self.kwargs.items():
-                kwargs_use[k] = v
+        kwargs_use = {}
+        kwargs_use['host'] = self.host
+        kwargs_use['port'] = int(self.port) if self.port else 22
+        for k, v in self.provider.kwargs.items():
+            kwargs_use[k] = v
+        for k, v in self.kwargs.items():
+            kwargs_use[k] = v
 
-            conn = pysftp.Connection(*args_use, **kwargs_use)
-            yield conn
-        finally:
-            conn.close()
+        conn = pysftp.Connection(*args_use, **kwargs_use)
+        yield conn
+        conn.close()
 
     def exists(self):        
         if self._matched_address:
