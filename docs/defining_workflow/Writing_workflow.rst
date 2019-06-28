@@ -148,7 +148,7 @@ statement and call the :meth:`pipeline.run` method::
    def sortFile( infile, outfile ):
 
        statement = '''sort %(infile)s > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 On calling the :meth:`pipeline.run` method, the environment of the
 caller is examined for a variable called ``statement``. The variable
@@ -163,7 +163,7 @@ The same mechanism also permits setting configuration parameters, for example::
    def sortFile( infile, outfile ):
 
        statement = '''sort -t %(tmpdir)s %(infile)s > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 will automatically substitute the configuration parameter ``tmpdir``
 into the command. See ConfigurationValues_ for more on using configuration
@@ -182,7 +182,7 @@ fails, it will go unnoticed.  To detect these errors, insert
        statement = '''gunzip %(infile)s %(infile)s.tmp &&
 		      sort -t %(tmpdir)s %(infile)s.tmp > %(outfile)s &&
 		      rm -f %(infile)s.tmp
-       P.run()
+       P.run(statement)
 
 Of course, the statement aboved could be executed more efficiently
 using pipes::
@@ -193,7 +193,7 @@ using pipes::
        statement = '''gunzip < %(infile)s 
 		      | sort -t %(tmpdir)s 
 		      | gzip > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 The pipeline inserts code automatically to check for error return
 codes if multiple commands are combined in a pipe.
@@ -212,7 +212,7 @@ To run the command from the previous section on the cluster::
        statement = '''gunzip < %(infile)s 
 		      | sort -t %(tmpdir)s 
 		      | gzip > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 The pipeline will automatically create the job submission files,
 submit the job to the cluster and wait for its return.
@@ -237,7 +237,7 @@ variables::
        statement = '''gunzip < %(infile)s 
 		      | sort -t %(tmpdir)s 
 		      | gzip > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 The above statement will be run in the queue ``longjobs.q`` at a
 priority of ``-10``.  Additionally, it will be executed in the
@@ -253,7 +253,7 @@ Array jobs can be controlled through the ``job_array`` variable::
        statement = '''grid_task.bash %(infile)s %(outfile)s
           > %(outfile)s.$SGE_TASK_ID 2> %(outfile)s.err.$SGE_TASK_ID
        '''
-       P.run()
+       P.run(statement)
 
 
 Note that the :file:`grid_task.bash` file must be grid engine

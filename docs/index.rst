@@ -109,6 +109,8 @@ For a non-comprehensive list of citations please see our :citing and :ref:`proje
    :hidden:
 
    remote/S3.rst
+   remote/GC.rst
+   remote/Azure.rst
 
 .. toctree::
    :caption: cgatcore functions
