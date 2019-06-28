@@ -21,50 +21,50 @@ class FTPRemoteObject(AbstractRemoteObject):
 
     @contextmanager
     def ftpc(self):
-        try:
-            if (not hasattr(self, "conn") or (hasattr(self, "conn") and not isinstance(self.conn, ftputil.FTPHost))) or self.immediate_close:
-                args_use = self.provider.args
-                if len(self.args):
-                    args_use = self.args
+        
+        if (not hasattr(self, "conn") or (hasattr(self, "conn") and not isinstance(self.conn, ftputil.FTPHost))) or self.immediate_close:
+            args_use = self.provider.args
+            if len(self.args):
+                args_use = self.args
 
-                    kwargs_use = {}
-                    kwargs_use['host'] = self.host
-                    kwargs_use['password'] = None
-                    kwargs_use['username'] = None
-                    kwargs_use['port'] = int(self.port) if self.port else 21
-                    kwargs_use['encrypt_data_channel'] = self.encrypt_data_channel
+                kwargs_use = {}
+                kwargs_use['host'] = self.host
+                kwargs_use['password'] = None
+                kwargs_use['username'] = None
+                kwargs_use['port'] = int(self.port) if self.port else 21
+                kwargs_use['encrypt_data_channel'] = self.encrypt_data_channel
             
-                    for k, v in self.provider.kwargs.items():
-                        kwargs_use[k] = v
-                    for k, v in self.kwargs.items():
-                        kwargs_use[k] = v
+                for k, v in self.provider.kwargs.items():
+                    kwargs_use[k] = v
+                for k, v in self.kwargs.items():
+                    kwargs_use[k] = v
 
 
-                    ftp_base_class = ftplib.FTP_LTS if kwargs_use['encrypt_data_channel'] else ftplib.FTP
+                ftp_base_class = ftplib.FTP_LTS if kwargs_use['encrypt_data_channel'] else ftplib.FTP
 
-                    ftp_session_factory = ftputil.session.session_factory(
+                ftp_session_factory = ftputil.session.session_factory(
                         base_class=ftp_base_class,
                         port=kwargs_use['port'],
                         encrypt_data_channel=kwargs_use['encrypt_data_channel'],
                         debug_level=None)
 
 
-                    conn = ftputil.FTPHost(kwargs_use['host'], kwargs_use['username'], kwargs_use['password'], session_factory=ftp_session_factory)
+                conn = ftputil.FTPHost(kwargs_use['host'], kwargs_use['username'], kwargs_use['password'], session_factory=ftp_session_factory)
 
-                    if self.immediate_close:
-                        yield conn
-                    else:
-                        self.conn = conn
-                        yield self.conn
-                elif not self.immediate_close:
+                if self.immediate_close:
+                    yield conn
+                else:
+                    self.conn = conn
                     yield self.conn
-        finally:
-            if self.immediate_close:
-                try:
-                    conn.seep_alive()
-                    conn.close()
-                except:
-                    pass
+            elif not self.immediate_close:
+                yield self.conn
+
+        if self.immediate_close:
+            try:
+                conn.seep_alive()
+                conn.close()
+            except:
+                pass
 
     def exists(self):        
         if self._matched_address:
