@@ -28,3 +28,5 @@ dependencies:
 - boto3
 - google-cloud-storage
 - google-cloud-sdk
+- ftputil
+- pysftp

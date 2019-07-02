@@ -26,7 +26,7 @@ there is a selection "Access keys". The account name and access keys are listed 
 Download from Azure
 -------------------
 
-Using remote files with Azure can be acieved easily by using `download`, `upload` and `delete_file` functions that are written into a RemoteClass.
+Using remote files with Azure can be achieved easily by using `download`, `upload` and `delete_file` functions that are written into a RemoteClass.
 
 Firstly you will need to initiate the class as follows::
 
