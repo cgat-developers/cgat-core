@@ -94,6 +94,19 @@ This can easily be performed by::
    conda search <package>
    conda install <package>
 
+Access libdrmaa shared library
+------------------------------
+
+You may also need access to the libdrmaa.so.1.0 C library, which can often be installed as part of the
+libdrmaa-dev package on most Unixes. Once you have installed that, you may need to tell DRMAA Python
+where it is installed by setting the DRMAA_LIBRARY_PATH environment variable, if it is not installed
+in a location that Python usually looks for libraries.
+
+In order to set this correctly every time please add the following line to your bashrc, but set the library
+path to the location of the libdrmaa.so.1.0::
+
+  export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0
+
 
 
 .. _conda: https://conda.io
