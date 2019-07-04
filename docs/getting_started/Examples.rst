@@ -303,4 +303,22 @@ The first command retrieves the latest changes from the master
 repository and the second command updates your local version with
 these changes.
 
+
+Using qsub commands
+-------------------
+
+We would always recommend using cgat-core to perform the job submission as this
+is handled in the background without the need to use qsub commands. However, 
+if users wish to use qsub then it is perfectly simple to do so. Since our
+statements to P.run() are essentially commandline scripts then you can write
+the qsub as you would normally do when sending a script to the commandline. For
+example::
+
+   statement = "qsub [commands] echo 'This is where you would put commands you wan ran' "
+   
+   P.run(statament)
+   
+When running the pipeline make sure you specify `--no-cluster` as a commandlie option and your
+good to go.
+
 .. _pipelineReporting:
