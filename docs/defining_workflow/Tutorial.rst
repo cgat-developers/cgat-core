@@ -22,11 +22,11 @@ Setting up the pipleine
 
 **1.** First navigate to a directory where you want to start building your code::
 
-   mkdir test && touch test/pipeline.yml && touch pipeline_test.py && touch ModuleTest.py
+   mkdir test && cd test && mkdir configuration && touch configuration/pipeline.yml && touch pipeline_test.py && touch ModuleTest.py
 
 This will create a directory called test in the current directory with the following layout::
 
-   |-- test
+   |-- configuration
    |   `-- pipeline.yml
    `-- pipeline_test.py
     -- ModuleTest.py
@@ -69,6 +69,10 @@ within scripts.
 Importing pipeline from cgatcore allows users to run utility functions for interfacing with CGAT ruffus pipelines
 with an HPC cluster, uploading data to a database, provides paramaterisation and more.
 
+You'll also need python modules::
+  
+  import os
+  import sys
 
 **Config parser:** This code helps with parsing the pipeline.yml file::
 
@@ -177,10 +181,11 @@ The following code should be pasted just before the **Commandline parser** argum
 To run the pipeline navigate to the working directory and then run the pipeline. ::
 
    python /location/to/code/pipeline_test.py config
+   python /location/to/code/pipeline_test.py show full -v 5
 
 This will place the pipeline.yml in the folder. Then run ::
 
-   python /location/to/code/pipeline_test.py  make full -v5
+   python /location/to/code/pipeline_test.py  make full -v5 --local
 
 The pipeline will then execute and count the words in the yml file.
 
