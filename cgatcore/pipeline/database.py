@@ -19,7 +19,7 @@ from cgatcore.pipeline.parameters import get_params
 
 def tablequote(track):
     '''quote a track name such that is suitable as a table name.'''
-    return re.sub("[-(),\[\].]", "_", track)
+    return re.sub(r"[-(),\[\].]", "_", track)
 
 
 def to_table(outfile):

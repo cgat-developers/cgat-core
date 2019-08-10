@@ -19,7 +19,6 @@ def executewait(dbhandle, statement, regex_error="locked",
                 retries=-1, wait=5):
     '''repeatedly execute an SQL statement until it succeeds.
 
-
     Arguments
     ---------
     dbhandle : object
