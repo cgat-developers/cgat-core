@@ -405,6 +405,10 @@ class TestExecutionRunCluster(TestExecutionRunLocal):
         return iotools.remote_file_exists(filename, hostname, expect)
 
     def test_job_should_fail_if_cancelled(self):
+
+        if not P.will_run_on_cluster(P.get_parameters()):
+            return
+
         if QUEUE_MANAGER == "slurm":
             self.assertRaises(
                 OSError,
