@@ -9,6 +9,9 @@ import cgatcore.pipeline as P
 import cgatcore.iotools as iotools
 
 
+QUEUE_MANAGER = P.get_parameters().get("cluster", {}).get("queue_manager", None)
+
+
 @contextlib.contextmanager
 def run_on_cluster(to_cluster):
     if to_cluster:
@@ -218,6 +221,27 @@ class TestExecutionRunLocal(unittest.TestCase):
 
         self.assertEqual(memory_used, self.test_memory_size)
 
+    def test_job_should_fail_if_killed(self):
+        self.assertRaises(
+            OSError,
+            P.run,
+            "kill -9 $$",
+            to_cluster=self.to_cluster)
+
+    def test_job_should_fail_if_usersignal1(self):
+        self.assertRaises(
+            OSError,
+            P.run,
+            "kill -SIGUSR1 $$",
+            to_cluster=self.to_cluster)
+
+    def test_job_should_fail_if_usersignal1(self):
+        self.assertRaises(
+            OSError,
+            P.run,
+            "kill -SIGUSR2 $$",
+            to_cluster=self.to_cluster)
+
     def test_job_should_pass_if_unlimited_memory_required(self):
         outfile = os.path.join(self.work_dir, "out")
 
@@ -365,7 +389,8 @@ class TestExecutionRunLocal(unittest.TestCase):
             self.validate_benchmark_data(d, s)
 
 
-class TestExecutionRuncluster(TestExecutionRunLocal):
+@unittest.skipIf(QUEUE_MANAGER is None, "no cluster configured for testing")
+class TestExecutionRunCluster(TestExecutionRunLocal):
     to_cluster = True
 
     def setUp(self):
@@ -378,6 +403,43 @@ class TestExecutionRuncluster(TestExecutionRunLocal):
 
     def file_exists(self, filename, hostname=None, expect=False):
         return iotools.remote_file_exists(filename, hostname, expect)
+
+    def test_job_should_fail_if_cancelled(self):
+
+        if not P.will_run_on_cluster(P.get_parameters()):
+            return
+
+        if QUEUE_MANAGER == "slurm":
+            self.assertRaises(
+                OSError,
+                P.run,
+                "scancel $SLURM_JOB_ID",
+                to_cluster=self.to_cluster)
+        elif QUEUE_MANAGER == "sge":
+            self.assertRaises(
+                OSError,
+                P.run,
+                "qdel $SGE_TASK_ID",
+                to_cluster=self.to_cluster)
+
+    @unittest.skipIf(QUEUE_MANAGER != "slurm", "test relevant in SLURM only")
+    def test_job_should_pass_if_memory_bounds_hit_with_io(self):
+        # slurm issue - memory hit due to I/O buffering and error
+        # is reported.
+        outfile = os.path.join(self.work_dir, "out")
+        benchmark_data = P.run(
+            "python -c 'import numpy; "
+            "a = numpy.array(numpy.arange(0, 10 * {memory}), numpy.int8); "
+            "numpy.save(\"outfile\", a); "
+            "'".format(
+                memory=self.test_memory_size,
+                outfile=outfile),
+            to_cluster=self.to_cluster,
+            cluster_memory_ulimit=False,
+            job_memory="{}G".format(
+                (self.base_memory_size + self.test_memory_size) / 10**9))
+
+        self.assertTrue(benchmark_data)
 
 
 if __name__ == "__main__":

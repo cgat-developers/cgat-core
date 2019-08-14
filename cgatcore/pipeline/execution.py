@@ -680,6 +680,10 @@ class Executor(object):
         # mapped to common fields
         for jobinfo, statement in zip(resource_usage, statements):
 
+            if resource_usage is None:
+                E.warn("no resource usage for {}".format(self.task_name))
+                continue
+
             # add some common fields
             data = {"task": self.task_name,
                     "engine": self.__class__.__name__,

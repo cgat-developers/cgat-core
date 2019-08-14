@@ -897,8 +897,8 @@ class LoggingFilterProgress(logging.Filter):
 
         def split_by_job(text):
             # ignore optional docstring at beginning (is bracketed by '"')
-            text = re.sub('^\"[^"]+\"', "", "".join(text))
-            for line in re.split("Job\s+=", text):
+            text = re.sub(r'^\"[^"]+\"', "", "".join(text))
+            for line in re.split(r"Job\s+=", text):
                 if not line.strip():
                     continue
                 if "Make missing directories" in line:
@@ -972,7 +972,7 @@ class LoggingFilterProgress(logging.Filter):
                     r"\[.*-> ([^\]]+)\]", record.msg).groups()[0]
             except AttributeError:
                 return True
-            job_name = re.sub("\s", "", job_name)
+            job_name = re.sub(r"\s", "", job_name)
             task_name = self.map_job2task.get(job_name, None)
             if task_name is None:
                 return

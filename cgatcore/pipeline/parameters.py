@@ -12,10 +12,14 @@ import sys
 import platform
 import getpass
 import logging
-import yaml
 import re
 from collections import defaultdict
+try:
+    from collections.abc import Sequence, Mapping  # noqa
+except ImportError:
+    from collections import Sequence, Mapping  # noqa
 
+import yaml
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 from cgatcore.pipeline.utils import get_caller_locals, is_test
@@ -186,8 +190,8 @@ def nested_update(old, new):
     new[x], otherwise set old[x] to new[x]'''
 
     for key, value in new.items():
-        if isinstance(value, collections.Mapping) and \
-           isinstance(old.get(key, str()), collections.Mapping):
+        if isinstance(value, Mapping) and \
+           isinstance(old.get(key, str()), Mapping):
             old[key].update(new[key])
         else:
             old[key] = new[key]
@@ -387,7 +391,7 @@ def get_parameters(filenames=None,
     # for backwards compatibility - normalize dictionaries
     p = {}
     for k, v in PARAMS.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, Mapping):
             for kk, vv in v.items():
                 new_key = "{}_{}".format(k, kk)
                 if new_key in p:

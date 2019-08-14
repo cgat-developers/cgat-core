@@ -109,33 +109,28 @@ class DRMAACluster(object):
             retval = None
 
         stdout, stderr = self.get_drmaa_job_stdout_stderr(stdout_path, stderr_path)
-
-        if retval is not None and not self.ignore_errors:
-            if retval.exitStatus != 0:
-                raise OSError(
-                    "---------------------------------------\n"
-                    "Job {} exited with error code {}: \n"
-                    "The stderr was: \n{}\n{}\n"
-                    "-----------------------------------------".format(
-                        job_id, retval.exitStatus, "".join(stderr), statement))
-
-            elif retval.hasSignal:
-                raise OSError(
-                    "---------------------------------------\n"
-                    "Job {} was terminated by signal {}: \n"
-                    "The stderr was: \n{}\n{}\n"
-                    "-----------------------------------------".format(
-                        job_id, retval.terminatedSignal, "".join(stderr), statement))
-
-            elif retval.hasExited is False or retval.wasAborted is True:
-                raise OSError(
-                    "-------------------------------------------------\n"
-                    "cluster job {} was aborted ({}) and/or failed to exit ({}) "
-                    "while running the following statement:\n"
-                    "\n{}\n"
-                    "(Job may have been cancelled by the user or the scheduler)\n"
-                    "----------------------------------------------------------\n"
-                    .format(job_id, retval.wasAborted, not retval.hasExited, statement))
+        if retval is not None:
+            if retval.exitStatus == 0:
+                if retval.wasAborted is True:
+                    get_logger().warning(
+                        "Job {} marked as hasAborted=True but completed successfully, hasExited={} "
+                        "(Job may have been cancelled by the user or the scheduler due to memory constraints)"
+                        "The stderr was \n{}\nstatement = {}".format(
+                            job_id, retval.hasExited, "".join(stderr), statement))
+                
+            else:
+                msg = ("Job {} has non-zero exitStatus {}: hasExited={},  wasAborted={}"
+                       "hasSignal={}, terminatedSignal='{}' "
+                       "\nstatement = {}".format(
+                           job_id, retval.exitStatus, retval.hasExited, retval.wasAborted,
+                           retval.hasSignal, retval.terminatedSignal,
+                           statement))
+                if stderr:
+                    msg += "\n stderr = {}".format("".join(stderr))
+                if self.ignore_errors:
+                    get_logger().warning(msg)
+                else:
+                    raise OSError(msg)
 
         # get hostname from job script
         hostname = stdout[-3][:-1]
@@ -361,16 +356,17 @@ class SlurmCluster(DRMAACluster):
         # Note the that the specified memory must be per CPU
         # for consistency with the implemented SGE approach
 
-        if job_memory.endswith("G"):
-            job_memory_per_cpu = int(math.ceil(float(job_memory[:-1]) * 1000))
-        elif job_memory.endswith("M"):
-            job_memory_per_cpu = int(math.ceil(float(job_memory[:-1])))
-        else:
-            raise ValueError('job memory unit not recognised for SLURM, '
-                             'must be either "M" (for Mb) or "G" (for Gb),'
-                             ' e.g. 1G or 1000M for 1 Gigabyte of memory')
+        if job_memory != "unlimited":
+            if job_memory.endswith("G"):
+                job_memory_per_cpu = int(math.ceil(float(job_memory[:-1]) * 1000))
+            elif job_memory.endswith("M"):
+                job_memory_per_cpu = int(math.ceil(float(job_memory[:-1])))
+            else:
+                raise ValueError('job memory unit not recognised for SLURM, '
+                                 'must be either "M" (for Mb) or "G" (for Gb),'
+                                 ' e.g. 1G or 1000M for 1 Gigabyte of memory')
 
-        spec.append("--mem-per-cpu={}".format(job_memory_per_cpu))
+            spec.append("--mem-per-cpu={}".format(job_memory_per_cpu))
 
         # set the partition to use (equivalent of SGE queue)
         spec.append("--partition={}".format(kwargs["queue"]))
