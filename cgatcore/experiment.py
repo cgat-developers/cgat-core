@@ -262,7 +262,7 @@ import functools
 import gzip
 import warnings
 import pipes
-import optparse
+import argparse
 import textwrap
 import random
 import uuid
@@ -325,14 +325,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 
-class BetterFormatter(optparse.IndentedHelpFormatter):
+class BetterFormatter(argparse.HelpFormatter):
     """A formatter for :class:`OptionParser` outputting indented
     help text.
     """
 
     def __init__(self, *args, **kwargs):
 
-        optparse.IndentedHelpFormatter.__init__(self, *args, **kwargs)
+        argparse.HelpFormatter.__init__(self, *args, **kwargs)
         self.wrapper = textwrap.TextWrapper(width=self.width)
 
     def _formatter(self, text):
@@ -357,7 +357,7 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 
     def format_usage(self, usage):
 
-        return self._formatter(optparse._("Usage: %s\n") % usage)
+        return self._formatter(argparse._("Usage: %s\n") % usage)
 
     def format_option(self, option):
         # Ripped and modified from Python 2.6's optparse's HelpFormatter
@@ -396,7 +396,7 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
 #################################################################
 #################################################################
 #################################################################
-class AppendCommaOption(optparse.Option):
+class AppendCommaOption(argparse.Action):
 
     '''Option with additional parsing capabilities.
 
@@ -450,7 +450,7 @@ class AppendCommaOption(optparse.Option):
                 self, action, dest, opt, value, values, parser)
 
 
-class OptionParser(optparse.OptionParser):
+class OptionParser(argparse.ArgumentParser):
 
     '''CGAT derivative of OptionParser.
     '''
@@ -461,7 +461,7 @@ class OptionParser(optparse.OptionParser):
         if "--no-usage" in sys.argv:
             kwargs["usage"] = None
 
-        optparse.OptionParser.__init__(self, *args,
+        argparse.ArgumentParser.__init__(self, *args,
                                        option_class=AppendCommaOption,
                                        formatter=BetterFormatter(),
                                        **kwargs)
@@ -473,10 +473,6 @@ class OptionParser(optparse.OptionParser):
             self.add_option("--no-usage", dest="help_no_usage",
                             action="store_true",
                             help="output help without usage information")
-
-
-class OptionGroup(optparse.OptionGroup):
-    pass
 
 
 def callbackShortHelp(option, opt, value, parser):
@@ -717,43 +713,40 @@ def start(parser=None,
 
     global_starting_time = time.time()
 
-    group = OptionGroup(parser, "Script timing options")
+    group = parser.add_argument_group("Script timing options")
 
-    group.add_option("--timeit", dest='timeit_file', type="string",
+    group.add_argument("--timeit", dest='timeit_file', type="string",
                      help="store timeing information in file [%default].")
-    group.add_option("--timeit-name", dest='timeit_name', type="string",
+    group.add_argument("--timeit-name", dest='timeit_name', type="string",
                      help="name in timing file for this class of jobs "
                      "[%default].")
-    group.add_option("--timeit-header", dest='timeit_header',
+    group.add_argument("--timeit-header", dest='timeit_header',
                      action="store_true",
                      help="add header for timing information [%default].")
-    parser.add_option_group(group)
 
-    group = OptionGroup(parser, "Common options")
+    group = parser.add_argument_group("Common options")
 
-    group.add_option("--random-seed", dest='random_seed', type="int",
+    group.add_argument("--random-seed", dest='random_seed', type="int",
                      help="random seed to initialize number generator "
                      "with [%default].")
 
-    group.add_option("-v", "--verbose", dest="loglevel", type="int",
+    group.add_argument("-v", "--verbose", dest="loglevel", type="int",
                      help="loglevel [%default]. The higher, the more output.")
 
-    group.add_option("--log-config-filename",
+    group.add_argument("--log-config-filename",
                      dest="log_config_filename",
                      type="string",
                      default="logging.yml",
                      help="Configuration file for logger [%default].")
 
-    group.add_option("--tracing", dest="tracing", type="choice",
+    group.add_argument("--tracing", dest="tracing", type="choice",
                      choices=("function",),
                      default=None,
                      help="enable function tracing [%default].")
 
-    group.add_option("-?", dest="short_help", action="callback",
+    group.add_argument("-?", dest="short_help", action="callback",
                      callback=callbackShortHelp,
                      help="output short help (command line options only.")
-
-    parser.add_option_group(group)
 
     if quiet:
         parser.set_defaults(loglevel=0)
@@ -769,7 +762,7 @@ def start(parser=None,
     )
 
     if add_csv_options:
-        parser.add_option("--csv-dialect", dest="csv_dialect", type="string",
+        parser.add_argument("--csv-dialect", dest="csv_dialect", type="string",
                           help="csv dialect to use [%default].")
 
         parser.set_defaults(
@@ -778,41 +771,41 @@ def start(parser=None,
         )
 
     if add_cluster_options:
-        group = OptionGroup(parser, "cluster options")
-        group.add_option("--no-cluster", "--local", dest="without_cluster",
+        group = parser.add_argument_group("cluster options")
+        group.add_argument("--no-cluster", "--local", dest="without_cluster",
                          action="store_true",
                          help="do no use cluster - run locally [%default].")
-        group.add_option("--cluster-priority", dest="cluster_priority",
+        group.add_argument("--cluster-priority", dest="cluster_priority",
                          type="int",
                          help="set job priority on cluster [%default].")
-        group.add_option("--cluster-queue", dest="cluster_queue",
+        group.add_argument("--cluster-queue", dest="cluster_queue",
                          type="string",
                          help="set cluster queue [%default].")
-        group.add_option("--cluster-num-jobs", dest="cluster_num_jobs",
+        group.add_argument("--cluster-num-jobs", dest="cluster_num_jobs",
                          type="int",
                          help="number of jobs to submit to the queue execute "
                          "in parallel [%default].")
-        group.add_option("--cluster-parallel",
+        group.add_argument("--cluster-parallel",
                          dest="cluster_parallel_environment",
                          type="string",
                          help="name of the parallel environment to use "
                          "[%default].")
-        group.add_option("--cluster-options", dest="cluster_options",
+        group.add_argument("--cluster-options", dest="cluster_options",
                          type="string",
                          help="additional options for cluster jobs, passed "
                          "on to queuing system [%default].")
-        group.add_option("--cluster-queue-manager",
+        group.add_argument("--cluster-queue-manager",
                          dest="cluster_queue_manager",
                          type="choice",
                          choices=("sge", "slurm", "torque", "pbspro"),
                          help="cluster queuing system "
                          "[%default].")
-        group.add_option("--cluster-memory-resource",
+        group.add_argument("--cluster-memory-resource",
                          dest="cluster_memory_resource",
                          type="string",
                          help="resource name to allocate memory with "
                          "[%default].")
-        group.add_option("--cluster-memory-default",
+        group.add_argument("--cluster-memory-default",
                          dest="cluster_memory_default",
                          type="string",
                          help="default amount of memory to allocate "
@@ -830,16 +823,16 @@ def start(parser=None,
         parser.add_option_group(group)
 
     if add_output_options or add_pipe_options:
-        group = OptionGroup(parser, "Input/output options")
+        group = parser.add_argument_group("Input/output options")
 
         if add_output_options:
-            group.add_option(
+            group.add_argument(
                 "-P", "--output-filename-pattern",
                 dest="output_filename_pattern", type="string",
                 help="OUTPUT filename pattern for various methods "
                 "[%default].")
 
-            group.add_option("-F", "--force-output", dest="output_force",
+            group.add_argument("-F", "--force-output", dest="output_force",
                              action="store_true",
                              help="force over-writing of existing files.")
 
@@ -848,18 +841,18 @@ def start(parser=None,
 
         if add_pipe_options:
 
-            group.add_option("-I", "--stdin", dest="stdin", type="string",
+            group.add_argument("-I", "--stdin", dest="stdin", type="string",
                              help="file to read stdin from [default = stdin].",
                              metavar="FILE")
-            group.add_option("-L", "--log", dest="stdlog", type="string",
+            group.add_argument("-L", "--log", dest="stdlog", type="string",
                              help="file with logging information "
                              "[default = stdout].",
                              metavar="FILE")
-            group.add_option("-E", "--error", dest="stderr", type="string",
+            group.add_argument("-E", "--error", dest="stderr", type="string",
                              help="file with error information "
                              "[default = stderr].",
                              metavar="FILE")
-            group.add_option("-S", "--stdout", dest="stdout", type="string",
+            group.add_argument("-S", "--stdout", dest="stdout", type="string",
                              help="file where output is to go "
                              "[default = stdout].",
                              metavar="FILE")
@@ -869,21 +862,18 @@ def start(parser=None,
             parser.set_defaults(stdlog=sys.stdout)
             parser.set_defaults(stdin=sys.stdin)
 
-        parser.add_option_group(group)
-
     if add_database_options:
-        group = OptionGroup(parser, "database connection options")
-        group.add_option(
+        group = parser.add_argument_group("database connection options")
+        group.add_argument(
             "--database-url", dest="database_url", type="string",
             help="database connection url, for example sqlite:///./csvdb [%default].")
 
-        group.add_option(
+        group.add_argument(
             "--database-schema", dest="database_schema", type="string",
             help="database schema [%default]")
         
         parser.set_defaults(database_url="sqlite:///./csvdb")
         parser.set_defaults(database_schema=None)
-        parser.add_option_group(group)
 
     # restore user defaults
     parser.defaults.update(user_defaults)
@@ -892,57 +882,57 @@ def start(parser=None,
         return parser
 
     if not no_parsing:
-        (global_options, global_args) = parser.parse_args(argv[1:])
+        (global_args) = parser.parse_args(argv[1:])
 
     if global_options.random_seed is not None:
         random.seed(global_options.random_seed)
 
     if add_pipe_options:
-        if global_options.stdout != sys.stdout:
-            global_options.stdout = open_file(global_options.stdout, "w")
-        if global_options.stderr != sys.stderr:
-            if global_options.stderr == "stderr":
-                global_options.stderr = global_options.stderr
+        if global_args.stdout != sys.stdout:
+            global_args.stdout = open_file(global_options.stdout, "w")
+        if global_args.stderr != sys.stderr:
+            if global_args.stderr == "stderr":
+                global_args.stderr = global_options.stderr
             else:
-                global_options.stderr = open_file(global_options.stderr, "w")
-        if global_options.stdlog != sys.stdout:
-            global_options.stdlog = open_file(global_options.stdlog, "a")
-        if global_options.stdin != sys.stdin:
-            global_options.stdin = open_file(global_options.stdin, "r")
+                global_args.stderr = open_file(global_options.stderr, "w")
+        if global_args.stdlog != sys.stdout:
+            global_args.stdlog = open_file(global_options.stdlog, "a")
+        if global_args.stdin != sys.stdin:
+            global_args.stdin = open_file(global_options.stdin, "r")
     else:
-        global_options.stderr = sys.stderr
-        global_options.stdout = sys.stdout
-        global_options.stdlog = sys.stdout
-        global_options.stdin = sys.stdin
+        global_args.stderr = sys.stderr
+        global_args.stdout = sys.stdout
+        global_args.stdlog = sys.stdout
+        global_args.stdin = sys.stdin
 
     # reset log_config_filename if logging.yml does not exist
-    if global_options.log_config_filename == "logging.yml" and not os.path.exists(
-            global_options.log_config_filename):
-        global_options.log_config_filename = None
+    if global_args.log_config_filename == "logging.yml" and not os.path.exists(
+            global_args.log_config_filename):
+        global_args.log_config_filename = None
 
-    if global_options.log_config_filename:
-        if os.path.exists(global_options.log_config_filename):
+    if global_args.log_config_filename:
+        if os.path.exists(global_args.log_config_filename):
             # configure logging from filename
-            with open(global_options.log_config_filename) as inf:
+            with open(global_args.log_config_filename) as inf:
                 dict_yaml = yaml.load(inf)
             logging.config.dictConfig(dict_yaml)
         else:
             raise OSError("file {} with logging configuration does not exist".format(
-                global_options.log_config_filename))
+                global_args.log_config_filename))
     else:
         # configure logging from command line options
         # map from 0-10 to logging scale
         # 0: quiet
         # 1: little verbositiy
         # >1: increased verbosity
-        if global_options.loglevel == 0:
+        if global_args.loglevel == 0:
             lvl = logging.ERROR
-        elif global_options.loglevel == 1:
+        elif global_args.loglevel == 1:
             lvl = logging.INFO
         else:
             lvl = logging.DEBUG
 
-        if global_options.stdout == global_options.stdlog:
+        if global_args.stdout == global_args.stdlog:
             logformat = '# %(asctime)s %(levelname)s %(message)s'
         else:
             logformat = '%(asctime)s %(levelname)s %(message)s'
@@ -950,7 +940,7 @@ def start(parser=None,
         logging.basicConfig(
             level=lvl,
             format=format,
-            stream=global_options.stdlog)
+            stream=global_args.stdlog)
 
         # set up multi-line logging
         # Note that .handlers is not part of the API, might change
@@ -964,12 +954,12 @@ def start(parser=None,
         logger = logging.getLogger("cgatcore")
 
     logger.info(get_header())
-    logger.info(get_params(global_options))
+    logger.info(get_params(global_args))
 
-    if global_options.tracing == "function":
+    if global_args.tracing == "function":
         sys.settrace(trace_calls)
 
-    return global_options, global_args
+    return global_args
 
 
 def stop(logger=None):
@@ -979,16 +969,16 @@ def stop(logger=None):
     and writes the final log messages indicating script completion.
     """
 
-    if global_options.loglevel >= 1 and global_benchmark:
+    if global_args.loglevel >= 1 and global_benchmark:
         t = time.time() - global_starting_time
-        global_options.stdlog.write(
+        global_args.stdlog.write(
             "######### Time spent in benchmarked functions #########\n")
-        global_options.stdlog.write("# function\tseconds\tpercent\n")
+        global_args.stdlog.write("# function\tseconds\tpercent\n")
         for key, value in list(global_benchmark.items()):
-            global_options.stdlog.write(
+            global_args.stdlog.write(
                 "# %s\t%6i\t%5.2f%%\n" % (key, value,
                                           (100.0 * float(value) / t)))
-        global_options.stdlog.write(
+        global_args.stdlog.write(
             "#######################################################\n")
 
     if logger is None:
@@ -996,20 +986,20 @@ def stop(logger=None):
     logger.info(get_footer())
 
     # close files
-    if global_options.stdout != sys.stdout:
-        global_options.stdout.close()
+    if global_args.stdout != sys.stdout:
+        global_args.stdout.close()
     # do not close log, otherwise error occurs in atext.py
     # if global_options.stdlog != sys.stdout:
     #   global_options.stdlog.close()
 
-    if global_options.stderr != sys.stderr:
-        global_options.stderr.close()
+    if global_args.stderr != sys.stderr:
+        global_args.stderr.close()
 
-    if global_options.timeit_file:
+    if global_args.timeit_file:
 
-        outfile = open(global_options.timeit_file, "a")
+        outfile = open(global_args.timeit_file, "a")
 
-        if global_options.timeit_header:
+        if global_args.timeit_header:
             outfile.write("\t".join(
                 ("name", "wall", "user", "sys", "cuser", "csys",
                  "host", "system", "release", "machine",
@@ -1023,7 +1013,7 @@ def stop(logger=None):
         if sys.argv[0] == "run.py":
             cmd = global_args[0]
             if len(global_args) > 1:
-                cmd += " '" + "' '".join(global_args[1:]) + "'"
+                cmd += " '" + "' '".join(global_args[1:]) + "'" # AC hmm not sure what old global_args is not
         else:
             cmd = sys.argv[0]
 
@@ -1043,7 +1033,7 @@ def get_output_file(section):
     '''return filename to write to, replacing any ``%s`` with section in
     the output pattern for files (``--output-filename-pattern``).
     '''
-    return re.sub("%s", section, global_options.output_filename_pattern)
+    return re.sub("%s", section, global_args.output_filename_pattern)
 
 
 def open_output_file(section, mode="w", encoding="utf-8"):
@@ -1074,9 +1064,9 @@ def open_output_file(section, mode="w", encoding="utf-8"):
     fn = get_output_file(section)
 
     if fn == "-":
-        return global_options.stdout
+        return global_args.stdout
 
-    if not global_options.output_force and os.path.exists(fn):
+    if not global_args.output_force and os.path.exists(fn):
         raise OSError(
             "file %s already exists, use --force-output to "
             "overwrite existing files.".format(fn))
