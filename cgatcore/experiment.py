@@ -288,111 +288,6 @@ global_args = None
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
-##########################################################################
-# The code for BetterFormatter has been taken from
-# http://code.google.com/p/yjl/source/browse/Python/snippet/BetterFormatter.py
-__copyright__ = """
-Copyright (c) 2001-2006 Gregory P. Ward.  All rights reserved.
-Copyright (c) 2002-2006 Python Software Foundation.  All rights reserved.
-Copyright (c) 2011 Yu-Jie Lin.  All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-  * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
-  * Neither the name of the author nor the names of its
-    contributors may be used to endorse or promote products derived from
-    this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-"""
-
-
-class BetterFormatter(argparse.HelpFormatter):
-    """A formatter for :class:`OptionParser` outputting indented
-    help text.
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        argparse.HelpFormatter.__init__(self, *args, **kwargs)
-        self.wrapper = textwrap.TextWrapper(width=self.width)
-
-    def _formatter(self, text):
-
-        return '\n'.join(['\n'.join(p) for p in
-                          map(self.wrapper.wrap,
-                              self.parser.expand_prog_name(text).split('\n'))])
-
-    def format_description(self, description):
-
-        if description:
-            return self._formatter(description) + '\n'
-        else:
-            return ''
-
-    def format_epilog(self, epilog):
-
-        if epilog:
-            return '\n' + self._formatter(epilog) + '\n'
-        else:
-            return ''
-
-    def format_usage(self, usage):
-
-        return self._formatter(argparse._("Usage: %s\n") % usage)
-
-    def format_option(self, option):
-        # Ripped and modified from Python 2.6's optparse's HelpFormatter
-        result = []
-        opts = self.option_strings[option]
-        opt_width = self.help_position - self.current_indent - 2
-        if len(opts) > opt_width:
-            opts = "%*s%s\n" % (self.current_indent, "", opts)
-            indent_first = self.help_position
-        else:                       # start help on same line as opts
-            opts = "%*s%-*s  " % (self.current_indent, "", opt_width, opts)
-            indent_first = 0
-        result.append(opts)
-        if option.help:
-            help_text = self.expand_default(option)
-            # Added expand program name
-            help_text = self.parser.expand_prog_name(help_text)
-            # Modified the generation of help_line
-            help_lines = []
-            wrapper = textwrap.TextWrapper(width=self.help_width)
-            for p in map(wrapper.wrap, help_text.split('\n')):
-                if p:
-                    help_lines.extend(p)
-                else:
-                    help_lines.append('')
-            # End of modification
-            result.append("%*s%s\n" % (indent_first, "", help_lines[0]))
-            result.extend(["%*s%s\n" % (self.help_position, "", line)
-                           for line in help_lines[1:]])
-        elif opts[-1] != "\n":
-            result.append("\n")
-        return "".join(result)
-
-
-# End of BetterFormatter()
 #################################################################
 #################################################################
 #################################################################
@@ -462,15 +357,12 @@ class OptionParser(argparse.ArgumentParser):
             kwargs["usage"] = None
 
         argparse.ArgumentParser.__init__(self, *args,
-                                       option_class=AppendCommaOption,
-                                       formatter=BetterFormatter(),
                                        **kwargs)
 
         # set new option parser
-        # parser.formatter = BetterFormatter()
         # parser.formatter.set_parser(parser)
         if "--no-usage" in sys.argv:
-            self.add_option("--no-usage", dest="help_no_usage",
+            self.add_argument("--no-usage", dest="help_no_usage",
                             action="store_true",
                             help="output help without usage information")
 
@@ -709,15 +601,15 @@ def start(parser=None,
     global global_options, global_args, global_starting_time
 
     # save default values given by user
-    user_defaults = copy.copy(parser.defaults)
+    user_defaults = copy.copy(parser.parse_args([]))
 
     global_starting_time = time.time()
 
     group = parser.add_argument_group("Script timing options")
 
-    group.add_argument("--timeit", dest='timeit_file', type="string",
+    group.add_argument("--timeit", dest='timeit_file', type=str,
                      help="store timeing information in file [%default].")
-    group.add_argument("--timeit-name", dest='timeit_name', type="string",
+    group.add_argument("--timeit-name", dest='timeit_name', type=str,
                      help="name in timing file for this class of jobs "
                      "[%default].")
     group.add_argument("--timeit-header", dest='timeit_header',
@@ -726,26 +618,25 @@ def start(parser=None,
 
     group = parser.add_argument_group("Common options")
 
-    group.add_argument("--random-seed", dest='random_seed', type="int",
+    group.add_argument("--random-seed", dest='random_seed', type=int,
                      help="random seed to initialize number generator "
                      "with [%default].")
 
-    group.add_argument("-v", "--verbose", dest="loglevel", type="int",
+    group.add_argument("-v", "--verbose", dest="loglevel", type=int,
                      help="loglevel [%default]. The higher, the more output.")
 
     group.add_argument("--log-config-filename",
                      dest="log_config_filename",
-                     type="string",
+                     type=str,
                      default="logging.yml",
                      help="Configuration file for logger [%default].")
 
-    group.add_argument("--tracing", dest="tracing", type="choice",
-                     choices=("function",),
+    group.add_argument("--tracing", dest="tracing", type=str,
+                     choices=["function"],
                      default=None,
                      help="enable function tracing [%default].")
 
-    group.add_argument("-?", dest="short_help", action="callback",
-                     callback=callbackShortHelp,
+    group.add_argument("-?", type=callbackShortHelp,
                      help="output short help (command line options only.")
 
     if quiet:
@@ -762,7 +653,7 @@ def start(parser=None,
     )
 
     if add_csv_options:
-        parser.add_argument("--csv-dialect", dest="csv_dialect", type="string",
+        parser.add_argument("--csv-dialect", dest="csv_dialect", type=str,
                           help="csv dialect to use [%default].")
 
         parser.set_defaults(
@@ -776,38 +667,38 @@ def start(parser=None,
                          action="store_true",
                          help="do no use cluster - run locally [%default].")
         group.add_argument("--cluster-priority", dest="cluster_priority",
-                         type="int",
+                         type=int,
                          help="set job priority on cluster [%default].")
         group.add_argument("--cluster-queue", dest="cluster_queue",
-                         type="string",
+                         type=str,
                          help="set cluster queue [%default].")
         group.add_argument("--cluster-num-jobs", dest="cluster_num_jobs",
-                         type="int",
+                         type=int,
                          help="number of jobs to submit to the queue execute "
                          "in parallel [%default].")
         group.add_argument("--cluster-parallel",
                          dest="cluster_parallel_environment",
-                         type="string",
+                         type=str,
                          help="name of the parallel environment to use "
                          "[%default].")
         group.add_argument("--cluster-options", dest="cluster_options",
-                         type="string",
+                         type=str,
                          help="additional options for cluster jobs, passed "
                          "on to queuing system [%default].")
         group.add_argument("--cluster-queue-manager",
                          dest="cluster_queue_manager",
-                         type="choice",
-                         choices=("sge", "slurm", "torque", "pbspro"),
+                         type=str,
+                         choices=["sge", "slurm", "torque", "pbspro"],
                          help="cluster queuing system "
                          "[%default].")
         group.add_argument("--cluster-memory-resource",
                          dest="cluster_memory_resource",
-                         type="string",
+                         type=str,
                          help="resource name to allocate memory with "
                          "[%default].")
         group.add_argument("--cluster-memory-default",
                          dest="cluster_memory_default",
-                         type="string",
+                         type=str,
                          help="default amount of memory to allocate "
                          "[%default].")
 
@@ -828,7 +719,7 @@ def start(parser=None,
         if add_output_options:
             group.add_argument(
                 "-P", "--output-filename-pattern",
-                dest="output_filename_pattern", type="string",
+                dest="output_filename_pattern", type=str,
                 help="OUTPUT filename pattern for various methods "
                 "[%default].")
 
@@ -841,18 +732,18 @@ def start(parser=None,
 
         if add_pipe_options:
 
-            group.add_argument("-I", "--stdin", dest="stdin", type="string",
+            group.add_argument("-I", "--stdin", dest="stdin", type=str,
                              help="file to read stdin from [default = stdin].",
                              metavar="FILE")
-            group.add_argument("-L", "--log", dest="stdlog", type="string",
+            group.add_argument("-L", "--log", dest="stdlog", type=str,
                              help="file with logging information "
                              "[default = stdout].",
                              metavar="FILE")
-            group.add_argument("-E", "--error", dest="stderr", type="string",
+            group.add_argument("-E", "--error", dest="stderr", type=str,
                              help="file with error information "
                              "[default = stderr].",
                              metavar="FILE")
-            group.add_argument("-S", "--stdout", dest="stdout", type="string",
+            group.add_argument("-S", "--stdout", dest="stdout", type=str,
                              help="file where output is to go "
                              "[default = stdout].",
                              metavar="FILE")
@@ -865,25 +756,25 @@ def start(parser=None,
     if add_database_options:
         group = parser.add_argument_group("database connection options")
         group.add_argument(
-            "--database-url", dest="database_url", type="string",
+            "--database-url", dest="database_url", type=str,
             help="database connection url, for example sqlite:///./csvdb [%default].")
 
         group.add_argument(
-            "--database-schema", dest="database_schema", type="string",
+            "--database-schema", dest="database_schema", type=str,
             help="database schema [%default]")
         
         parser.set_defaults(database_url="sqlite:///./csvdb")
         parser.set_defaults(database_schema=None)
 
     # restore user defaults
-    parser.defaults.update(user_defaults)
+    parser.set_defaults(user_defaults)
 
     if return_parser:
         return parser
 
     if not no_parsing:
-        (global_args) = parser.parse_args(argv[1:])
-
+        global_args = parser.parse_args(str(argv[1:]))
+    
     if global_options.random_seed is not None:
         random.seed(global_options.random_seed)
 
