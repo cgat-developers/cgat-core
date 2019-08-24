@@ -534,10 +534,6 @@ def start(parser=None,
 
     """
 
-    if not parser:
-        parser = OptionParser(
-            version="%prog version: $Id$")
-
     if argv is None:
         argv = sys.argv
 
@@ -649,7 +645,6 @@ def start(parser=None,
                             cluster_memory_resource=None,
                             cluster_memory_default="unlimited",
                             cluster_queue_manager="sge")
-        parser.add_option_group(group)
 
     if add_output_options or add_pipe_options:
         group = parser.add_argument_group("Input/output options")
@@ -704,7 +699,6 @@ def start(parser=None,
 
     if not no_parsing:
         global_args = parser.parse_args()
-        print(global_args)
 
     if global_args.random_seed is not None:
         random.seed(global_args.random_seed)
