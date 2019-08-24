@@ -88,7 +88,7 @@ def cached_os_path_islink(filename):
 # global options and arguments - set but currently not
 # used as relevant sections are entered into the PARAMS
 # dictionary. Could be deprecated and removed.
-GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
+GLOBAL_ARGS = None
 
 # Monkey patching to make Gevent.pool compatible with
 # ruffus.
@@ -492,15 +492,15 @@ def ruffus_return_dag(stream,
                 stack.append(tt)
 
 
-def setup_logging(options, pipeline=None):
+def setup_logging(args, pipeline=None):
 
     logger = logging.getLogger("cgatcore.pipeline")
 
-    if options.log_config_filename is None:
+    if args.log_config_filename is None:
 
         # set up default file logger
         handler = logging.FileHandler(
-            filename=options.pipeline_logfile,
+            filename=args.pipeline_logfile,
             mode="a")
 
         if pipeline is not None:
@@ -518,7 +518,7 @@ def setup_logging(options, pipeline=None):
         logger.addHandler(handler)
 
         logger.info("pipeline log is {}".format(
-            options.pipeline_logfile))
+            args.pipeline_logfile))
 
     return logger
 
@@ -742,50 +742,50 @@ def parse_commandline(argv=None, **kwargs):
         kwargs["callback"](parser)
 
     logger_callback = setup_logging
-    (options, args) = E.start(
+    args = E.start(
         parser,
         add_cluster_options=True,
         argv=argv,
         logger_callback=logger_callback)
 
-    options.pipeline_name = argv[0]
-    return options, args
+    args.pipeline_name = argv[0]
+    return args
 
 
-def update_params_with_commandline_options(params, options):
+def update_params_with_commandline_options(params, args):
     """add and update selected parameters in the parameter
-    dictionary with command line options.
+    dictionary with command line args.
     """
 
-    params["pipeline_name"] = options.pipeline_name
-    params["dryrun"] = options.dry_run
-    if options.cluster_queue is not None:
-        params["cluster_queue"] = options.cluster_queue
-    if options.cluster_priority is not None:
-        params["cluster_priority"] = options.cluster_priority
-    if options.cluster_num_jobs is not None:
-        params["cluster_num_jobs"] = options.cluster_num_jobs
-    if options.cluster_options is not None:
-        params["cluster_options"] = options.cluster_options
-    if options.cluster_parallel_environment is not None:
+    params["pipeline_name"] = args.pipeline_name
+    params["dryrun"] = args.dry_run
+    if args.cluster_queue is not None:
+        params["cluster_queue"] = args.cluster_queue
+    if args.cluster_priority is not None:
+        params["cluster_priority"] = args.cluster_priority
+    if args.cluster_num_jobs is not None:
+        params["cluster_num_jobs"] = args.cluster_num_jobs
+    if args.cluster_options is not None:
+        params["cluster_options"] = args.cluster_options
+    if args.cluster_parallel_environment is not None:
         params["cluster_parallel_environment"] =\
-            options.cluster_parallel_environment
-    if options.without_cluster:
+            args.cluster_parallel_environment
+    if args.without_cluster:
         params["without_cluster"] = True
 
-    params["shell_logfile"] = options.shell_logfile
+    params["shell_logfile"] = args.shell_logfile
 
-    params["ruffus_checksums_level"] = options.ruffus_checksums_level
+    params["ruffus_checksums_level"] = args.ruffus_checksums_level
     # always create an "input" section
     params["input_globs"] = {}
-    for variable in options.input_globs:
+    for variable in args.input_globs:
         if "=" in variable:
             variable, value = variable.split("=")
             params["input_globs"][variable.strip()] = value.strip()
         else:
             params["input_globs"]["default"] = variable.strip()
 
-    for variables in options.variables_to_set:
+    for variables in args.variables_to_set:
         variable, value = variables.split("=")
         value = iotools.str2val(value.strip())
         # enter old style
@@ -798,8 +798,8 @@ def update_params_with_commandline_options(params, options):
                 suffix = "_".join(parts[x:])
                 params[prefix][suffix] = value
 
-    if options.work_dir:
-        params["work_dir"] = os.path.abspath(options.work_dir)
+    if args.work_dir:
+        params["work_dir"] = os.path.abspath(args.work_dir)
     else:
         params["work_dir"] = params["start_dir"]
 
@@ -1043,16 +1043,16 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
         except AttributeError as ex:
             path = "unknown"
 
-    options, args = parse_commandline(argv, **kwargs)
+    args = parse_commandline(argv, **kwargs)
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
          "../pipeline.yml",
-         options.config_file],
+         args.config_file],
         defaults=defaults)
 
     global GLOBAL_OPTIONS
     global GLOBAL_ARGS
-    GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
+    GLOBAL_ARGS = args
     logger = logging.getLogger("cgatcore.pipeline")
     logger.info("started in directory: {}".format(get_params().get("start_dir")))
 
@@ -1060,7 +1060,7 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
     # built. It now needs to be updated with selected command
     # line options as these should always take precedence over
     # configuration files.
-    update_params_with_commandline_options(get_params(), options)
+    update_params_with_commandline_options(get_params(), args)
 
     code_location, version = get_version()
     logger.info("code location: {}".format(code_location))
@@ -1076,10 +1076,10 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
 
     logger.info("pipeline has been initialized")
 
-    return options, args
+    return args
 
 
-def run_workflow(options, args, pipeline=None):
+def run_workflow(args, pipeline=None):
     """command line control function for a pipeline.
 
     This method defines command line options for the pipeline and
@@ -1106,17 +1106,17 @@ def run_workflow(options, args, pipeline=None):
     """
     logger = logging.getLogger("cgatcore.pipeline")
     if args:
-        options.pipeline_action = args[0]
+        args.pipeline_action = args[0]
         if len(args) > 1:
-            options.pipeline_targets.extend(args[1:])
+            args.pipeline_targets.extend(args[1:])
 
-    logger.debug("starting run_workflow with action {}".format(options.pipeline_action))
+    logger.debug("starting run_workflow with action {}".format(args.pipeline_action))
 
-    if options.force_run:
-        if options.force_run == "all":
+    if args.force_run:
+        if args.force_run == "all":
             forcedtorun_tasks = ruffus.pipeline_get_task_names()
         else:
-            forcedtorun_tasks = options.pipeline_targets
+            forcedtorun_tasks = args.pipeline_targets
     else:
         forcedtorun_tasks = []
 
@@ -1135,28 +1135,28 @@ def run_workflow(options, args, pipeline=None):
     logger.info("temporary directory is {}".format(get_params()["tmpdir"]))
 
     # set multiprocess to a sensible setting if there is no cluster
-    run_on_cluster = HAS_DRMAA is True and not options.without_cluster
-    if options.multiprocess is None:
+    run_on_cluster = HAS_DRMAA is True and not args.without_cluster
+    if args.multiprocess is None:
         if not run_on_cluster:
-            options.multiprocess = int(math.ceil(
+            args.multiprocess = int(math.ceil(
                 multiprocessing.cpu_count() / 2.0))
         else:
-            options.multiprocess = 40
+            args.multiprocess = 40
 
     # see inputValidation function in Parameters.py
-    if options.input_validation:
+    if args.input_validation:
         input_validation(get_params(), sys.argv[0])
 
-    elif options.pipeline_action == "debug":
+    elif args.pipeline_action == "debug":
         # create the session proxy
         start_session()
 
-        method_name = options.pipeline_targets[0]
+        method_name = args.pipeline_targets[0]
         caller = get_caller()
         method = getattr(caller, method_name)
-        method(*options.pipeline_targets[1:])
+        method(*args.pipeline_targets[1:])
 
-    elif options.pipeline_action in ("make",
+    elif args.pipeline_action in ("make",
                                      "show",
                                      "state",
                                      "svg",
@@ -1168,9 +1168,9 @@ def run_workflow(options, args, pipeline=None):
         messenger = None
         try:
             with cache_os_functions():
-                if options.pipeline_action == "make":
+                if args.pipeline_action == "make":
 
-                    if not options.without_cluster and not HAS_DRMAA and not get_params()['testing']:
+                    if not args.without_cluster and not HAS_DRMAA and not get_params()['testing']:
                         E.critical("DRMAA API not found so cannot talk to a cluster.")
                         E.critical("Please use --local to run the pipeline"
                                    " on this host: {}".format(os.uname()[1]))
@@ -1181,22 +1181,22 @@ def run_workflow(options, args, pipeline=None):
                     stream = StringIO()
                     ruffus.pipeline_printout(
                         stream,
-                        options.pipeline_targets,
+                        args.pipeline_targets,
                         verbose=5,
                         pipeline=pipeline,
-                        checksum_level=options.ruffus_checksums_level)
+                        checksum_level=args.ruffus_checksums_level)
 
                     messenger = LoggingFilterProgress(stream.getvalue())
                     logger.addFilter(messenger)
 
                     global task
-                    if options.without_cluster:
+                    if args.without_cluster:
                         # use ThreadPool to avoid taking multiple CPU for pipeline
                         # controller.
-                        opts = {"multithread": options.multiprocess}
+                        opts = {"multithread": args.multiprocess}
                     else:
                         # use cooperative multitasking instead of multiprocessing.
-                        opts = {"multiprocess": options.multiprocess,
+                        opts = {"multiprocess": args.multiprocess,
                                 "pool_manager": "gevent"}
                         # create the session proxy
                         start_session()
@@ -1204,13 +1204,13 @@ def run_workflow(options, args, pipeline=None):
                     logger.info("current directory is {}".format(os.getcwd()))
 
                     ruffus.pipeline_run(
-                        options.pipeline_targets,
+                        args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
                         logger=logger,
-                        verbose=options.loglevel,
-                        log_exceptions=options.log_exceptions,
-                        exceptions_terminate_immediately=options.exceptions_terminate_immediately,
-                        checksum_level=options.ruffus_checksums_level,
+                        verbose=args.loglevel,
+                        log_exceptions=args.log_exceptions,
+                        exceptions_terminate_immediately=args.exceptions_terminate_immediately,
+                        checksum_level=args.ruffus_checksums_level,
                         pipeline=pipeline,
                         one_second_per_job=False,
                         **opts
@@ -1218,62 +1218,62 @@ def run_workflow(options, args, pipeline=None):
 
                     close_session()
 
-                elif options.pipeline_action == "show":
+                elif args.pipeline_action == "show":
                     ruffus.pipeline_printout(
-                        options.stdout,
-                        options.pipeline_targets,
+                        args.stdout,
+                        args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
-                        verbose=options.loglevel,
+                        verbose=args.loglevel,
                         pipeline=pipeline,
-                        checksum_level=options.ruffus_checksums_level)
+                        checksum_level=args.ruffus_checksums_level)
 
-                elif options.pipeline_action == "touch":
+                elif args.pipeline_action == "touch":
                     ruffus.pipeline_run(
-                        options.pipeline_targets,
+                        args.pipeline_targets,
                         touch_files_only=True,
-                        verbose=options.loglevel,
+                        verbose=args.loglevel,
                         pipeline=pipeline,
-                        checksum_level=options.ruffus_checksums_level)
+                        checksum_level=args.ruffus_checksums_level)
 
-                elif options.pipeline_action == "regenerate":
+                elif args.pipeline_action == "regenerate":
                     ruffus.pipeline_run(
-                        options.pipeline_targets,
-                        touch_files_only=options.ruffus_checksums_level,
+                        args.pipeline_targets,
+                        touch_files_only=args.ruffus_checksums_level,
                         pipeline=pipeline,
-                        verbose=options.loglevel)
+                        verbose=args.loglevel)
 
-                elif options.pipeline_action == "svg":
+                elif args.pipeline_action == "svg":
                     ruffus.pipeline_printout_graph(
-                        options.stdout.buffer,
-                        options.pipeline_format,
-                        options.pipeline_targets,
+                        args.stdout.buffer,
+                        args.pipeline_format,
+                        args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
                         pipeline=pipeline,
-                        checksum_level=options.ruffus_checksums_level)
+                        checksum_level=args.ruffus_checksums_level)
 
-                elif options.pipeline_action == "state":
+                elif args.pipeline_action == "state":
                     ruffus.ruffus_return_dag(
-                        options.stdout,
-                        target_tasks=options.pipeline_targets,
+                        args.stdout,
+                        target_tasks=args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
-                        verbose=options.loglevel,
+                        verbose=args.loglevel,
                         pipeline=pipeline,
-                        checksum_level=options.ruffus_checksums_level)
+                        checksum_level=args.ruffus_checksums_level)
 
-                elif options.pipeline_action == "plot":
+                elif args.pipeline_action == "plot":
                     outf, filename = tempfile.mkstemp()
                     ruffus.pipeline_printout_graph(
                         os.fdopen(outf, "wb"),
-                        options.pipeline_format,
-                        options.pipeline_targets,
+                        args.pipeline_format,
+                        args.pipeline_targets,
                         pipeline=pipeline,
-                        checksum_level=options.ruffus_checksums_level)
+                        checksum_level=args.ruffus_checksums_level)
                     execute("inkscape %s" % filename)
                     os.unlink(filename)
 
         except ruffus.ruffus_exceptions.RethrownJobError as ex:
 
-            if not options.debug:
+            if not args.debug:
                 E.error("%i tasks with errors, please see summary below:" %
                         len(ex.args))
                 for idx, e in enumerate(ex.args):
@@ -1295,7 +1295,7 @@ def run_workflow(options, args, pipeline=None):
                     E.error("%i: Task=%s Error=%s %s: %s" %
                             (idx, task, error, job, msg))
 
-                E.error("full traceback is in %s" % options.pipeline_logfile)
+                E.error("full traceback is in %s" % args.pipeline_logfile)
 
                 logger.error("start of all error messages")
                 logger.error(ex)
@@ -1305,17 +1305,17 @@ def run_workflow(options, args, pipeline=None):
             else:
                 raise
 
-    elif options.pipeline_action == "dump":
-        options.stdout.write((json.dumps(get_params())) + "\n")
+    elif args.pipeline_action == "dump":
+        args.stdout.write((json.dumps(get_params())) + "\n")
 
-    elif options.pipeline_action == "printconfig":
+    elif args.pipeline_action == "printconfig":
         E.info("printing out pipeline parameters: ")
         p = get_params()
         for k in sorted(get_params()):
             print(k, "=", p[k])
         print_config_files()
 
-    elif options.pipeline_action == "config":
+    elif args.pipeline_action == "config":
         # Level needs to be 2:
         # 0th level -> cgatflow.py
         # 1st level -> Control.py
@@ -1327,12 +1327,12 @@ def run_workflow(options, args, pipeline=None):
                                     "configuration")
         write_config_files(pipeline_path, general_path)
 
-    elif options.pipeline_action == "clone":
-        clone_pipeline(options.pipeline_targets[0])
+    elif args.pipeline_action == "clone":
+        clone_pipeline(args.pipeline_targets[0])
 
     else:
         raise ValueError("unknown pipeline action %s" %
-                         options.pipeline_action)
+                         args.pipeline_action)
 
     E.stop(logger=get_logger())
 
@@ -1367,8 +1367,8 @@ def main(argv=None):
         argv = sys.argv
 
     if GLOBAL_OPTIONS is None:
-        options, args = initialize(caller=get_caller().__file__)
+        args = initialize(caller=get_caller().__file__)
     else:
-        options, args = GLOBAL_OPTIONS, GLOBAL_ARGS
+        args = GLOBAL_OPTIONS, GLOBAL_ARGS
 
-    run_workflow(options, args)
+    run_workflow(args)
