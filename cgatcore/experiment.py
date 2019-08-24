@@ -266,7 +266,6 @@ import argparse
 import textwrap
 import random
 import uuid
-import json
 import yaml
 # import convenience functions from logging
 import logging
