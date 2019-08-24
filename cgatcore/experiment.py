@@ -266,6 +266,7 @@ import argparse
 import textwrap
 import random
 import uuid
+import json
 import yaml
 # import convenience functions from logging
 import logging
@@ -288,62 +289,115 @@ global_args = None
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
-#################################################################
-#################################################################
-#################################################################
-class AppendCommaOption(argparse.Action):
+##########################################################################
+# The code for BetterFormatter has been taken from
+# http://code.google.com/p/yjl/source/browse/Python/snippet/BetterFormatter.py
+__copyright__ = """
+Copyright (c) 2001-2006 Gregory P. Ward.  All rights reserved.
+Copyright (c) 2002-2006 Python Software Foundation.  All rights reserved.
+Copyright (c) 2011 Yu-Jie Lin.  All rights reserved.
 
-    '''Option with additional parsing capabilities.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
 
-    * "," in arguments to options that have the action 'append'
-      are treated as a list of options. This is what galaxy does,
-      but generally convenient.
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
 
-    * Option values of "None" and "" are treated as default values.
-    '''
-#    def check_value( self, opt, value ):
-# do not check type for ',' separated lists
-#        if "," in value:
-#            return value
-#        else:
-#            return optparse.Option.check_value( self, opt, value )
-#
-#    def take_action(self, action, dest, opt, value, values, parser):
-#        if action == "append" and "," in value:
-#            lvalue = value.split(",")
-#            values.ensure_value(dest, []).extend(lvalue)
-#        else:
-#            optparse.Option.take_action(
-#                self, action, dest, opt, value, values, parser)
-#
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
 
-    def convert_value(self, opt, value):
-        if value is not None:
-            if self.nargs == 1:
-                if self.action == "append":
-                    if "," in value:
-                        return [self.check_value(opt, v) for v in
-                                value.split(",") if v != ""]
-                    else:
-                        if value != "":
-                            return self.check_value(opt, value)
-                        else:
-                            return value
-                else:
-                    return self.check_value(opt, value)
-            else:
-                return tuple([self.check_value(opt, v) for v in value])
+  * Neither the name of the author nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
 
-    # why is it necessary to pass action and dest to this function when
-    # they could be accessed as self.action and self.dest?
-    def take_action(self, action, dest, opt, value, values, parser):
 
-        if action == "append" and type(value) == list:
-            values.ensure_value(dest, []).extend(value)
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+
+class BetterFormatter(argparse.HelpFormatter):
+    """A formatter for :class:`OptionParser` outputting indented
+    help text.
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        argparse.HelpFormatter.__init__(self, *args, **kwargs)
+        self.wrapper = textwrap.TextWrapper(width=self.width)
+
+    def _formatter(self, text):
+
+        return '\n'.join(['\n'.join(p) for p in
+                          map(self.wrapper.wrap,
+                              self.parser.expand_prog_name(text).split('\n'))])
+
+    def format_description(self, description):
+
+        if description:
+            return self._formatter(description) + '\n'
         else:
-            optparse.Option.take_action(
-                self, action, dest, opt, value, values, parser)
+            return ''
 
+    def format_epilog(self, epilog):
+
+        if epilog:
+            return '\n' + self._formatter(epilog) + '\n'
+        else:
+            return ''
+
+    def format_usage(self, usage):
+
+        return self._formatter(argparse._("Usage: %s\n") % usage)
+
+    def format_option(self, option):
+        # Ripped and modified from Python 2.6's optparse's HelpFormatter
+        result = []
+        opts = self.option_strings[option]
+        opt_width = self.help_position - self.current_indent - 2
+        if len(opts) > opt_width:
+            opts = "%*s%s\n" % (self.current_indent, "", opts)
+            indent_first = self.help_position
+        else:                       # start help on same line as opts
+            opts = "%*s%-*s  " % (self.current_indent, "", opt_width, opts)
+            indent_first = 0
+        result.append(opts)
+        if option.help:
+            help_text = self.expand_default(option)
+            # Added expand program name
+            help_text = self.parser.expand_prog_name(help_text)
+            # Modified the generation of help_line
+            help_lines = []
+            wrapper = textwrap.TextWrapper(width=self.help_width)
+            for p in map(wrapper.wrap, help_text.split('\n')):
+                if p:
+                    help_lines.extend(p)
+                else:
+                    help_lines.append('')
+            # End of modification
+            result.append("%*s%s\n" % (indent_first, "", help_lines[0]))
+            result.extend(["%*s%s\n" % (self.help_position, "", line)
+                           for line in help_lines[1:]])
+        elif opts[-1] != "\n":
+            result.append("\n")
+        return "".join(result)
+
+
+# End of BetterFormatter()
+#################################################################
+#################################################################
+#################################################################
 
 class OptionParser(argparse.ArgumentParser):
 
@@ -356,7 +410,7 @@ class OptionParser(argparse.ArgumentParser):
         if "--no-usage" in sys.argv:
             kwargs["usage"] = None
 
-        argparse.ArgumentParser.__init__(self, *args,
+        argparse.ArgumentParser.__init__(self, *args,formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                        **kwargs)
 
         # set new option parser
@@ -598,7 +652,7 @@ def start(parser=None,
     if argv is None:
         argv = sys.argv
 
-    global global_options, global_args, global_starting_time
+    global global_args, global_starting_time
 
     # save default values given by user
     user_defaults = copy.copy(parser.parse_args([]))
@@ -608,33 +662,32 @@ def start(parser=None,
     group = parser.add_argument_group("Script timing options")
 
     group.add_argument("--timeit", dest='timeit_file', type=str,
-                     help="store timeing information in file [%default].")
+                     help="store timeing information in file.")
     group.add_argument("--timeit-name", dest='timeit_name', type=str,
-                     help="name in timing file for this class of jobs "
-                     "[%default].")
+                     help="name in timing file for this class of jobs ")
     group.add_argument("--timeit-header", dest='timeit_header',
                      action="store_true",
-                     help="add header for timing information [%default].")
+                     help="add header for timing information.")
 
     group = parser.add_argument_group("Common options")
 
     group.add_argument("--random-seed", dest='random_seed', type=int,
                      help="random seed to initialize number generator "
-                     "with [%default].")
+                     "with")
 
     group.add_argument("-v", "--verbose", dest="loglevel", type=int,
-                     help="loglevel [%default]. The higher, the more output.")
+                     help="loglevel. The higher, the more output.")
 
     group.add_argument("--log-config-filename",
                      dest="log_config_filename",
                      type=str,
                      default="logging.yml",
-                     help="Configuration file for logger [%default].")
+                     help="Configuration file for logger.")
 
     group.add_argument("--tracing", dest="tracing", type=str,
                      choices=["function"],
                      default=None,
-                     help="enable function tracing [%default].")
+                     help="enable function tracing.")
 
     group.add_argument("-?", type=callbackShortHelp,
                      help="output short help (command line options only.")
@@ -654,7 +707,7 @@ def start(parser=None,
 
     if add_csv_options:
         parser.add_argument("--csv-dialect", dest="csv_dialect", type=str,
-                          help="csv dialect to use [%default].")
+                          help="csv dialect to use.")
 
         parser.set_defaults(
             csv_dialect="excel-tab",
@@ -665,42 +718,38 @@ def start(parser=None,
         group = parser.add_argument_group("cluster options")
         group.add_argument("--no-cluster", "--local", dest="without_cluster",
                          action="store_true",
-                         help="do no use cluster - run locally [%default].")
+                         help="do no use cluster - run locally.")
         group.add_argument("--cluster-priority", dest="cluster_priority",
                          type=int,
-                         help="set job priority on cluster [%default].")
+                         help="set job priority on cluster.")
         group.add_argument("--cluster-queue", dest="cluster_queue",
                          type=str,
-                         help="set cluster queue [%default].")
+                         help="set cluster queue.")
         group.add_argument("--cluster-num-jobs", dest="cluster_num_jobs",
                          type=int,
                          help="number of jobs to submit to the queue execute "
-                         "in parallel [%default].")
+                         "in parallel.")
         group.add_argument("--cluster-parallel",
                          dest="cluster_parallel_environment",
                          type=str,
-                         help="name of the parallel environment to use "
-                         "[%default].")
+                         help="name of the parallel environment to use ")
         group.add_argument("--cluster-options", dest="cluster_options",
                          type=str,
                          help="additional options for cluster jobs, passed "
-                         "on to queuing system [%default].")
+                         "on to queuing system.")
         group.add_argument("--cluster-queue-manager",
                          dest="cluster_queue_manager",
                          type=str,
                          choices=["sge", "slurm", "torque", "pbspro"],
-                         help="cluster queuing system "
-                         "[%default].")
+                         help="cluster queuing system ")
         group.add_argument("--cluster-memory-resource",
                          dest="cluster_memory_resource",
                          type=str,
-                         help="resource name to allocate memory with "
-                         "[%default].")
+                         help="resource name to allocate memory with ")
         group.add_argument("--cluster-memory-default",
                          dest="cluster_memory_default",
                          type=str,
-                         help="default amount of memory to allocate "
-                         "[%default].")
+                         help="default amount of memory to allocate ")
 
         parser.set_defaults(without_cluster=False,
                             cluster_queue=None,
@@ -720,8 +769,7 @@ def start(parser=None,
             group.add_argument(
                 "-P", "--output-filename-pattern",
                 dest="output_filename_pattern", type=str,
-                help="OUTPUT filename pattern for various methods "
-                "[%default].")
+                help="OUTPUT filename pattern for various methods ")
 
             group.add_argument("-F", "--force-output", dest="output_force",
                              action="store_true",
@@ -733,20 +781,16 @@ def start(parser=None,
         if add_pipe_options:
 
             group.add_argument("-I", "--stdin", dest="stdin", type=str,
-                             help="file to read stdin from [default = stdin].",
-                             metavar="FILE")
+                             help="file to read stdin from [default = stdin].")
             group.add_argument("-L", "--log", dest="stdlog", type=str,
                              help="file with logging information "
-                             "[default = stdout].",
-                             metavar="FILE")
+                             "[default = stdout].")
             group.add_argument("-E", "--error", dest="stderr", type=str,
                              help="file with error information "
-                             "[default = stderr].",
-                             metavar="FILE")
+                             "[default = stderr].")
             group.add_argument("-S", "--stdout", dest="stdout", type=str,
                              help="file where output is to go "
-                             "[default = stdout].",
-                             metavar="FILE")
+                             "[default = stdout].")
 
             parser.set_defaults(stderr=sys.stderr)
             parser.set_defaults(stdout=sys.stdout)
@@ -757,39 +801,37 @@ def start(parser=None,
         group = parser.add_argument_group("database connection options")
         group.add_argument(
             "--database-url", dest="database_url", type=str,
-            help="database connection url, for example sqlite:///./csvdb [%default].")
+            help="database connection url, for example sqlite:///./csvdb.")
 
         group.add_argument(
             "--database-schema", dest="database_schema", type=str,
-            help="database schema [%default]")
+            help="database schem")
         
         parser.set_defaults(database_url="sqlite:///./csvdb")
         parser.set_defaults(database_schema=None)
-
-    # restore user defaults
-    parser.set_defaults(user_defaults)
 
     if return_parser:
         return parser
 
     if not no_parsing:
-        global_args = parser.parse_args(str(argv[1:]))
-    
-    if global_options.random_seed is not None:
-        random.seed(global_options.random_seed)
+        global_args = parser.parse_args()
+        print(global_args)
+
+    if global_args.random_seed is not None:
+        random.seed(global_args.random_seed)
 
     if add_pipe_options:
         if global_args.stdout != sys.stdout:
-            global_args.stdout = open_file(global_options.stdout, "w")
+            global_args.stdout = open_file(global_args.stdout, "w")
         if global_args.stderr != sys.stderr:
             if global_args.stderr == "stderr":
-                global_args.stderr = global_options.stderr
+                global_args.stderr = global_args.stderr
             else:
-                global_args.stderr = open_file(global_options.stderr, "w")
+                global_args.stderr = open_file(global_args.stderr, "w")
         if global_args.stdlog != sys.stdout:
-            global_args.stdlog = open_file(global_options.stdlog, "a")
+            global_args.stdlog = open_file(global_args.stdlog, "a")
         if global_args.stdin != sys.stdin:
-            global_args.stdin = open_file(global_options.stdin, "r")
+            global_args.stdin = open_file(global_args.stdin, "r")
     else:
         global_args.stderr = sys.stderr
         global_args.stdout = sys.stdout
