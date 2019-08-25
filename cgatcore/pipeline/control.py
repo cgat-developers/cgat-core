@@ -1106,7 +1106,6 @@ def run_workflow(args, argv, pipeline=None):
 
     logger = logging.getLogger("cgatcore.pipeline")
     if args:
-        print(argv[1:])
         args.pipeline_action = argv[1]
         if len(argv[1:]) > 1:
             args.pipeline_targets = argv[2]
