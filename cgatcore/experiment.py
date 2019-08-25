@@ -288,6 +288,9 @@ global_args = None
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
+class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    pass
+
 class OptionParser(argparse.ArgumentParser):
 
     '''CGAT derivative of ArgumentParser.
@@ -300,7 +303,7 @@ class OptionParser(argparse.ArgumentParser):
             kwargs["usage"] = None
 
         argparse.ArgumentParser.__init__(self, *args,
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                         formatter_class=CustomFormatter,
                                        **kwargs)
 
         # set new option parser
