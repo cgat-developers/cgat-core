@@ -606,7 +606,7 @@ def parse_commandline(argv=None, **kwargs):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser()
+    parser = E.OptionParser(description=USAGE)
 
     parser.add_argument("--pipeline-action", dest="pipeline_action",
                       type=str,
