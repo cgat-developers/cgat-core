@@ -1050,7 +1050,6 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
          args.config_file],
         defaults=defaults)
 
-    global GLOBAL_OPTIONS
     global GLOBAL_ARGS
     GLOBAL_ARGS = args
     logger = logging.getLogger("cgatcore.pipeline")
@@ -1079,7 +1078,7 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
     return args
 
 
-def run_workflow(args, pipeline=None):
+def run_workflow(args, argv, pipeline=None):
     """command line control function for a pipeline.
 
     This method defines command line options for the pipeline and
@@ -1104,11 +1103,12 @@ def run_workflow(args, pipeline=None):
         pipeline to run. If not given, all ruffus pipelines are run.
 
     """
+
     logger = logging.getLogger("cgatcore.pipeline")
     if args:
-        args.pipeline_action = args[0]
-        if len(args) > 1:
-            args.pipeline_targets.extend(args[1:])
+        args.pipeline_action = argv[1]
+        if len(argv) > 1:
+            args.pipeline_targets = argv[2]
 
     logger.debug("starting run_workflow with action {}".format(args.pipeline_action))
 
@@ -1366,9 +1366,9 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    if GLOBAL_OPTIONS is None:
+    if GLOBAL_ARGS is None:
         args = initialize(caller=get_caller().__file__)
     else:
-        args = GLOBAL_OPTIONS, GLOBAL_ARGS
+        args = GLOBAL_ARGS
 
-    run_workflow(args)
+    run_workflow(args, argv)

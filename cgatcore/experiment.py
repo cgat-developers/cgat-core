@@ -290,7 +290,7 @@ global_benchmark = collections.defaultdict(int)
 
 class OptionParser(argparse.ArgumentParser):
 
-    '''CGAT derivative of OptionParser.
+    '''CGAT derivative of ArgumentParser.
     '''
 
     def __init__(self, *args, **kwargs):
@@ -299,7 +299,8 @@ class OptionParser(argparse.ArgumentParser):
         if "--no-usage" in sys.argv:
             kwargs["usage"] = None
 
-        argparse.ArgumentParser.__init__(self, *args,formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        argparse.ArgumentParser.__init__(self, *args,
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                        **kwargs)
 
         # set new option parser
@@ -539,9 +540,6 @@ def start(parser=None,
 
     global global_args, global_starting_time
 
-    # save default values given by user
-    user_defaults = copy.copy(parser.parse_args([]))
-
     global_starting_time = time.time()
 
     group = parser.add_argument_group("Script timing options")
@@ -698,7 +696,7 @@ def start(parser=None,
         return parser
 
     if not no_parsing:
-        global_args = parser.parse_args()
+        global_args, unknown = parser.parse_known_args()
 
     if global_args.random_seed is not None:
         random.seed(global_args.random_seed)
@@ -765,7 +763,7 @@ def start(parser=None,
             handler.setFormatter(MultiLineFormatter(logformat))
 
     if logger_callback:
-        logger = logger_callback(global_options)
+        logger = logger_callback(global_args)
     else:
         logger = logging.getLogger("cgatcore")
 
