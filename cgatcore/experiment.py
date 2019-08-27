@@ -433,7 +433,8 @@ def start(parser=None,
           add_cluster_options=False,
           add_output_options=False,
           logger_callback=None,
-          return_parser=False):
+          return_parser=False,
+          unknowns=False):
     """set up an experiment.
 
     The :py:func:`Start` method will set up a file logger and add some
@@ -529,6 +530,9 @@ def start(parser=None,
         callback function to further configure logging system. The
         callback should accept the options as first parameter and
         return a logger.
+
+    unknowns : bool
+        if a set of unknown args are to be returned
 
     Returns
     -------
@@ -776,7 +780,10 @@ def start(parser=None,
     if global_args.tracing == "function":
         sys.settrace(trace_calls)
 
-    return global_args
+    if unknowns:
+        return global_args, unknown
+    else:
+        return global_args
 
 
 def stop(logger=None):
