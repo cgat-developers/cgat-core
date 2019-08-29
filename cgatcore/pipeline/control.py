@@ -361,7 +361,7 @@ def peek_parameters(workingdir,
         else:
             return {}
 
-    statement = "cgatflow {} dump".format(pipeline)
+    statement = "cgatflow {} dump -v 0".format(pipeline)
 
     os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
     process = subprocess.Popen(statement,
