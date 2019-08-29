@@ -361,7 +361,7 @@ def peek_parameters(workingdir,
         else:
             return {}
 
-    statement = "cgatflow {} -v 0 dump".format(pipeline)
+    statement = "cgatflow {} dump".format(pipeline)
 
     os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
     process = subprocess.Popen(statement,
@@ -742,13 +742,14 @@ def parse_commandline(argv=None, **kwargs):
         kwargs["callback"](parser)
 
     logger_callback = setup_logging
-    args = E.start(
+    args, unknown = E.start(
         parser,
         add_cluster_options=True,
         argv=argv,
-        logger_callback=logger_callback)
+        logger_callback=logger_callback,
+        unknowns=True)
 
-    args.pipeline_name = argv[0]
+    args.pipeline_name = unknown[0]
     return args
 
 
