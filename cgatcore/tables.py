@@ -6,6 +6,7 @@ import re
 import os
 import glob
 import collections
+from _version import __version__
 
 import cgatcore.iotools as iotools
 import cgatcore.experiment as E
@@ -453,7 +454,7 @@ def main(argv=sys.argv):
 
     parser = E.OptionParser()
 
-    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version=version.__version__))
+    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version=__version__))
 
     parser.add_option("-t", "--no-titles",
                       dest="input_has_titles",

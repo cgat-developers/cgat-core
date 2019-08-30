@@ -5,7 +5,7 @@ import collections
 import random
 from functools import reduce
 import numpy
-import version
+from _version import __version__
 
 import cgatcore.experiment as E
 import cgatcore.csvutils as CSV
@@ -317,7 +317,7 @@ def main(argv=None):
 
     parser = E.OptionParser()
 
-    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version=version.__version__))
+    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version=__version__))
 
     parser.add_option(
         "-m", "--method", dest="methods", type="choice", action="append",
