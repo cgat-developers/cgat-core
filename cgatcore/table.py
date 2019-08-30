@@ -5,6 +5,7 @@ import collections
 import random
 from functools import reduce
 import numpy
+import version
 
 import cgatcore.experiment as E
 import cgatcore.csvutils as CSV
@@ -314,8 +315,9 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id$",
-                            usage=globals()["__doc__"])
+    parser = E.OptionParser()
+
+    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version=version.__version__))
 
     parser.add_option(
         "-m", "--method", dest="methods", type="choice", action="append",
