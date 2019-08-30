@@ -36,15 +36,15 @@ def read_table(filename, options):
 
     if options.regex_end:
         rx = re.compile(options.regex_end)
-        
+
     for n, line in enumerated_lines:
 
         if options.regex_end and rx.search(line):
             break
-        
+
         if not line.startswith("#") and line.strip():
             yield line
-        
+
 
 def concatenate_tables(outfile, options, args):
     '''concatenate tables.'''
@@ -67,7 +67,7 @@ def concatenate_tables(outfile, options, args):
         headers.append(header)
 
     row_headers = headers
-        
+
     if options.cat is None:
         if len(row_headers) == 1:
             row_head_titles = ["filename"]
@@ -84,7 +84,7 @@ def concatenate_tables(outfile, options, args):
 
     # collect titles
     first_lines = []
-    
+
     for n, table in enumerate(tables):
             try:
                 title_line = next(table)
@@ -139,7 +139,7 @@ def concatenate_tables(outfile, options, args):
             row = "\t".join([str(x) for x in row_headers[nindex]] +
                             data) + "\n"
             outfile.write(row)
-            
+
         if options.input_has_titles:
             titles = first_lines[nindex][:-1].split("\t")
             map_old2new = [map_title2column[t] for t in titles]
@@ -513,7 +513,7 @@ def main(argv=sys.argv):
     parser.add_argument("--sort-keys", dest="sort_keys", type=str,
                         choices=("numeric", "alphabetic"),
                         help="sort key columns by value.")
-                        
+
     parser.add_argument("--keep-empty", dest="ignore_empty",
                         action="store_false",
                         help="keep empty tables. The default is "
