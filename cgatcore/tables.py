@@ -451,8 +451,9 @@ def join_tables(outfile, options, args):
 
 def main(argv=sys.argv):
 
-    parser = E.OptionParser(version="%prog version: $Id$",
-                            usage=globals()["__doc__"])
+    parser = E.OptionParser()
+
+    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version=version.__version__))
 
     parser.add_option("-t", "--no-titles",
                       dest="input_has_titles",
