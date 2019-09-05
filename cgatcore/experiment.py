@@ -288,30 +288,209 @@ global_args = None
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
+##########################################################################
+# The code for BetterFormatter has been taken from
+# http://code.google.com/p/yjl/source/browse/Python/snippet/BetterFormatter.py
+__copyright__ = """
+Copyright (c) 2001-2006 Gregory P. Ward.  All rights reserved.
+Copyright (c) 2002-2006 Python Software Foundation.  All rights reserved.
+Copyright (c) 2011 Yu-Jie Lin.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+  * Neither the name of the author nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+
+
+class BetterFormatter(optparse.IndentedHelpFormatter):
+    """A formatter for :class:`OptionParser` outputting indented
+    help text.
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        optparse.IndentedHelpFormatter.__init__(self, *args, **kwargs)
+        self.wrapper = textwrap.TextWrapper(width=self.width)
+
+    def _formatter(self, text):
+
+        return '\n'.join(['\n'.join(p) for p in
+                          map(self.wrapper.wrap,
+                              self.parser.expand_prog_name(text).split('\n'))])
+
+    def format_description(self, description):
+
+        if description:
+            return self._formatter(description) + '\n'
+        else:
+            return ''
+
+    def format_epilog(self, epilog):
+
+        if epilog:
+            return '\n' + self._formatter(epilog) + '\n'
+        else:
+            return ''
+
+    def format_usage(self, usage):
+
+        return self._formatter(optparse._("Usage: %s\n") % usage)
+
+    def format_option(self, option):
+        # Ripped and modified from Python 2.6's optparse's HelpFormatter
+        result = []
+        opts = self.option_strings[option]
+        opt_width = self.help_position - self.current_indent - 2
+        if len(opts) > opt_width:
+            opts = "%*s%s\n" % (self.current_indent, "", opts)
+            indent_first = self.help_position
+        else:                       # start help on same line as opts
+            opts = "%*s%-*s  " % (self.current_indent, "", opt_width, opts)
+            indent_first = 0
+        result.append(opts)
+        if option.help:
+            help_text = self.expand_default(option)
+            # Added expand program name
+            help_text = self.parser.expand_prog_name(help_text)
+            # Modified the generation of help_line
+            help_lines = []
+            wrapper = textwrap.TextWrapper(width=self.help_width)
+            for p in map(wrapper.wrap, help_text.split('\n')):
+                if p:
+                    help_lines.extend(p)
+                else:
+                    help_lines.append('')
+            # End of modification
+            result.append("%*s%s\n" % (indent_first, "", help_lines[0]))
+            result.extend(["%*s%s\n" % (self.help_position, "", line)
+                           for line in help_lines[1:]])
+        elif opts[-1] != "\n":
+            result.append("\n")
+        return "".join(result)
+
+
+# End of BetterFormatter()
+#################################################################
+#################################################################
+#################################################################
+
+class AppendCommaOption(optparse.Option):
+
+    '''Option with additional parsing capabilities.
+
+    * "," in arguments to options that have the action 'append'
+      are treated as a list of options. This is what galaxy does,
+      but generally convenient.
+
+    * Option values of "None" and "" are treated as default values.
+    '''
+#    def check_value( self, opt, value ):
+# do not check type for ',' separated lists
+#        if "," in value:
+#            return value
+#        else:
+#            return optparse.Option.check_value( self, opt, value )
+#
+#    def take_action(self, action, dest, opt, value, values, parser):
+#        if action == "append" and "," in value:
+#            lvalue = value.split(",")
+#            values.ensure_value(dest, []).extend(lvalue)
+#        else:
+#            optparse.Option.take_action(
+#                self, action, dest, opt, value, values, parser)
+#
+
+    def convert_value(self, opt, value):
+        if value is not None:
+            if self.nargs == 1:
+                if self.action == "append":
+                    if "," in value:
+                        return [self.check_value(opt, v) for v in
+                                value.split(",") if v != ""]
+                    else:
+                        if value != "":
+                            return self.check_value(opt, value)
+                        else:
+                            return value
+                else:
+                    return self.check_value(opt, value)
+            else:
+                return tuple([self.check_value(opt, v) for v in value])
+
+    # why is it necessary to pass action and dest to this function when
+    # they could be accessed as self.action and self.dest?
+    def take_action(self, action, dest, opt, value, values, parser):
+
+        if action == "append" and type(value) == list:
+            values.ensure_value(dest, []).extend(value)
+        else:
+            optparse.Option.take_action(
+                self, action, dest, opt, value, values, parser)
+
 class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
     pass
 
 class OptionParser(argparse.ArgumentParser):
 
-    '''CGAT derivative of ArgumentParser.
+    '''CGAT derivative of ArgumentParser. OptionParser is still
+    implimented for backwards compatibility
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs, optparse=False):
         # if "--short" is a command line option
         # remove usage from kwargs
         if "--no-usage" in sys.argv:
             kwargs["usage"] = None
 
-        argparse.ArgumentParser.__init__(self, *args,
-                                         formatter_class=CustomFormatter,
+        if optparse:
+            optparse.OptionParser.__init__(self, *args,
+                                       option_class=AppendCommaOption,
+                                       formatter=BetterFormatter(),
                                        **kwargs)
+        else:
+            argparse.ArgumentParser.__init__(self, *args,
+                                             formatter_class=CustomFormatter,
+                                             **kwargs)
 
         # set new option parser
         # parser.formatter.set_parser(parser)
-        if "--no-usage" in sys.argv:
-            self.add_argument("--no-usage", dest="help_no_usage",
-                            action="store_true",
-                            help="output help without usage information")
+        if optparse:
+            # set new option parser
+            # parser.formatter = BetterFormatter()
+            # parser.formatter.set_parser(parser)
+            if "--no-usage" in sys.argv:
+                self.add_option("--no-usage", dest="help_no_usage",
+                                action="store_true",
+                                help="output help without usage information")
+        else:
+            
+            if "--no-usage" in sys.argv:
+                self.add_argument("--no-usage", dest="help_no_usage",
+                                  action="store_true",
+                                  help="output help without usage information")
 
 
 def callbackShortHelp(option, opt, value, parser):
