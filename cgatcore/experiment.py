@@ -262,6 +262,7 @@ import functools
 import gzip
 import warnings
 import pipes
+import optparse
 import argparse
 import textwrap
 import random
@@ -459,13 +460,15 @@ class OptionParser(argparse.ArgumentParser):
     implimented for backwards compatibility
     '''
 
-    def __init__(self, *args, **kwargs, optparse=False):
+    def __init__(self, optparse=False, *args, **kwargs):
+
+        self.optparse = optparse
         # if "--short" is a command line option
         # remove usage from kwargs
         if "--no-usage" in sys.argv:
             kwargs["usage"] = None
 
-        if optparse:
+        if self.optparse:
             optparse.OptionParser.__init__(self, *args,
                                        option_class=AppendCommaOption,
                                        formatter=BetterFormatter(),
