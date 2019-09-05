@@ -618,7 +618,8 @@ def start(parser=None,
           add_output_options=False,
           logger_callback=None,
           return_parser=False,
-          unknowns=False):
+          unknowns=False,
+          parser_type="argparse"):
     """set up an experiment.
 
     The :py:func:`Start` method will set up a file logger and add some
@@ -718,6 +719,9 @@ def start(parser=None,
     unknowns : bool
         if a set of unknown args are to be returned
 
+    parser_type : string
+        parser type is either optparse or argparse
+
     Returns
     -------
     tuple
@@ -732,9 +736,9 @@ def start(parser=None,
     global global_args, global_starting_time
 
     global_starting_time = time.time()
-
+    
     # Argparse options
-    if "argparse" in parser.__module__:
+    if "argparse" in parser_type:
         group = parser.add_argument_group("Script timing options")
 
         group.add_argument("--timeit", dest='timeit_file', type=str,
