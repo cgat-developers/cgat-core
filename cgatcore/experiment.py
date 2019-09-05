@@ -451,8 +451,10 @@ class AppendCommaOption(optparse.Option):
             optparse.Option.take_action(
                 self, action, dest, opt, value, values, parser)
 
+
 class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
     pass
+
 
 class OptionParser(argparse.ArgumentParser):
 
@@ -470,9 +472,9 @@ class OptionParser(argparse.ArgumentParser):
 
         if self.optparse:
             optparse.OptionParser.__init__(self, *args,
-                                       option_class=AppendCommaOption,
-                                       formatter=BetterFormatter(),
-                                       **kwargs)
+                                           option_class=AppendCommaOption,
+                                           formatter=BetterFormatter(),
+                                           **kwargs)
         else:
             argparse.ArgumentParser.__init__(self, *args,
                                              formatter_class=CustomFormatter,
@@ -489,7 +491,7 @@ class OptionParser(argparse.ArgumentParser):
                                 action="store_true",
                                 help="output help without usage information")
         else:
-            
+
             if "--no-usage" in sys.argv:
                 self.add_argument("--no-usage", dest="help_no_usage",
                                   action="store_true",
@@ -876,7 +878,7 @@ def start(parser=None,
             group.add_argument(
                 "--database-schema", dest="database_schema", type=str,
                 help="database schem")
-        
+
             parser.set_defaults(database_url="sqlite:///./csvdb")
             parser.set_defaults(database_schema=None)
 
@@ -1018,7 +1020,7 @@ def stop(logger=None):
         if sys.argv[0] == "run.py":
             cmd = global_args[0]
             if len(global_args) > 1:
-                cmd += " '" + "' '".join(global_args[1:]) + "'" # AC hmm not sure what old global_args is not
+                cmd += " '" + "' '".join(global_args[1:]) + "'"
         else:
             cmd = sys.argv[0]
 
