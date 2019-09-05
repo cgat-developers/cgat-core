@@ -7,7 +7,6 @@ channels:
 
 dependencies:
 # python dependencies
-- argparse
 - python
 - gevent
 - nose
