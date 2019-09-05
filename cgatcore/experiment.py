@@ -16,7 +16,10 @@ and consistent methods for
 
 See :doc:`../scripts/cgat_script_template` on how to use this module.
 
-The basic usage of this module within a script is::
+This module can handle both optparse and argparse. The default is to
+return an argparse object.
+
+For default argparse: The basic usage of this module within a script is::
 
     """script_name.py - my script
 
@@ -35,15 +38,14 @@ The basic usage of this module within a script is::
         if not argv: argv = sys.argv
 
         # setup command line parser
-        parser = E.OptionParser(version="%prog version: $Id$",
-                                usage=globals()["__doc__"] )
+        parser = E.OptionParser(description=__doc__)
 
-        parser.add_option("-t", "--test", dest="test", type="string",
+        parser.add_arguments("-t", "--test", dest="test", type="string",
                           help="supply help")
 
         # add common options (-h/--help, ...) and parse
         # command line
-        (options, args) = E.Start(parser)
+        args = E.Start(parser)
 
         # do something
         # ...
@@ -55,6 +57,40 @@ The basic usage of this module within a script is::
 
     if __name__ == "__main__":
         sys.exit(main(sys.argv))
+
+
+To use optparse: The basic usage of this module within a script is::
+
+    def main(argv=None):
+        """script main.
+
+        parses command line options in sys.argv, unless *argv* is given.
+        """
+
+        if not argv: argv = sys.argv
+
+        # setup command line parser
+        parser = E.OptionParser(version="%prog version: $Id$",
+                                usage=globals()["__doc__"], optparse=True)
+
+        parser.add_option("-t", "--test", dest="test", type="string",
+                          help="supply help")
+
+        # add common options (-h/--help, ...) and parse
+        # command line
+        (options, args) = E.Start(parser, optparse=True)
+
+        # do something
+        # ...
+        E.info("an information message")
+        E.warn("a warning message)
+
+        ## write footer and output benchmark information.
+        E.Stop()
+
+    if __name__ == "__main__":
+        sys.exit(main(sys.argv))
+
 
 Record keeping
 --------------
@@ -619,7 +655,7 @@ def start(parser=None,
           logger_callback=None,
           return_parser=False,
           unknowns=False,
-          parser_type="argparse"):
+          optparse=False):
     """set up an experiment.
 
     The :py:func:`Start` method will set up a file logger and add some
@@ -719,8 +755,8 @@ def start(parser=None,
     unknowns : bool
         if a set of unknown args are to be returned
 
-    parser_type : string
-        parser type is either optparse or argparse
+    optparse : bool
+        specify if parser type is either optparse or argparse
 
     Returns
     -------
@@ -738,7 +774,7 @@ def start(parser=None,
     global_starting_time = time.time()
     
     # Argparse options
-    if "argparse" in parser_type:
+    if optparse is False:
         group = parser.add_argument_group("Script timing options")
 
         group.add_argument("--timeit", dest='timeit_file', type=str,
