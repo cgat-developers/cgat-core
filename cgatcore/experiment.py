@@ -732,7 +732,7 @@ def start(parser=None,
     global_starting_time = time.time()
 
     # Argparse options
-    if "argparse" in parser.__name__:
+    if "argparse" in parser.__module__:
         group = parser.add_argument_group("Script timing options")
 
         group.add_argument("--timeit", dest='timeit_file', type=str,
