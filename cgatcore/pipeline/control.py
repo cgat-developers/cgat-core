@@ -749,7 +749,7 @@ def parse_commandline(argv=None, **kwargs):
         logger_callback=logger_callback,
         unknowns=True)
 
-    args.pipeline_name = unknown[0]
+    args.pipeline_name = argv[0]
     return args
 
 
