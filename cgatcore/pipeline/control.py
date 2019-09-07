@@ -580,7 +580,7 @@ clone <source>
 '''
 
 
-def parse_commandline(argv=None, **kwargs):
+def parse_commandline(argv=None, optparse=False, **kwargs):
     """parse command line.
 
     Create option parser and parse command line.
@@ -603,154 +603,156 @@ def parse_commandline(argv=None, **kwargs):
        List of command line arguments
 
     """
-    if argv is None:
-        argv = sys.argv
+    if optparse is True:
+        pass
+    else:
+        if argv is None:
+            argv = sys.argv
 
-    parser = E.OptionParser(description=USAGE)
+        parser = E.OptionParser(description=USAGE)
 
-    parser.add_argument("--pipeline-action", dest="pipeline_action",
-                      type=str,
-                      choices=(
-                          "make", "show", "plot", "dump", "config", "clone",
-                          "check", "regenerate", "state", "printconfig"),
-                      help="action to take.")
+        parser.add_argument("--pipeline-action", dest="pipeline_action",
+                            type=str,
+                            choices=("make", "show", "plot", "dump", "config", "clone",
+                                     "check", "regenerate", "state", "printconfig"),
+                            help="action to take.")
 
-    parser.add_argument("--pipeline-format", dest="pipeline_format",
-                      type=str,
-                      choices=("dot", "jpg", "svg", "ps", "png"),
-                      help="pipeline format.")
+        parser.add_argument("--pipeline-format", dest="pipeline_format",
+                            type=str,
+                            choices=("dot", "jpg", "svg", "ps", "png"),
+                            help="pipeline format.")
 
-    parser.add_argument("-n", "--dry-run", dest="dry_run",
-                      action="store_true",
-                      help="perform a dry run (do not execute any shell "
-                      "commands).")
+        parser.add_argument("-n", "--dry-run", dest="dry_run",
+                            action="store_true",
+                            help="perform a dry run (do not execute any shell "
+                            "commands).")
 
-    parser.add_argument("-c", "--config-file", dest="config_file",
-                      help="benchmark configuration file ")
+        parser.add_argument("-c", "--config-file", dest="config_file",
+                            help="benchmark configuration file ")
 
-    parser.add_argument("-f", "--force-run", dest="force_run",
-                      type=str,
-                      help="force running the pipeline even if there are "
-                      "up-to-date tasks. If option is 'all', all tasks "
-                      "will be rerun. Otherwise, only the tasks given as "
-                      "arguments will be rerun. ")
+        parser.add_argument("-f", "--force-run", dest="force_run",
+                            type=str,
+                            help="force running the pipeline even if there are "
+                            "up-to-date tasks. If option is 'all', all tasks "
+                            "will be rerun. Otherwise, only the tasks given as "
+                            "arguments will be rerun. ")
 
-    parser.add_argument("-p", "--multiprocess", dest="multiprocess", type=int,
-                      help="number of parallel processes to use on "
-                      "submit host "
-                      "(different from number of jobs to use for "
-                      "cluster jobs) ")
+        parser.add_argument("-p", "--multiprocess", dest="multiprocess", type=int,
+                            help="number of parallel processes to use on "
+                            "submit host "
+                            "(different from number of jobs to use for "
+                            "cluster jobs) ")
 
-    parser.add_argument("-e", "--exceptions", dest="log_exceptions",
-                      action="store_true",
-                      help="echo exceptions immediately as they occur ")
+        parser.add_argument("-e", "--exceptions", dest="log_exceptions",
+                            action="store_true",
+                            help="echo exceptions immediately as they occur ")
 
-    parser.add_argument("-i", "--terminate", dest="terminate",
-                      action="store_true",
-                      help="terminate immediately at the first exception")
+        parser.add_argument("-i", "--terminate", dest="terminate",
+                            action="store_true",
+                            help="terminate immediately at the first exception")
 
-    parser.add_argument("-d", "--debug", dest="debug",
-                      action="store_true",
-                      help="output debugging information on console, "
-                      "and not the logfile ")
+        parser.add_argument("-d", "--debug", dest="debug",
+                            action="store_true",
+                            help="output debugging information on console, "
+                            "and not the logfile ")
 
-    parser.add_argument("-s", "--set", dest="variables_to_set",
-                      type=str, action="append",
-                      help="explicitely set paramater values ")
+        parser.add_argument("-s", "--set", dest="variables_to_set",
+                            type=str, action="append",
+                            help="explicitely set paramater values ")
 
-    parser.add_argument("--input-glob", "--input-glob", dest="input_globs",
-                      type=str, action="append",
-                      help="glob expression for input filenames. The exact format "
-                      "is pipeline specific. If the pipeline expects only a single input, "
-                      "`--input-glob=*.bam` will be sufficient. If the pipeline expects "
-                      "multiple types of input, a qualifier might need to be added, for example "
-                      "`--input-glob=bam=*.bam` --input-glob=bed=*.bed.gz`. Giving this option "
-                      "overrides the default of a pipeline looking for input in the current directory "
-                      "or specified the config file.")
+        parser.add_argument("--input-glob", "--input-glob", dest="input_globs",
+                            type=str, action="append",
+                            help="glob expression for input filenames. The exact format "
+                            "is pipeline specific. If the pipeline expects only a single input, "
+                            "`--input-glob=*.bam` will be sufficient. If the pipeline expects "
+                            "multiple types of input, a qualifier might need to be added, for example "
+                            "`--input-glob=bam=*.bam` --input-glob=bed=*.bed.gz`. Giving this option "
+                            "overrides the default of a pipeline looking for input in the current directory "
+                            "or specified the config file.")
 
-    parser.add_argument("--checksums", dest="ruffus_checksums_level",
-                        type=int,
-                        help="set the level of ruffus checksums")
+        parser.add_argument("--checksums", dest="ruffus_checksums_level",
+                            type=int,
+                            help="set the level of ruffus checksums")
 
-    parser.add_argument("-t", "--is-test", dest="is_test",
-                        action="store_true",
-                        help="this is a test run")
+        parser.add_argument("-t", "--is-test", dest="is_test",
+                            action="store_true",
+                            help="this is a test run")
 
-    parser.add_argument("--engine", dest="engine",
-                        type=str,
-                        choices=("local", "arvados"),
-                        help="engine to use.")
+        parser.add_argument("--engine", dest="engine",
+                            type=str,
+                            choices=("local", "arvados"),
+                            help="engine to use.")
 
-    parser.add_argument(
-        "--always-mount", dest="always_mount",
-        action="store_true",
-        help="force mounting of arvados keep")
+        parser.add_argument(
+            "--always-mount", dest="always_mount",
+            action="store_true",
+            help="force mounting of arvados keep")
 
-    parser.add_argument("--only-info", dest="only_info",
-                        action="store_true",
-                        help="only update meta information, do not run")
+        parser.add_argument("--only-info", dest="only_info",
+                            action="store_true",
+                            help="only update meta information, do not run")
 
-    parser.add_argument("--work-dir", dest="work_dir",
-                        type=str,
-                        help="working directory. Will be created if it does not exist")
+        parser.add_argument("--work-dir", dest="work_dir",
+                            type=str,
+                            help="working directory. Will be created if it does not exist")
 
-    group = parser.add_argument_group("pipeline logging configuration")
+        group = parser.add_argument_group("pipeline logging configuration")
 
-    group.add_argument("--pipeline-logfile", dest="pipeline_logfile",
-                       type=str,
-                       help="primary logging destination.")
+        group.add_argument("--pipeline-logfile", dest="pipeline_logfile",
+                           type=str,
+                           help="primary logging destination.")
 
-    group.add_argument("--shell-logfile", dest="shell_logfile",
-                       type=str,
-                       help="filename for shell debugging information. "
-                       "If it is not an absolute path, "
-                       "the output will be written into the current working "
-                       "directory. If unset, no logging will be output.")
+        group.add_argument("--shell-logfile", dest="shell_logfile",
+                           type=str,
+                           help="filename for shell debugging information. "
+                           "If it is not an absolute path, "
+                           "the output will be written into the current working "
+                           "directory. If unset, no logging will be output.")
 
-    group.add_argument("--input-validation", dest="input_validation",
-                        action="store_true",
-                        help="perform input validation before starting")
+        group.add_argument("--input-validation", dest="input_validation",
+                           action="store_true",
+                           help="perform input validation before starting")
 
     
 
-    parser.set_defaults(
-        pipeline_action=None,
-        pipeline_format="svg",
-        pipeline_targets=[],
-        force_run=False,
-        multiprocess=None,
-        pipeline_logfile="pipeline.log",
-        shell_logfile=None,
-        dry_run=False,
-        log_exceptions=True,
-        engine="local",
-        exceptions_terminate_immediately=None,
-        debug=False,
-        variables_to_set=[],
-        is_test=False,
-        ruffus_checksums_level=0,
-        config_file="pipeline.yml",
-        work_dir=None,
-        always_mount=False,
-        only_info=False,
-        input_globs=[],
-        input_validation=False)
+        parser.set_defaults(
+            pipeline_action=None,
+            pipeline_format="svg",
+            pipeline_targets=[],
+            force_run=False,
+            multiprocess=None,
+            pipeline_logfile="pipeline.log",
+            shell_logfile=None,
+            dry_run=False,
+            log_exceptions=True,
+            engine="local",
+            exceptions_terminate_immediately=None,
+            debug=False,
+            variables_to_set=[],
+            is_test=False,
+            ruffus_checksums_level=0,
+            config_file="pipeline.yml",
+            work_dir=None,
+            always_mount=False,
+            only_info=False,
+            input_globs=[],
+            input_validation=False)
 
-    parser.set_defaults(**kwargs)
+        parser.set_defaults(**kwargs)
 
-    if "callback" in kwargs:
-        kwargs["callback"](parser)
+        if "callback" in kwargs:
+            kwargs["callback"](parser)
 
-    logger_callback = setup_logging
-    args, unknown = E.start(
-        parser,
-        add_cluster_options=True,
-        argv=argv,
-        logger_callback=logger_callback,
-        unknowns=True)
+        logger_callback = setup_logging
+        args, unknown = E.start(
+            parser,
+            add_cluster_options=True,
+            argv=argv,
+            logger_callback=logger_callback,
+            unknowns=True)
 
-    args.pipeline_name = argv[0]
-    return args
+        args.pipeline_name = argv[0]
+        return args
 
 
 def update_params_with_commandline_options(params, args):
@@ -1015,7 +1017,7 @@ class LoggingFilterProgress(logging.Filter):
         return True
 
 
-def initialize(argv=None, caller=None, defaults=None, **kwargs):
+def initialize(argv=None, caller=None, defaults=None, optpase=False, **kwargs):
     """setup the pipeline framework.
 
     Arguments
@@ -1044,7 +1046,7 @@ def initialize(argv=None, caller=None, defaults=None, **kwargs):
         except AttributeError as ex:
             path = "unknown"
 
-    args = parse_commandline(argv, **kwargs)
+    args = parse_commandline(argv, optparse, **kwargs)
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
          "../pipeline.yml",
