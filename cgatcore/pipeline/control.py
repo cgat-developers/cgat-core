@@ -1017,7 +1017,7 @@ class LoggingFilterProgress(logging.Filter):
         return True
 
 
-def initialize(argv=None, caller=None, defaults=None, optpase=False, **kwargs):
+def initialize(argv=None, caller=None, defaults=None, optparse=False, **kwargs):
     """setup the pipeline framework.
 
     Arguments
