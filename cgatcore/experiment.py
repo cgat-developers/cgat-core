@@ -627,13 +627,7 @@ def get_footer():
             global_id)
 
 
-def argparse_start(parser, argv, quiet, no_parsing,
-                   add_csv_options, add_database_options,
-                   add_pipe_options, add_cluster_options,
-                   add_output_options, logger_callback,
-                   return_parser, unknowns, optparse):
-    """Argparser implimentation for E.start """
-
+def argparse_start():
     group = parser.add_argument_group("Script timing options")
 
     group.add_argument("--timeit", dest='timeit_file', type=str,
@@ -710,6 +704,7 @@ def argparse_start(parser, argv, quiet, no_parsing,
                            help="name of the parallel environment to use ")
         group.add_argument("--cluster-options", dest="cluster_options",
                            type=str,
+                           help="additional options for cluster jobs, passed "
                            "on to queuing system.")
         group.add_argument("--cluster-queue-manager",
                            dest="cluster_queue_manager",
@@ -808,7 +803,8 @@ def argparse_start(parser, argv, quiet, no_parsing,
         global_args.stdin = sys.stdin
 
         # reset log_config_filename if logging.yml does not exist
-    if global_args.log_config_filename == "logging.yml" and not os.path.exists(global_args.log_config_filename):
+    if global_args.log_config_filename == "logging.yml" and not os.path.exists(
+        global_args.log_config_filename):
         global_args.log_config_filename = None
 
     if global_args.log_config_filename:
@@ -821,11 +817,11 @@ def argparse_start(parser, argv, quiet, no_parsing,
             raise OSError("file {} with logging configuration does not exist".format(
                     global_args.log_config_filename))
     else:
-        # configure logging from command line options
-        # map from 0-10 to logging scale
-        # 0: quiet
-        # 1: little verbositiy
-        # >1: increased verbosity
+            # configure logging from command line options
+            # map from 0-10 to logging scale
+            # 0: quiet
+            # 1: little verbositiy
+            # >1: increased verbosity
         if global_args.loglevel == 0:
             lvl = logging.ERROR
         elif global_args.loglevel == 1:
@@ -843,9 +839,9 @@ def argparse_start(parser, argv, quiet, no_parsing,
             format=format,
             stream=global_args.stdlog)
 
-        # set up multi-line logging
-        # Note that .handlers is not part of the API, might change
-        # Solution is to configure handlers explicitely.
+            # set up multi-line logging
+            # Note that .handlers is not part of the API, might change
+            # Solution is to configure handlers explicitely.
         for handler in logging.getLogger().handlers:
             handler.setFormatter(MultiLineFormatter(logformat))
 
@@ -864,7 +860,6 @@ def argparse_start(parser, argv, quiet, no_parsing,
         return global_args, unknown
     else:
         return global_args
-
 
 class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
@@ -1011,14 +1006,10 @@ def start(parser=None,
     global global_args, global_starting_time
 
     global_starting_time = time.time()
-
+    
     # Argparse options
     if optparse is False:
-        argparse_start(parser, argv, quiet, no_parsing,
-                       add_csv_options, add_database_options,
-                       add_pipe_options, add_cluster_options,
-                       add_output_options, logger_callback,
-                       return_parser, unknowns, optparse)
+        argparse_start()
 
 
 def stop(logger=None):
