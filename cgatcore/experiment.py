@@ -627,6 +627,240 @@ def get_footer():
             global_id)
 
 
+def argparse_start():
+    group = parser.add_argument_group("Script timing options")
+
+    group.add_argument("--timeit", dest='timeit_file', type=str,
+                       help="store timeing information in file.")
+    group.add_argument("--timeit-name", dest='timeit_name', type=str,
+                       help="name in timing file for this class of jobs ")
+    group.add_argument("--timeit-header", dest='timeit_header',
+                       action="store_true",
+                       help="add header for timing information.")
+
+    group = parser.add_argument_group("Common options")
+
+    group.add_argument("--random-seed", dest='random_seed', type=int,
+                       help="random seed to initialize number generator "
+                       "with")
+
+    group.add_argument("-v", "--verbose", dest="loglevel", type=int,
+                       help="loglevel. The higher, the more output.")
+
+    group.add_argument("--log-config-filename",
+                       dest="log_config_filename",
+                       type=str,
+                       default="logging.yml",
+                       help="Configuration file for logger.")
+
+    group.add_argument("--tracing", dest="tracing", type=str,
+                       choices=["function"],
+                       default=None,
+                       help="enable function tracing.")
+
+    group.add_argument("-?", type=callbackShortHelp,
+                       help="output short help (command line options only.")
+
+    if quiet:
+        parser.set_defaults(loglevel=0)
+    else:
+        parser.set_defaults(loglevel=1)
+
+    parser.set_defaults(
+        timeit_file=None,
+        timeit_name='all',
+        timeit_header=None,
+        random_seed=None,
+        tracing=None,
+        )
+
+    if add_csv_options:
+        parser.add_argument("--csv-dialect", dest="csv_dialect", type=str,
+                            help="csv dialect to use.")
+
+        parser.set_defaults(
+            csv_dialect="excel-tab",
+            csv_lineterminator="\n",
+            )
+
+    if add_cluster_options:
+        group = parser.add_argument_group("cluster options")
+        group.add_argument("--no-cluster", "--local", dest="without_cluster",
+                           action="store_true",
+                           help="do no use cluster - run locally.")
+        group.add_argument("--cluster-priority", dest="cluster_priority",
+                           type=int,
+                           help="set job priority on cluster.")
+        group.add_argument("--cluster-queue", dest="cluster_queue",
+                           type=str,
+                           help="set cluster queue.")
+        group.add_argument("--cluster-num-jobs", dest="cluster_num_jobs",
+                           type=int,
+                           help="number of jobs to submit to the queue execute "
+                           "in parallel.")
+        group.add_argument("--cluster-parallel",
+                           dest="cluster_parallel_environment",
+                           type=str,
+                           help="name of the parallel environment to use ")
+        group.add_argument("--cluster-options", dest="cluster_options",
+                           type=str,
+                           help="additional options for cluster jobs, passed "
+                           "on to queuing system.")
+        group.add_argument("--cluster-queue-manager",
+                           dest="cluster_queue_manager",
+                           type=str,
+                           choices=["sge", "slurm", "torque", "pbspro"],
+                           help="cluster queuing system ")
+        group.add_argument("--cluster-memory-resource",
+                           dest="cluster_memory_resource",
+                           type=str,
+                           help="resource name to allocate memory with ")
+        group.add_argument("--cluster-memory-default",
+                           dest="cluster_memory_default",
+                           type=str,
+                           help="default amount of memory to allocate ")
+
+        parser.set_defaults(without_cluster=False,
+                            cluster_queue=None,
+                            cluster_priority=None,
+                            cluster_num_jobs=None,
+                            cluster_parallel_environment=None,
+                            cluster_options=None,
+                            cluster_memory_resource=None,
+                            cluster_memory_default="unlimited",
+                            cluster_queue_manager="sge")
+
+    if add_output_options or add_pipe_options:
+        group = parser.add_argument_group("Input/output options")
+
+        if add_output_options:
+            group.add_argument(
+                "-P", "--output-filename-pattern",
+                dest="output_filename_pattern", type=str,
+                help="OUTPUT filename pattern for various methods ")
+
+            group.add_argument("-F", "--force-output", dest="output_force",
+                               action="store_true",
+                               help="force over-writing of existing files.")
+
+            parser.set_defaults(output_filename_pattern="%s",
+                                output_force=False)
+
+        if add_pipe_options:
+
+            group.add_argument("-I", "--stdin", dest="stdin", type=str,
+                               help="file to read stdin from.")
+            group.add_argument("-L", "--log", dest="stdlog", type=str,
+                               help="file with logging information.")
+            group.add_argument("-E", "--error", dest="stderr", type=str,
+                               help="file with error information.")
+            group.add_argument("-S", "--stdout", dest="stdout", type=str,
+                               help="file where output is to go. ")
+
+            parser.set_defaults(stderr=sys.stderr)
+            parser.set_defaults(stdout=sys.stdout)
+            parser.set_defaults(stdlog=sys.stdout)
+            parser.set_defaults(stdin=sys.stdin)
+
+    if add_database_options:
+        group = parser.add_argument_group("database connection options")
+        group.add_argument(
+            "--database-url", dest="database_url", type=str,
+            help="database connection url, for example sqlite:///./csvdb.")
+
+        group.add_argument(
+            "--database-schema", dest="database_schema", type=str,
+            help="database schem")
+
+        parser.set_defaults(database_url="sqlite:///./csvdb")
+        parser.set_defaults(database_schema=None)
+
+    if return_parser:
+        return parser
+
+    if not no_parsing:
+        global_args, unknown = parser.parse_known_args()
+
+    if global_args.random_seed is not None:
+        random.seed(global_args.random_seed)
+
+    if add_pipe_options:
+        if global_args.stdout != sys.stdout:
+            global_args.stdout = open_file(global_args.stdout, "w")
+        if global_args.stderr != sys.stderr:
+            if global_args.stderr == "stderr":
+                global_args.stderr = global_args.stderr
+            else:
+                global_args.stderr = open_file(global_args.stderr, "w")
+        if global_args.stdlog != sys.stdout:
+            global_args.stdlog = open_file(global_args.stdlog, "a")
+        if global_args.stdin != sys.stdin:
+            global_args.stdin = open_file(global_args.stdin, "r")
+    else:
+        global_args.stderr = sys.stderr
+        global_args.stdout = sys.stdout
+        global_args.stdlog = sys.stdout
+        global_args.stdin = sys.stdin
+
+        # reset log_config_filename if logging.yml does not exist
+    if global_args.log_config_filename == "logging.yml" and not os.path.exists(
+        global_args.log_config_filename):
+        global_args.log_config_filename = None
+
+    if global_args.log_config_filename:
+        if os.path.exists(global_args.log_config_filename):
+            # configure logging from filename
+            with open(global_args.log_config_filename) as inf:
+                dict_yaml = yaml.load(inf)
+            logging.config.dictConfig(dict_yaml)
+        else:
+            raise OSError("file {} with logging configuration does not exist".format(
+                    global_args.log_config_filename))
+    else:
+            # configure logging from command line options
+            # map from 0-10 to logging scale
+            # 0: quiet
+            # 1: little verbositiy
+            # >1: increased verbosity
+        if global_args.loglevel == 0:
+            lvl = logging.ERROR
+        elif global_args.loglevel == 1:
+            lvl = logging.INFO
+        else:
+            lvl = logging.DEBUG
+
+        if global_args.stdout == global_args.stdlog:
+            logformat = '# %(asctime)s %(levelname)s %(message)s'
+        else:
+            logformat = '%(asctime)s %(levelname)s %(message)s'
+
+        logging.basicConfig(
+            level=lvl,
+            format=format,
+            stream=global_args.stdlog)
+
+            # set up multi-line logging
+            # Note that .handlers is not part of the API, might change
+            # Solution is to configure handlers explicitely.
+        for handler in logging.getLogger().handlers:
+            handler.setFormatter(MultiLineFormatter(logformat))
+
+    if logger_callback:
+        logger = logger_callback(global_args)
+    else:
+        logger = logging.getLogger("cgatcore")
+
+    logger.info(get_header())
+    logger.info(get_params(global_args))
+
+    if global_args.tracing == "function":
+        sys.settrace(trace_calls)
+
+    if unknowns:
+        return global_args, unknown
+    else:
+        return global_args
+
 class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
 
@@ -775,238 +1009,7 @@ def start(parser=None,
     
     # Argparse options
     if optparse is False:
-        group = parser.add_argument_group("Script timing options")
-
-        group.add_argument("--timeit", dest='timeit_file', type=str,
-                           help="store timeing information in file.")
-        group.add_argument("--timeit-name", dest='timeit_name', type=str,
-                           help="name in timing file for this class of jobs ")
-        group.add_argument("--timeit-header", dest='timeit_header',
-                           action="store_true",
-                           help="add header for timing information.")
-
-        group = parser.add_argument_group("Common options")
-
-        group.add_argument("--random-seed", dest='random_seed', type=int,
-                           help="random seed to initialize number generator "
-                           "with")
-
-        group.add_argument("-v", "--verbose", dest="loglevel", type=int,
-                           help="loglevel. The higher, the more output.")
-
-        group.add_argument("--log-config-filename",
-                           dest="log_config_filename",
-                           type=str,
-                           default="logging.yml",
-                           help="Configuration file for logger.")
-
-        group.add_argument("--tracing", dest="tracing", type=str,
-                           choices=["function"],
-                           default=None,
-                           help="enable function tracing.")
-
-        group.add_argument("-?", type=callbackShortHelp,
-                           help="output short help (command line options only.")
-
-        if quiet:
-            parser.set_defaults(loglevel=0)
-        else:
-            parser.set_defaults(loglevel=1)
-
-        parser.set_defaults(
-            timeit_file=None,
-            timeit_name='all',
-            timeit_header=None,
-            random_seed=None,
-            tracing=None,
-        )
-
-        if add_csv_options:
-            parser.add_argument("--csv-dialect", dest="csv_dialect", type=str,
-                                help="csv dialect to use.")
-
-            parser.set_defaults(
-                csv_dialect="excel-tab",
-                csv_lineterminator="\n",
-            )
-
-        if add_cluster_options:
-            group = parser.add_argument_group("cluster options")
-            group.add_argument("--no-cluster", "--local", dest="without_cluster",
-                               action="store_true",
-                               help="do no use cluster - run locally.")
-            group.add_argument("--cluster-priority", dest="cluster_priority",
-                               type=int,
-                               help="set job priority on cluster.")
-            group.add_argument("--cluster-queue", dest="cluster_queue",
-                               type=str,
-                               help="set cluster queue.")
-            group.add_argument("--cluster-num-jobs", dest="cluster_num_jobs",
-                               type=int,
-                               help="number of jobs to submit to the queue execute "
-                               "in parallel.")
-            group.add_argument("--cluster-parallel",
-                               dest="cluster_parallel_environment",
-                               type=str,
-                               help="name of the parallel environment to use ")
-            group.add_argument("--cluster-options", dest="cluster_options",
-                               type=str,
-                               help="additional options for cluster jobs, passed "
-                               "on to queuing system.")
-            group.add_argument("--cluster-queue-manager",
-                               dest="cluster_queue_manager",
-                               type=str,
-                               choices=["sge", "slurm", "torque", "pbspro"],
-                               help="cluster queuing system ")
-            group.add_argument("--cluster-memory-resource",
-                               dest="cluster_memory_resource",
-                               type=str,
-                               help="resource name to allocate memory with ")
-            group.add_argument("--cluster-memory-default",
-                               dest="cluster_memory_default",
-                               type=str,
-                               help="default amount of memory to allocate ")
-
-            parser.set_defaults(without_cluster=False,
-                                cluster_queue=None,
-                                cluster_priority=None,
-                                cluster_num_jobs=None,
-                                cluster_parallel_environment=None,
-                                cluster_options=None,
-                                cluster_memory_resource=None,
-                                cluster_memory_default="unlimited",
-                                cluster_queue_manager="sge")
-
-        if add_output_options or add_pipe_options:
-            group = parser.add_argument_group("Input/output options")
-
-            if add_output_options:
-                group.add_argument(
-                    "-P", "--output-filename-pattern",
-                    dest="output_filename_pattern", type=str,
-                    help="OUTPUT filename pattern for various methods ")
-
-                group.add_argument("-F", "--force-output", dest="output_force",
-                                   action="store_true",
-                                   help="force over-writing of existing files.")
-
-                parser.set_defaults(output_filename_pattern="%s",
-                                    output_force=False)
-
-            if add_pipe_options:
-
-                group.add_argument("-I", "--stdin", dest="stdin", type=str,
-                                   help="file to read stdin from.")
-                group.add_argument("-L", "--log", dest="stdlog", type=str,
-                                   help="file with logging information.")
-                group.add_argument("-E", "--error", dest="stderr", type=str,
-                                   help="file with error information.")
-                group.add_argument("-S", "--stdout", dest="stdout", type=str,
-                                   help="file where output is to go. ")
-
-                parser.set_defaults(stderr=sys.stderr)
-                parser.set_defaults(stdout=sys.stdout)
-                parser.set_defaults(stdlog=sys.stdout)
-                parser.set_defaults(stdin=sys.stdin)
-
-        if add_database_options:
-            group = parser.add_argument_group("database connection options")
-            group.add_argument(
-                "--database-url", dest="database_url", type=str,
-                help="database connection url, for example sqlite:///./csvdb.")
-
-            group.add_argument(
-                "--database-schema", dest="database_schema", type=str,
-                help="database schem")
-
-            parser.set_defaults(database_url="sqlite:///./csvdb")
-            parser.set_defaults(database_schema=None)
-
-        if return_parser:
-            return parser
-
-        if not no_parsing:
-            global_args, unknown = parser.parse_known_args()
-
-        if global_args.random_seed is not None:
-            random.seed(global_args.random_seed)
-
-        if add_pipe_options:
-            if global_args.stdout != sys.stdout:
-                global_args.stdout = open_file(global_args.stdout, "w")
-            if global_args.stderr != sys.stderr:
-                if global_args.stderr == "stderr":
-                    global_args.stderr = global_args.stderr
-                else:
-                    global_args.stderr = open_file(global_args.stderr, "w")
-            if global_args.stdlog != sys.stdout:
-                global_args.stdlog = open_file(global_args.stdlog, "a")
-            if global_args.stdin != sys.stdin:
-                global_args.stdin = open_file(global_args.stdin, "r")
-        else:
-            global_args.stderr = sys.stderr
-            global_args.stdout = sys.stdout
-            global_args.stdlog = sys.stdout
-            global_args.stdin = sys.stdin
-
-        # reset log_config_filename if logging.yml does not exist
-        if global_args.log_config_filename == "logging.yml" and not os.path.exists(
-                global_args.log_config_filename):
-            global_args.log_config_filename = None
-
-        if global_args.log_config_filename:
-            if os.path.exists(global_args.log_config_filename):
-                # configure logging from filename
-                with open(global_args.log_config_filename) as inf:
-                    dict_yaml = yaml.load(inf)
-                logging.config.dictConfig(dict_yaml)
-            else:
-                raise OSError("file {} with logging configuration does not exist".format(
-                    global_args.log_config_filename))
-        else:
-            # configure logging from command line options
-            # map from 0-10 to logging scale
-            # 0: quiet
-            # 1: little verbositiy
-            # >1: increased verbosity
-            if global_args.loglevel == 0:
-                lvl = logging.ERROR
-            elif global_args.loglevel == 1:
-                lvl = logging.INFO
-            else:
-                lvl = logging.DEBUG
-
-            if global_args.stdout == global_args.stdlog:
-                logformat = '# %(asctime)s %(levelname)s %(message)s'
-            else:
-                logformat = '%(asctime)s %(levelname)s %(message)s'
-
-            logging.basicConfig(
-                level=lvl,
-                format=format,
-                stream=global_args.stdlog)
-
-            # set up multi-line logging
-            # Note that .handlers is not part of the API, might change
-            # Solution is to configure handlers explicitely.
-            for handler in logging.getLogger().handlers:
-                handler.setFormatter(MultiLineFormatter(logformat))
-
-        if logger_callback:
-            logger = logger_callback(global_args)
-        else:
-            logger = logging.getLogger("cgatcore")
-
-        logger.info(get_header())
-        logger.info(get_params(global_args))
-
-        if global_args.tracing == "function":
-            sys.settrace(trace_calls)
-
-        if unknowns:
-            return global_args, unknown
-        else:
-            return global_args
+        argparse_start()
 
 
 def stop(logger=None):
