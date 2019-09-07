@@ -710,7 +710,7 @@ def argparse_start(parser, argv, quiet, no_parsing,
                            help="name of the parallel environment to use ")
         group.add_argument("--cluster-options", dest="cluster_options",
                            type=str,
-                           "on to queuing system.")
+                           help="additional options for cluster jobs, passed on to queuing system.")
         group.add_argument("--cluster-queue-manager",
                            dest="cluster_queue_manager",
                            type=str,
