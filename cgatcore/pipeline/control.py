@@ -876,8 +876,6 @@ def parse_commandline(argv=None, optparse=False, **kwargs):
                            action="store_true",
                            help="perform input validation before starting")
 
-    
-
         parser.set_defaults(
             pipeline_action=None,
             pipeline_format="svg",
@@ -1323,13 +1321,13 @@ def run_workflow(args, argv, pipeline=None):
         method(*args.pipeline_targets[1:])
 
     elif args.pipeline_action in ("make",
-                                     "show",
-                                     "state",
-                                     "svg",
-                                     "plot",
-                                     "dot",
-                                     "touch",
-                                     "regenerate"):
+                                  "show",
+                                  "state",
+                                  "svg",
+                                  "plot",
+                                  "dot",
+                                  "touch",
+                                  "regenerate"):
 
         messenger = None
         try:

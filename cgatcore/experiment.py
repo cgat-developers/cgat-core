@@ -773,7 +773,6 @@ def start(parser=None,
 
     global_starting_time = time.time()
 
-
     # Argparse options
     if optparse is True:
         if not parser:
@@ -948,7 +947,7 @@ def start(parser=None,
             group.add_option(
                 "--database-schema", dest="database_schema", type="string",
                 help="database schema [%default]")
-        
+
             parser.set_defaults(database_url="sqlite:///./csvdb")
             parser.set_defaults(database_schema=None)
             parser.add_option_group(group)
@@ -985,7 +984,7 @@ def start(parser=None,
 
         # reset log_config_filename if logging.yml does not exist
         if global_options.log_config_filename == "logging.yml" and not os.path.exists(
-            global_options.log_config_filename):
+                global_options.log_config_filename):
             global_options.log_config_filename = None
 
         if global_options.log_config_filename:
