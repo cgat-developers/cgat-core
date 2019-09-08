@@ -604,7 +604,170 @@ def parse_commandline(argv=None, optparse=False, **kwargs):
 
     """
     if optparse is True:
-        pass
+        if argv is None:
+            argv = sys.argv
+
+        parser = E.OptionParser(version="%prog version: $Id$",
+                                usage=USAGE)
+
+        parser.add_option("--pipeline-action", dest="pipeline_action",
+                          type="choice",
+                          choices=(
+                              "make", "show", "plot", "dump", "config", "clone",
+                              "check", "regenerate", "state", "printconfig"),
+                          help="action to take [default=%default].")
+
+        parser.add_option("--pipeline-format", dest="pipeline_format",
+                          type="choice",
+                          choices=("dot", "jpg", "svg", "ps", "png"),
+                          help="pipeline format [default=%default].")
+
+        parser.add_option("-n", "--dry-run", dest="dry_run",
+                          action="store_true",
+                          help="perform a dry run (do not execute any shell "
+                          "commands) [default=%default].")
+
+        parser.add_option("-c", "--config-file", dest="config_file",
+                          help="benchmark configuration file "
+                          "[default=%default].")
+
+        parser.add_option("-f", "--force-run", dest="force_run",
+                          type="string",
+                          help="force running the pipeline even if there are "
+                          "up-to-date tasks. If option is 'all', all tasks "
+                          "will be rerun. Otherwise, only the tasks given as "
+                          "arguments will be rerun. "
+                          "[default=%default].")
+
+        parser.add_option("-p", "--multiprocess", dest="multiprocess", type="int",
+                          help="number of parallel processes to use on "
+                          "submit host "
+                          "(different from number of jobs to use for "
+                          "cluster jobs) "
+                          "[default=%default].")
+
+        parser.add_option("-e", "--exceptions", dest="log_exceptions",
+                          action="store_true",
+                          help="echo exceptions immediately as they occur "
+                          "[default=%default].")
+
+        parser.add_option("-i", "--terminate", dest="terminate",
+                          action="store_true",
+                          help="terminate immediately at the first exception "
+                          "[default=%default].")
+
+        parser.add_option("-d", "--debug", dest="debug",
+                          action="store_true",
+                          help="output debugging information on console, "
+                          "and not the logfile "
+                          "[default=%default].")
+
+        parser.add_option("-s", "--set", dest="variables_to_set",
+                          type="string", action="append",
+                          help="explicitely set paramater values "
+                          "[default=%default].")
+
+        parser.add_option("--input-glob", "--input-glob", dest="input_globs",
+                          type="string", action="append",
+                          help="glob expression for input filenames. The exact format "
+                          "is pipeline specific. If the pipeline expects only a single input, "
+                          "`--input-glob=*.bam` will be sufficient. If the pipeline expects "
+                          "multiple types of input, a qualifier might need to be added, for example "
+                          "`--input-glob=bam=*.bam` --input-glob=bed=*.bed.gz`. Giving this option "
+                          "overrides the default of a pipeline looking for input in the current directory "
+                          "or specified the config file. "
+                          "[default=%default].")
+
+        parser.add_option("--checksums", dest="ruffus_checksums_level",
+                          type="int",
+                          help="set the level of ruffus checksums"
+                          "[default=%default].")
+
+        parser.add_option("-t", "--is-test", dest="is_test",
+                          action="store_true",
+                          help="this is a test run"
+                          "[default=%default].")
+
+        parser.add_option("--engine", dest="engine",
+                          choices=("local", "arvados"),
+                          help="engine to use."
+                          "[default=%default].")
+
+        parser.add_option(
+            "--always-mount", dest="always_mount",
+            action="store_true",
+            help="force mounting of arvados keep [%default]")
+
+        parser.add_option("--only-info", dest="only_info",
+                          action="store_true",
+                          help="only update meta information, do not run "
+                          "[default=%default].")
+
+        parser.add_option("--work-dir", dest="work_dir",
+                          type="string",
+                          help="working directory. Will be created if it does not exist "
+                          "[default=%default].")
+
+        group = E.OptionGroup(parser, "pipeline logging configuration")
+
+        group.add_option("--pipeline-logfile", dest="pipeline_logfile",
+                         type="string",
+                         help="primary logging destination."
+                         "[default=%default].")
+
+        group.add_option("--shell-logfile", dest="shell_logfile",
+                         type="string",
+                         help="filename for shell debugging information. "
+                         "If it is not an absolute path, "
+                         "the output will be written into the current working "
+                         "directory. If unset, no logging will be output. "
+                         "[default=%default].")
+
+        parser.add_option("--input-validation", dest="input_validation",
+                          action="store_true",
+                          help="perform input validation before starting "
+                          "[default=%default].")
+
+        parser.add_option_group(group)
+
+        parser.set_defaults(
+            pipeline_action=None,
+            pipeline_format="svg",
+            pipeline_targets=[],
+            force_run=False,
+            multiprocess=None,
+            pipeline_logfile="pipeline.log",
+            shell_logfile=None,
+            dry_run=False,
+            log_exceptions=True,
+            engine="local",
+            exceptions_terminate_immediately=None,
+            debug=False,
+            variables_to_set=[],
+            is_test=False,
+            ruffus_checksums_level=0,
+            config_file="pipeline.yml",
+            work_dir=None,
+            always_mount=False,
+            only_info=False,
+            input_globs=[],
+            input_validation=False)
+
+        parser.set_defaults(**kwargs)
+
+        if "callback" in kwargs:
+            kwargs["callback"](parser)
+
+        logger_callback = setup_logging
+        (options, args) = E.start(
+            parser,
+            add_cluster_options=True,
+            argv=argv,
+            logger_callback=logger_callback)
+
+        options.pipeline_name = argv[0]
+        return options, args
+
     else:
         if argv is None:
             argv = sys.argv

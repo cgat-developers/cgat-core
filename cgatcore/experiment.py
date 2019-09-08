@@ -518,7 +518,7 @@ class OptionParser(argparse.ArgumentParser):
 
         # set new option parser
         # parser.formatter.set_parser(parser)
-        if optparse:
+        if self.optparse:
             # set new option parser
             # parser.formatter = BetterFormatter()
             # parser.formatter.set_parser(parser)
