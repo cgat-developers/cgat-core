@@ -314,7 +314,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser()
+    parser = E.ArgumentParser()
 
     parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version="1.0"))
 

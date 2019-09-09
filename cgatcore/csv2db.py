@@ -186,7 +186,7 @@ def run(infile, options, chunk_size=10000):
 
 def buildParser():
 
-    parser = E.OptionParser(description=__doc__)
+    parser = E.ArgumentParser(description=__doc__)
 
     parser.add_argument("--version", action='version', version="1.0")
 
