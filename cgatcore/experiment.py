@@ -540,6 +540,10 @@ class OptionParser(optparse.OptionParser):
                             help="output help without usage information")
 
 
+class OptionGroup(optparse.OptionGroup):
+    pass
+
+
 def callbackShortHelp(option, opt, value, parser):
     '''output short help (only command line options).'''
     # clear usage and description
