@@ -319,6 +319,7 @@ class DefaultOptions:
     loglevel = 2
     timeit_file = None
 
+
 global_starting_time = time.time()
 global_options = DefaultOptions()
 global_args = None
@@ -514,9 +515,9 @@ class ArgumentParser(argparse.ArgumentParser):
 
 
 class OptionParser(optparse.OptionParser):
-
     '''CGAT derivative of ArgumentParser. OptionParser is still
-    implimented for backwards compatibility
+    implemented for backwards compatibility
+
     '''
 
     def __init__(self, *args, **kwargs):
@@ -653,6 +654,14 @@ class MultiLineFormatter(logging.Formatter):
         return s
 
 
+def _get_args():
+    """return global options depending on parser chosen.
+    """
+    if isinstance(global_args, list):
+        return global_options
+    return global_args
+
+
 def start(parser=None,
           argv=None,
           quiet=False,
@@ -785,8 +794,7 @@ def start(parser=None,
     # Argparse options
     if "OptionParser" in str(parser.__class__):
         if not parser:
-            parser = OptionParser(
-                version="%prog version: $Id$")
+            parser = OptionParser(version="%prog version: $Id$")
 
         global global_options
 
@@ -1290,16 +1298,18 @@ def stop(logger=None):
     and writes the final log messages indicating script completion.
     """
 
-    if global_args.loglevel >= 1 and global_benchmark:
+    args = _get_args()
+    
+    if args.loglevel >= 1 and global_benchmark:
         t = time.time() - global_starting_time
-        global_args.stdlog.write(
+        args.stdlog.write(
             "######### Time spent in benchmarked functions #########\n")
-        global_args.stdlog.write("# function\tseconds\tpercent\n")
+        args.stdlog.write("# function\tseconds\tpercent\n")
         for key, value in list(global_benchmark.items()):
-            global_args.stdlog.write(
+            args.stdlog.write(
                 "# %s\t%6i\t%5.2f%%\n" % (key, value,
                                           (100.0 * float(value) / t)))
-        global_args.stdlog.write(
+        args.stdlog.write(
             "#######################################################\n")
 
     if logger is None:
@@ -1307,20 +1317,20 @@ def stop(logger=None):
     logger.info(get_footer())
 
     # close files
-    if global_args.stdout != sys.stdout:
-        global_args.stdout.close()
+    if args.stdout != sys.stdout:
+        args.stdout.close()
     # do not close log, otherwise error occurs in atext.py
     # if global_options.stdlog != sys.stdout:
     #   global_options.stdlog.close()
 
-    if global_args.stderr != sys.stderr:
-        global_args.stderr.close()
+    if args.stderr != sys.stderr:
+        args.stderr.close()
 
-    if global_args.timeit_file:
+    if args.timeit_file:
 
-        outfile = open(global_args.timeit_file, "a")
+        outfile = open(args.timeit_file, "a")
 
-        if global_args.timeit_header:
+        if args.timeit_header:
             outfile.write("\t".join(
                 ("name", "wall", "user", "sys", "cuser", "csys",
                  "host", "system", "release", "machine",
@@ -1332,9 +1342,9 @@ def stop(logger=None):
         c_wall = "%5.2f" % (t_end - global_starting_time)
 
         if sys.argv[0] == "run.py":
-            cmd = global_args[0]
-            if len(global_args) > 1:
-                cmd += " '" + "' '".join(global_args[1:]) + "'"
+            cmd = args[0]
+            if len(args) > 1:
+                cmd += " '" + "' '".join(args[1:]) + "'"
         else:
             cmd = sys.argv[0]
 
@@ -1354,7 +1364,7 @@ def get_output_file(section):
     '''return filename to write to, replacing any ``%s`` with section in
     the output pattern for files (``--output-filename-pattern``).
     '''
-    return re.sub("%s", section, global_args.output_filename_pattern)
+    return re.sub("%s", section, _get_args().output_filename_pattern)
 
 
 def open_output_file(section, mode="w", encoding="utf-8"):
@@ -1383,11 +1393,12 @@ def open_output_file(section, mode="w", encoding="utf-8"):
     """
 
     fn = get_output_file(section)
-
+    args = _get_args()
+    
     if fn == "-":
-        return global_args.stdout
+        return args.stdout
 
-    if not global_args.output_force and os.path.exists(fn):
+    if not args.output_force and os.path.exists(fn):
         raise OSError(
             "file %s already exists, use --force-output to "
             "overwrite existing files.".format(fn))
