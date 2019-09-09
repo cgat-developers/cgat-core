@@ -36,15 +36,15 @@ def read_table(filename, options):
 
     if options.regex_end:
         rx = re.compile(options.regex_end)
-        
+
     for n, line in enumerated_lines:
 
         if options.regex_end and rx.search(line):
             break
-        
+
         if not line.startswith("#") and line.strip():
             yield line
-        
+
 
 def concatenate_tables(outfile, options, args):
     '''concatenate tables.'''
@@ -67,7 +67,7 @@ def concatenate_tables(outfile, options, args):
         headers.append(header)
 
     row_headers = headers
-        
+
     if options.cat is None:
         if len(row_headers) == 1:
             row_head_titles = ["filename"]
@@ -84,7 +84,7 @@ def concatenate_tables(outfile, options, args):
 
     # collect titles
     first_lines = []
-    
+
     for n, table in enumerate(tables):
             try:
                 title_line = next(table)
@@ -139,7 +139,7 @@ def concatenate_tables(outfile, options, args):
             row = "\t".join([str(x) for x in row_headers[nindex]] +
                             data) + "\n"
             outfile.write(row)
-            
+
         if options.input_has_titles:
             titles = first_lines[nindex][:-1].split("\t")
             map_old2new = [map_title2column[t] for t in titles]
@@ -451,120 +451,121 @@ def join_tables(outfile, options, args):
 
 def main(argv=sys.argv):
 
-    parser = E.OptionParser(version="%prog version: $Id$",
-                            usage=globals()["__doc__"])
+    parser = E.ArgumentParser()
 
-    parser.add_option("-t", "--no-titles",
-                      dest="input_has_titles",
-                      action="store_false",
-                      help="no titles in input [%default].")
+    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version="1.0"))
 
-    parser.add_option("--ignore-titles",
-                      dest="ignore_titles",
-                      action="store_true",
-                      help="ignore titles in input [%default]")
+    parser.add_argument("-t", "--no-titles",
+                        dest="input_has_titles",
+                        action="store_false",
+                        help="no titles in input.")
 
-    parser.add_option("-i", "--skip-titles",
-                      dest="skip_titles",
-                      action="store_true",
-                      help="skip output of titles.")
+    parser.add_argument("--ignore-titles",
+                        dest="ignore_titles",
+                        action="store_true",
+                        help="ignore titles in input")
 
-    parser.add_option("-m", "--missing-value",
-                      dest="missing_value",
-                      type="string",
-                      help="entry to use for missing values.")
+    parser.add_argument("-i", "--skip-titles",
+                        dest="skip_titles",
+                        action="store_true",
+                        help="skip output of titles.")
 
-    parser.add_option("--header-names", dest="headers", type="string",
-                      help="add headers for files as a ,-separated "
-                      "list [%default].")
+    parser.add_argument("-m", "--missing-value",
+                        dest="missing_value",
+                        type=str,
+                        help="entry to use for missing values.")
 
-    parser.add_option("-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns "
-                      "can be specified as a comma-separated list "
-                      "[default=%default].")
+    parser.add_argument("--header-names", dest="headers", type=str,
+                        help="add headers for files as a ,-separated "
+                        "list.")
 
-    parser.add_option("-k", "--take",
-                      dest="take",
-                      type="string",
-                      action="append",
-                      help="columns to take. If not set, all columns "
-                      "except for "
-                      "the join columns are taken [%default]")
+    parser.add_argument("-c", "--columns", dest="columns", type=str,
+                        help="columns to use for joining. Multiple columns "
+                        "can be specified as a comma-separated list "
+                        )
 
-    parser.add_option("-g", "--glob", dest="glob", type="string",
-                      help="wildcard expression for table names.")
+    parser.add_argument("-k", "--take",
+                        dest="take",
+                        type=str,
+                        action="append",
+                        help="columns to take. If not set, all columns "
+                        "except for "
+                        "the join columns are taken")
 
-    parser.add_option(
-        "-s", "--sort-order", dest="sort", type="string",
-        help="sort by column titles in particular given order: "
-        "alphabetical|numeric|list of columns.")
+    parser.add_argument("-g", "--glob", dest="glob", type=str,
+                        help="wildcard expression for table names.")
 
-    parser.add_option(
-        "-e", "--merge-overlapping", dest="merge", action="store_true",
-        help="simply merge tables without matching up "
-        "rows. [default=%default].")
+    parser.add_argument(
+            "-s", "--sort-order", dest="sort", type=str,
+            help="sort by column titles in particular given order: "
+            "alphabetical|numeric|list of columns.")
 
-    parser.add_option("-a", "--cat", dest="cat", type="string",
-                      help="simply concatenate tables. Adds an "
-                      "additional column called X with the filename "
-                      " [default=%default].")
+    parser.add_argument(
+            "-e", "--merge-overlapping", dest="merge", action="store_true",
+            help="simply merge tables without matching up "
+            "rows.")
 
-    parser.add_option("--sort-keys", dest="sort_keys", type="choice",
-                      choices=("numeric", "alphabetic"),
-                      help="sort key columns by value.")
+    parser.add_argument("-a", "--cat", dest="cat", type=str,
+                        help="simply concatenate tables. Adds an "
+                        "additional column called X with the filename "
+                        )
 
-    parser.add_option("--keep-empty", dest="ignore_empty",
-                      action="store_false",
-                      help="keep empty tables. The default is "
-                      "to ignore them.")
+    parser.add_argument("--sort-keys", dest="sort_keys", type=str,
+                        choices=("numeric", "alphabetic"),
+                        help="sort key columns by value.")
 
-    parser.add_option("--ignore-empty",
-                      dest="ignore_empty",
-                      action="store_true",
-                      help="ignore empty tables - this is "
-                      "the default [%default].")
+    parser.add_argument("--keep-empty", dest="ignore_empty",
+                        action="store_false",
+                        help="keep empty tables. The default is "
+                        "to ignore them.")
 
-    parser.add_option("--add-file-prefix",
-                      dest="add_file_prefix",
-                      action="store_true",
-                      help="add file prefix to "
-                      "columns headers. Suitable for multi-column"
-                      "tables [default=%default]")
+    parser.add_argument("--ignore-empty",
+                        dest="ignore_empty",
+                        action="store_true",
+                        help="ignore empty tables - this is "
+                        "the default.")
 
-    parser.add_option("--use-file-prefix",
-                      dest="use_file_prefix",
-                      action="store_true",
-                      help="use file prefix as column headers. "
-                      "Suitable for two-column tables "
-                      "[default=%default]")
+    parser.add_argument("--add-file-prefix",
+                        dest="add_file_prefix",
+                        action="store_true",
+                        help="add file prefix to "
+                        "columns headers. Suitable for multi-column"
+                        "tables")
 
-    parser.add_option("--prefixes", dest="prefixes", type="string",
-                      help="list of prefixes to use. "
-                      ", separated list of prefixes. "
-                      "The number of prefixes need to correspond to the "
-                      "number of input files [default=%default]")
+    parser.add_argument("--use-file-prefix",
+                        dest="use_file_prefix",
+                        action="store_true",
+                        help="use file prefix as column headers. "
+                        "Suitable for two-column tables "
+                        )
 
-    parser.add_option("--regex-filename", dest="regex_filename",
-                      type="string",
-                      help="pattern to apply to filename to "
-                      "build prefix [default=%default]")
+    parser.add_argument("--prefixes", dest="prefixes", type=str,
+                        help="list of prefixes to use. "
+                        ", separated list of prefixes. "
+                        "The number of prefixes need to correspond to the "
+                        "number of input files")
 
-    parser.add_option("--regex-start",
-                      dest="regex_start",
-                      type="string",
-                      help="regular expression to start "
-                      "collecting table in a file [default=%default]")
+    parser.add_argument("--regex-filename", dest="regex_filename",
+                        type=str,
+                        help="pattern to apply to filename to "
+                        "build prefix")
 
-    parser.add_option("--regex-end",
-                      dest="regex_end",
-                      type="string",
-                      help="regular expression to end collecting "
-                      "table in a file [default=%default]")
+    parser.add_argument("--regex-start",
+                        dest="regex_start",
+                        type=str,
+                        help="regular expression to start "
+                        "collecting table in a file")
 
-    parser.add_option("--test", dest="test",
-                      type="int",
-                      help="test combining tables with "
-                      "first X rows [default=%default]")
+    parser.add_argument("--regex-end",
+                        dest="regex_end",
+                        type=str,
+                        help="regular expression to end collecting "
+                        "table in a file")
+
+    parser.add_argument("--test", dest="test",
+                        type=int,
+                        help="test combining tables with "
+                        "first X rows")
 
     parser.set_defaults(
         input_has_titles=True,
@@ -588,41 +589,41 @@ def main(argv=sys.argv):
         test=0,
     )
 
-    (options, args) = E.start(parser, argv=argv)
+    (args, unknown) = E.start(parser, argv=argv, unknowns=True)
 
-    if options.headers:
-        if "," in options.headers:
-            options.headers = options.headers.split(",")
+    if args.headers:
+        if "," in args.headers:
+            args.headers = args.headers.split(",")
         else:
-            options.headers = re.split("\s+", options.headers.strip())
+            args.headers = re.split("\s+", args.headers.strip())
 
-    if options.sort and options.sort not in ("numeric", "alphabetic"):
-        if "," in options.sort:
-            options.sort = options.sort.split(",")
+    if args.sort and args.sort not in ("numeric", "alphabetic"):
+        if "," in args.sort:
+            args.sort = args.sort.split(",")
         else:
-            options.sort = re.split("\s+", options.sort)
+            args.sort = re.split("\s+", args.sort)
 
-    if options.merge:
-        options.columns = []
+    if args.merge:
+        args.columns = []
     else:
-        options.columns = [int(x) - 1 for x in options.columns.split(",")]
+        args.columns = [int(x) - 1 for x in args.columns.split(",")]
 
-    options.filenames = []
+    args.filenames = []
 
-    if options.glob:
-        options.filenames += glob.glob(options.glob)
+    if args.glob:
+        args.filenames += glob.glob(args.glob)
 
-    options.filenames += args
+    args.filenames += unknown
 
-    if len(options.filenames) < 1:
+    if len(args.filenames) < 1:
         raise ValueError("no tables found.")
 
-    E.info("combining %i tables" % len(options.filenames))
+    E.info("combining %i tables" % len(args.filenames))
 
-    if options.cat:
-        concatenate_tables(options.stdout, options, args)
+    if args.cat:
+        concatenate_tables(args.stdout, args, unknown)
     else:
-        join_tables(options.stdout, options, args)
+        join_tables(args.stdout, args, unknown)
 
     E.stop()
 

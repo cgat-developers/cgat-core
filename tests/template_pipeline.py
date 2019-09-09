@@ -76,13 +76,13 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    options, args = P.initialize(argv,
-                                 config_file="template.yml",
-                                 defaults={
-                                     "min_value": 0.0,
-                                     "num_samples": 1000,
-                                     "mu": 0.0,
-                                     "sigma": 1.0})
+    args = P.initialize(argv,
+                        config_file="template.yml",
+                        defaults={
+                            "min_value": 0.0,
+                            "num_samples": 1000,
+                            "mu": 0.0,
+                            "sigma": 1.0})
 
     pipeline = ruffus.Pipeline("template_pipeline")
 
@@ -108,7 +108,7 @@ def main(argv=None):
         output="all")
 
     E.debug("starting workflow")
-    return P.run_workflow(options, args)
+    return P.run_workflow(args, argv)
 
 
 if __name__ == "__main__":

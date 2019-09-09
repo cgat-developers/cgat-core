@@ -314,11 +314,12 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id$",
-                            usage=globals()["__doc__"])
+    parser = E.ArgumentParser()
 
-    parser.add_option(
-        "-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version="1.0"))
+
+    parser.add_argument(
+        "-m", "--method", dest="methods", type=str, action="append",
         choices=("transpose", "normalize-by-max", "normalize-by-value",
                  "multiply-by-value",
                  "percentile", "remove-header", "normalize-by-table",
@@ -327,126 +328,122 @@ def main(argv=None):
                  "randomize-rows"),
         help="""actions to perform on table.""")
 
-    parser.add_option("-s", "--scale", dest="scale", type="float",
-                      help="factor to scale matrix by.")
+    parser.add_argument("-s", "--scale", dest="scale", type=float,
+                        help="factor to scale matrix by.")
 
-    parser.add_option("-f", "--format", dest="format", type="string",
-                      help="output number format [default]")
+    parser.add_argument("-f", "--format", dest="format", type=str,
+                        help="output number format")
 
-    parser.add_option("-p", "--parameters", dest="parameters", type="string",
-                      help="Parameters for various functions.")
+    parser.add_argument("-p", "--parameters", dest="parameters", type=str,
+                        help="Parameters for various functions.")
 
-    parser.add_option(
+    parser.add_argument(
         "-t", "--header-names", dest="has_headers", action="store_true",
         help="matrix has row/column headers.")
 
-    parser.add_option("--transpose", dest="transpose", action="store_true",
-                      help="transpose table.")
+    parser.add_argument("--transpose", dest="transpose", action="store_true",
+                        help="transpose table.")
 
-    parser.add_option(
-        "--set-transpose-field", dest="set_transpose_field", type="string",
+    parser.add_argument(
+        "--set-transpose-field", dest="set_transpose_field", type=str,
         help="set first field (row 1 and col 1) to this value [%default].")
 
-    parser.add_option(
-        "--transpose-format", dest="transpose_format", type="choice",
+    parser.add_argument(
+        "--transpose-format", dest="transpose_format", type=str,
         choices=("default", "separated", ),
         help="input format of un-transposed table")
 
-    parser.add_option(
+    parser.add_argument(
         "--expand", dest="expand_table", action="store_true",
         help="expand table - multi-value cells with be expanded over "
         "several rows.")
 
-    parser.add_option("--no-headers", dest="has_headers", action="store_false",
-                      help="matrix has no row/column headers.")
+    parser.add_argument("--no-headers", dest="has_headers", action="store_false",
+                        help="matrix has no row/column headers.")
 
-    parser.add_option("--columns", dest="columns", type="string",
-                      help="columns to use.")
+    parser.add_argument("--columns", dest="columns", type=str,
+                        help="columns to use.")
 
-    parser.add_option("--file", dest="file", type="string",
-                      help="columns to test from table.",
-                      metavar="FILE")
+    parser.add_argument("--file", dest="file", type=str,
+                        help="columns to test from table.",
+                        metavar="FILE")
 
-    parser.add_option("-d", "--delimiter", dest="delimiter", type="string",
-                      help="delimiter of columns.",
-                      metavar="DELIM")
+    parser.add_argument("-d", "--delimiter", dest="delimiter", type=str,
+                        help="delimiter of columns.",
+                        metavar="DELIM")
 
-    parser.add_option(
+    parser.add_argument(
         "-V", "--invert-match", dest="invert_match",
         action="store_true",
         help="invert match.")
 
-    parser.add_option("--sort-by-rows", dest="sort_rows", type="string",
-                      help="output order for rows.")
+    parser.add_argument("--sort-by-rows", dest="sort_rows", type=str,
+                        help="output order for rows.")
 
-    parser.add_option("-a", "--value", dest="value", type="float",
-                      help="value to use for various algorithms.")
+    parser.add_argument("-a", "--value", dest="value", type=float,
+                        help="value to use for various algorithms.")
 
-    parser.add_option(
-        "--group", dest="group_column", type="int",
-        help="group values by column. Supply an integer column "
-        "[default=%default]")
+    parser.add_argument(
+        "--group", dest="group_column", type=int,
+        help="group values by column. Supply an integer column ")
 
-    parser.add_option("--group-function", dest="group_function", type="choice",
-                      choices=(
-                          "min", "max", "sum", "mean", "stats", "cat", "uniq"),
-                      help="function to group values by.")
+    parser.add_argument("--group-function", dest="group_function", type=str,
+                        choices=(
+                            "min", "max", "sum", "mean", "stats", "cat", "uniq"),
+                        help="function to group values by.")
 
-    parser.add_option("--join-table", dest="join_column", type="int",
-                      help="join rows in a table by columns.")
+    parser.add_argument("--join-table", dest="join_column", type=int,
+                        help="join rows in a table by columns.")
 
-    parser.add_option(
-        "--collapse-table", dest="collapse_table", type="string",
-        help="collapse a table. Value determines the missing variable "
-        "[%default].")
+    parser.add_argument(
+        "--collapse-table", dest="collapse_table", type=str,
+        help="collapse a table. Value determines the missing variable ")
 
-    parser.add_option(
-        "--join-column-name", dest="join_column_name", type="int",
+    parser.add_argument(
+        "--join-column-name", dest="join_column_name", type=int,
         help="use this column as a prefix.")
 
-    parser.add_option(
+    parser.add_argument(
         "--flatten-table", dest="flatten_table", action="store_true",
-        help="flatten a table [%default].")
+        help="flatten a table.")
 
-    parser.add_option("--as-column", dest="as_column", action="store_true",
-                      help="output table as a single column.")
+    parser.add_argument("--as-column", dest="as_column", action="store_true",
+                        help="output table as a single column.")
 
-    parser.add_option(
+    parser.add_argument(
         "--split-fields", dest="split_fields", action="store_true",
         help="split fields.")
 
-    parser.add_option(
-        "--separator", dest="separator", type="string",
-        help="separator for multi-valued fields [default=%default].")
+    parser.add_argument(
+        "--separator", dest="separator", type=str,
+        help="separator for multi-valued fields.")
 
-    parser.add_option(
-        "--fdr-method", dest="fdr_method", type="choice",
+    parser.add_argument(
+        "--fdr-method", dest="fdr_method", type=str,
         choices=(
             "BH", "bonferroni", "holm", "hommel", "hochberg", "BY"),
         help="method to perform multiple testing correction by controlling "
-        "the fdr [default=%default].")
+        "the fdr.")
 
-    parser.add_option(
-        "--fdr-add-column", dest="fdr_add_column", type="string",
+    parser.add_argument(
+        "--fdr-add-column", dest="fdr_add_column", type=str,
         help="add new column instead of replacing existing columns. "
         "The value of the option will be used as prefix if there are "
-        "multiple columns [%default]")
+        "multiple columns")
 
     # IMS: add option to use a column as the row id in flatten
-    parser.add_option(
-        "--id-column", dest="id_column", type="string",
+    parser.add_argument(
+        "--id-column", dest="id_column", type=str,
         help="list of column(s) to use as the row id when flattening "
-        "the table. If None, then row number is used. [default=%default].")
+        "the table. If None, then row number is used.")
 
-    parser.add_option(
-        "--variable-name", dest="variable_name", type="string",
-        help="the column header for the 'variable' column when flattening "
-        "[default=%default].")
+    parser.add_argument(
+        "--variable-name", dest="variable_name", type=str,
+        help="the column header for the 'variable' column when flattening ")
 
-    parser.add_option(
-        "--value-name", dest="value_name", type="string",
-        help="the column header for the 'value' column when flattening "
-        "[default=%default].")
+    parser.add_argument(
+        "--value-name", dest="value_name", type=str,
+        help="the column header for the 'value' column when flattening ")
 
     parser.set_defaults(
         methods=[],
