@@ -492,46 +492,52 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescri
     pass
 
 
-class OptionParser(argparse.ArgumentParser):
-
-    '''CGAT derivative of ArgumentParser. OptionParser is still
+class ArgumentParser(argparse.ArgumentParser):
+    ''''CGAT derivative of ArgumentParser. OptionParser is still
     implimented for backwards compatibility
     '''
+    def __init__(self, *args, **kwargs):
 
-    def __init__(self, optparse=False, *args, **kwargs):
-
-        self.optparse = optparse
         # if "--short" is a command line option
         # remove usage from kwargs
         if "--no-usage" in sys.argv:
             kwargs["usage"] = None
 
-        if self.optparse:
-            optparse.OptionParser.__init__(self, *args,
-                                           option_class=AppendCommaOption,
-                                           formatter=BetterFormatter(),
-                                           **kwargs)
-        else:
-            argparse.ArgumentParser.__init__(self, *args,
-                                             formatter_class=CustomFormatter,
-                                             **kwargs)
+        argparse.ArgumentParser.__init__(self, *args,
+                                         formatter_class=CustomFormatter,
+                                         **kwargs)
+
+        if "--no-usage" in sys.argv:
+            self.add_argument("--no-usage", dest="help_no_usage",
+                              action="store_true",
+                              help="output help without usage information")
+
+
+class OptionParser(optparse.OptionParser):
+
+    '''CGAT derivative of ArgumentParser. OptionParser is still
+    implimented for backwards compatibility
+    '''
+
+    def __init__(self, *args, **kwargs):
+
+        # if "--short" is a command line option
+        # remove usage from kwargs
+        if "--no-usage" in sys.argv:
+            kwargs["usage"] = None
+
+        optparse.OptionParser.__init__(self, *args,
+                                       option_class=AppendCommaOption,
+                                       formatter=BetterFormatter(),
+                                       **kwargs)
 
         # set new option parser
+        # parser.formatter = BetterFormatter()
         # parser.formatter.set_parser(parser)
-        if self.optparse:
-            # set new option parser
-            # parser.formatter = BetterFormatter()
-            # parser.formatter.set_parser(parser)
-            if "--no-usage" in sys.argv:
-                self.add_option("--no-usage", dest="help_no_usage",
-                                action="store_true",
-                                help="output help without usage information")
-        else:
-
-            if "--no-usage" in sys.argv:
-                self.add_argument("--no-usage", dest="help_no_usage",
-                                  action="store_true",
-                                  help="output help without usage information")
+        if "--no-usage" in sys.argv:
+            self.add_option("--no-usage", dest="help_no_usage",
+                            action="store_true",
+                            help="output help without usage information")
 
 
 def callbackShortHelp(option, opt, value, parser):
@@ -654,8 +660,7 @@ def start(parser=None,
           add_output_options=False,
           logger_callback=None,
           return_parser=False,
-          unknowns=False,
-          optparse=False):
+          unknowns=False):
     """set up an experiment.
 
     The :py:func:`Start` method will set up a file logger and add some
@@ -774,7 +779,7 @@ def start(parser=None,
     global_starting_time = time.time()
 
     # Argparse options
-    if optparse is True:
+    if "OptionParser" in str(parser.__class__):
         if not parser:
             parser = OptionParser(
                 version="%prog version: $Id$")
@@ -1039,7 +1044,7 @@ def start(parser=None,
         return global_options, global_args
 
     # Argparse options
-    elif optparse is False:
+    else:
         group = parser.add_argument_group("Script timing options")
 
         group.add_argument("--timeit", dest='timeit_file', type=str,
