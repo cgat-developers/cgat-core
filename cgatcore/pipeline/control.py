@@ -580,7 +580,7 @@ clone <source>
 '''
 
 
-def parse_commandline(argv=None, optparse=False, **kwargs):
+def parse_commandline(argv=None, optparse=True, **kwargs):
     """parse command line.
 
     Create option parser and parse command line.
