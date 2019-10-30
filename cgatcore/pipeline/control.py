@@ -747,6 +747,9 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
             logger_callback=logger_callback)
 
         options.pipeline_name = argv[0]
+        options.pipeline_action = argv[1]
+        if len(argv[1:]) > 1:
+            options.pipeline_targets = argv[2]
 
     else:
         if argv is None:
@@ -1220,37 +1223,13 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     return args
 
 
-def run_workflow(args, argv, pipeline=None):
-    """command line control function for a pipeline.
+def run_workflow(args, argv=None, pipeline=None):
+    """run workflow given options in args.
 
-    This method defines command line options for the pipeline and
-    updates the global configuration dictionary correspondingly.
-
-    It then provides a command parser to execute particular tasks
-    using the ruffus pipeline control functions. See the generated
-    command line help for usage.
-
-    To use it, add::
-
-        import pipeline as P
-
-        if __name__ == "__main__":
-            sys.exit(P.main(sys.argv))
-
-    to your pipeline script.
-
-    Arguments
-    ---------
-    pipeline: object
-        pipeline to run. If not given, all ruffus pipelines are run.
-
+    argv is kept for backwards compatibility.
     """
 
     logger = logging.getLogger("cgatcore.pipeline")
-    if args:
-        args.pipeline_action = argv[1]
-        if len(argv[1:]) > 1:
-            args.pipeline_targets = argv[2]
 
     logger.debug("starting run_workflow with action {}".format(args.pipeline_action))
 
@@ -1513,4 +1492,4 @@ def main(argv=None):
 
     args = E.get_args()
 
-    run_workflow(args, argv)
+    run_workflow(args)
