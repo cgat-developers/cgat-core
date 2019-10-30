@@ -584,9 +584,10 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
         Additional arguments overwrite default option settings.
 
     """
+    if argv is None:
+        argv = sys.argv
+    
     if optparse is True:
-        if argv is None:
-            argv = sys.argv
 
         parser = E.OptionParser(version="%prog version: $Id$",
                                 usage=USAGE)
@@ -747,14 +748,11 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
             logger_callback=logger_callback)
 
         options.pipeline_name = argv[0]
-        options.pipeline_action = argv[1]
-        if len(argv[1:]) > 1:
-            options.pipeline_targets = argv[2]
+        if args:
+            options.pipeline_action = args[0]
+            options.pipeline_targets = args[1:]
 
     else:
-        if argv is None:
-            argv = sys.argv
-
         parser = E.ArgumentParser(description=USAGE)
 
         parser.add_argument("--pipeline-action", dest="pipeline_action",
