@@ -1208,7 +1208,7 @@ def start(parser=None,
             return parser
 
         if not no_parsing:
-            global_args, unknown = parser.parse_known_args()
+            global_args, unknown = parser.parse_known_args(argv[1:])
 
         if global_args.random_seed is not None:
             random.seed(global_args.random_seed)
