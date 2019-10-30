@@ -85,16 +85,6 @@ def cached_os_path_islink(filename):
     return SAVED_OS_PATH_ISLINK(filename)
 
 
-# global options and arguments - set but currently not
-# used as relevant sections are entered into the PARAMS
-# dictionary. Could be deprecated and removed.
-GLOBAL_ARGS = None
-
-# Monkey patching to make Gevent.pool compatible with
-# ruffus.
-# # OLD_NEXT = gevent.pool.IMapUnordered.next
-
-
 class EventPool(gevent.pool.Pool):
 
     def __len__(self):
@@ -593,15 +583,6 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
     **kwargs: dict
         Additional arguments overwrite default option settings.
 
-    Returns
-    -------
-
-    options: object
-       Command line options container
-
-    args : list
-       List of command line arguments
-
     """
     if optparse is True:
         if argv is None:
@@ -766,7 +747,6 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
             logger_callback=logger_callback)
 
         options.pipeline_name = argv[0]
-        return options, args
 
     else:
         if argv is None:
@@ -913,7 +893,6 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
             unknowns=True)
 
         args.pipeline_name = argv[0]
-        return args
 
 
 def update_params_with_commandline_options(params, args):
@@ -1178,7 +1157,7 @@ class LoggingFilterProgress(logging.Filter):
         return True
 
 
-def initialize(argv=None, caller=None, defaults=None, optparse=False, **kwargs):
+def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     """setup the pipeline framework.
 
     Arguments
@@ -1207,15 +1186,14 @@ def initialize(argv=None, caller=None, defaults=None, optparse=False, **kwargs):
         except AttributeError as ex:
             path = "unknown"
 
-    args = parse_commandline(argv, optparse, **kwargs)
+    parse_commandline(argv, optparse, **kwargs)
+    args = E.get_args()
     get_parameters(
         [os.path.join(path, "pipeline.yml"),
          "../pipeline.yml",
          args.config_file],
         defaults=defaults)
 
-    global GLOBAL_ARGS
-    GLOBAL_ARGS = args
     logger = logging.getLogger("cgatcore.pipeline")
     logger.info("started in directory: {}".format(get_params().get("start_dir")))
 
@@ -1530,9 +1508,9 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    if GLOBAL_ARGS is None:
-        args = initialize(caller=get_caller().__file__)
-    else:
-        args = GLOBAL_ARGS
+    if E.get_args() is None:
+        initialize(caller=get_caller().__file__)
+
+    args = E.get_args()
 
     run_workflow(args, argv)

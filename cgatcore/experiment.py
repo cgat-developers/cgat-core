@@ -654,7 +654,7 @@ class MultiLineFormatter(logging.Formatter):
         return s
 
 
-def _get_args():
+def get_args():
     """return global options depending on parser chosen.
     """
     if isinstance(global_args, list):
@@ -1298,8 +1298,8 @@ def stop(logger=None):
     and writes the final log messages indicating script completion.
     """
 
-    args = _get_args()
-    
+    args = get_args()
+
     if args.loglevel >= 1 and global_benchmark:
         t = time.time() - global_starting_time
         args.stdlog.write(
@@ -1364,7 +1364,7 @@ def get_output_file(section):
     '''return filename to write to, replacing any ``%s`` with section in
     the output pattern for files (``--output-filename-pattern``).
     '''
-    return re.sub("%s", section, _get_args().output_filename_pattern)
+    return re.sub("%s", section, get_args().output_filename_pattern)
 
 
 def open_output_file(section, mode="w", encoding="utf-8"):
@@ -1393,8 +1393,8 @@ def open_output_file(section, mode="w", encoding="utf-8"):
     """
 
     fn = get_output_file(section)
-    args = _get_args()
-    
+    args = get_args()
+
     if fn == "-":
         return args.stdout
 
