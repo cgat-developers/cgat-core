@@ -2,5 +2,5 @@ conda:
     file: conda/environments/cgat-core.yml
 
 python:
-    version: 3.8
+    version: 3.7
     pip_install: true
