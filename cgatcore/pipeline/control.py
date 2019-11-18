@@ -902,17 +902,15 @@ def update_params_with_commandline_options(params, args):
 
     params["pipeline_name"] = args.pipeline_name
     params["dryrun"] = args.dry_run
-    if args.cluster_queue is not None:
-        params["cluster"]["queue"] = args.cluster_queue
-    if args.cluster_priority is not None:
-        params["cluster"]["priority"] = args.cluster_priority
-    if args.cluster_num_jobs is not None:
-        params["cluster"]["num_jobs"] = args.cluster_num_jobs
-    if args.cluster_options is not None:
-        params["cluster"]["options"] = args.cluster_options
-    if args.cluster_parallel_environment is not None:
-        params["cluster"]["parallel_environment"] =\
-            args.cluster_parallel_environment
+
+    # translate cluster options into dict
+    for key in params["cluster"].keys():
+        arg_key = "cluster_{}".format(key)
+        if hasattr(args, arg_key):
+            val = getattr(args, arg_key)
+            if val is not None:
+                params["cluster"][key] = val
+
     if args.without_cluster:
         params["without_cluster"] = True
 
