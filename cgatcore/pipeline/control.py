@@ -586,7 +586,7 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
     """
     if argv is None:
         argv = sys.argv
-    
+
     if optparse is True:
 
         parser = E.OptionParser(version="%prog version: $Id$",
@@ -1371,7 +1371,7 @@ def run_workflow(args, argv=None, pipeline=None):
                         checksum_level=args.ruffus_checksums_level)
 
                 elif args.pipeline_action == "state":
-                    ruffus.ruffus_return_dag(
+                    ruffus_return_dag(
                         args.stdout,
                         target_tasks=args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
