@@ -746,7 +746,6 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
             add_cluster_options=True,
             argv=argv,
             logger_callback=logger_callback)
-
         options.pipeline_name = argv[0]
         if args:
             options.pipeline_action = args[0]
@@ -903,17 +902,15 @@ def update_params_with_commandline_options(params, args):
 
     params["pipeline_name"] = args.pipeline_name
     params["dryrun"] = args.dry_run
-    if args.cluster_queue is not None:
-        params["cluster_queue"] = args.cluster_queue
-    if args.cluster_priority is not None:
-        params["cluster_priority"] = args.cluster_priority
-    if args.cluster_num_jobs is not None:
-        params["cluster_num_jobs"] = args.cluster_num_jobs
-    if args.cluster_options is not None:
-        params["cluster_options"] = args.cluster_options
-    if args.cluster_parallel_environment is not None:
-        params["cluster_parallel_environment"] =\
-            args.cluster_parallel_environment
+
+    # translate cluster options into dict
+    for key in params["cluster"].keys():
+        arg_key = "cluster_{}".format(key)
+        if hasattr(args, arg_key):
+            val = getattr(args, arg_key)
+            if val is not None:
+                params["cluster"][key] = val
+
     if args.without_cluster:
         params["without_cluster"] = True
 

@@ -1150,7 +1150,7 @@ def run(statement, **kwargs):
     options = dict(list(get_params().items()))
     caller_options = get_caller_locals()
     options.update(list(caller_options.items()))
-
+    
     if "self" in options:
         del options["self"]
     options.update(list(kwargs.items()))

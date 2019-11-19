@@ -876,7 +876,7 @@ def start(parser=None,
                              type="int",
                              help="number of jobs to submit to the queue execute "
                              "in parallel [%default].")
-            group.add_option("--cluster-parallel",
+            group.add_option("--cluster-parallel-environment",
                              dest="cluster_parallel_environment",
                              type="string",
                              help="name of the parallel environment to use "
