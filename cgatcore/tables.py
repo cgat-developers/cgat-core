@@ -86,13 +86,13 @@ def concatenate_tables(outfile, options, args):
     first_lines = []
 
     for n, table in enumerate(tables):
-            try:
-                title_line = next(table)
-            except StopIteration:
-                E.warn("Empty table %s " % options.filenames[n])
-                first_lines.append(None)
-                continue
-            first_lines.append(title_line)
+        try:
+            title_line = next(table)
+        except StopIteration:
+            E.warn("Empty table %s " % options.filenames[n])
+            first_lines.append(None)
+            continue
+        first_lines.append(title_line)
 
     if options.input_has_titles:
         titles = collections.OrderedDict()
@@ -212,7 +212,7 @@ def join_tables(outfile, options, args):
 
         if options.input_has_titles:
             # See https://github.com/cgat-developers/cgat-core/pull/53
-            #data = next(lines).split()
+            # data = next(lines).split()
             # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
@@ -366,7 +366,8 @@ def join_tables(outfile, options, args):
                 sort_order = []
 
                 if options.sort == "numeric":
-                    t = list(zip(list(map(int, titles[1:])), list(range(1, len(titles) + 1))))
+                    t = list(zip(list(map(int, titles[1:])), list(
+                        range(1, len(titles) + 1))))
                     t.sort()
 
                     for tt in t:
@@ -453,7 +454,8 @@ def main(argv=sys.argv):
 
     parser = E.ArgumentParser()
 
-    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version="1.0"))
+    parser.add_argument("--version", action='version',
+                        version='%(prog)s {version}'.format(version="1.0"))
 
     parser.add_argument("-t", "--no-titles",
                         dest="input_has_titles",
@@ -496,14 +498,14 @@ def main(argv=sys.argv):
                         help="wildcard expression for table names.")
 
     parser.add_argument(
-            "-s", "--sort-order", dest="sort", type=str,
-            help="sort by column titles in particular given order: "
-            "alphabetical|numeric|list of columns.")
+        "-s", "--sort-order", dest="sort", type=str,
+        help="sort by column titles in particular given order: "
+        "alphabetical|numeric|list of columns.")
 
     parser.add_argument(
-            "-e", "--merge-overlapping", dest="merge", action="store_true",
-            help="simply merge tables without matching up "
-            "rows.")
+        "-e", "--merge-overlapping", dest="merge", action="store_true",
+        help="simply merge tables without matching up "
+        "rows.")
 
     parser.add_argument("-a", "--cat", dest="cat", type=str,
                         help="simply concatenate tables. Adds an "

@@ -55,7 +55,8 @@ def get_temp_file(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"
             # temporary directory.
             pass
         if not os.path.exists(dir):
-            raise OSError("temporary directory {} could not be created".format(dir))
+            raise OSError(
+                "temporary directory {} could not be created".format(dir))
 
     return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp",
                                        mode=mode,

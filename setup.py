@@ -18,7 +18,7 @@ IS_OSX = sys.platform == 'darwin'
 ########################################################################
 # collect CGAT version
 sys.path.insert(0, "cgatcore")
-import version
+import version  # noqa
 
 version = version.__version__
 

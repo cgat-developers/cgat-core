@@ -83,7 +83,8 @@ def build_load_statement(tablename, retry=True, options=""):
     opts.append("--database-url={}".format(params["database"]["url"]))
 
     db_options = " ".join(opts)
-    load_statement = ("python -m cgatcore.csv2db {db_options} {options} --table={tablename}".format(**locals()))
+    load_statement = (
+        "python -m cgatcore.csv2db {db_options} {options} --table={tablename}".format(**locals()))
 
     return load_statement
 
@@ -371,7 +372,7 @@ def merge_and_load(infiles,
         header = ",".join([os.path.basename(snip(x, suffix)) for x in infiles])
     elif regex:
         header = ",".join(["-".join(re.search(regex, x).groups())
-                          for x in infiles])
+                           for x in infiles])
     else:
         header = ",".join([os.path.basename(x) for x in infiles])
 
@@ -379,7 +380,7 @@ def merge_and_load(infiles,
 
     if columns:
         column_filter = "| cut -f %s" % ",".join(map(str,
-                                                 [x + 1 for x in columns]))
+                                                     [x + 1 for x in columns]))
     else:
         column_filter = ""
         if prefixes:
@@ -442,25 +443,25 @@ def connect():
     # db.py handle.
     url = get_params()["database"]["url"]
     is_sqlite3 = url.startswith("sqlite")
-    
+
     if is_sqlite3:
         connect_args = {'check_same_thread': False}
     else:
         connect_args = {}
-        
+
     creator = None
     if is_sqlite3 and "annotations_dir" in get_params():
         # not sure what the correct way is for url
         # sqlite:///./csvdb -> ./csvdb
         # sqlite:////path/to/csvdb -> /path/to/csvdb
         filename = os.path.abspath(url[len("sqlite:///"):])
-        
+
         def creator():
             conn = sqlite3.connect(filename)
             conn.execute("ATTACH DATABASE '{}' as annotations".format(
                 os.path.join(get_params()["annotations_dir"], "csvdb")))
             return conn
-        
+
     engine = sqlalchemy.create_engine(
         url,
         connect_args=connect_args,

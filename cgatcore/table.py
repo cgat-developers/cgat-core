@@ -86,18 +86,18 @@ def read_and_group_table(infile, options):
     elif options.group_function == "max":
         f = max
     elif options.group_function == "sum":
-        f = lambda z: reduce(lambda x, y: x + y, z)
+        def f(z): return reduce(lambda x, y: x + y, z)
     elif options.group_function == "mean":
         f = numpy.mean
     elif options.group_function == "cat":
-        f = lambda x: ";".join([y for y in x if y != ""])
+        def f(x): return ";".join([y for y in x if y != ""])
         converter = str
     elif options.group_function == "uniq":
-        f = lambda x: ";".join([y for y in set(x) if y != ""])
+        def f(x): return ";".join([y for y in set(x) if y != ""])
         converter = str
     elif options.group_function == "stats":
         # Stats lives in cgat-apps/CGAT
-        f = lambda x: str(Stats.DistributionalParameters(x))
+        def f(x): return str(Stats.DistributionalParameters(x))
         # update headers
         new_fields = [fields[options.group_column]]
         for c in options.columns:
@@ -316,7 +316,8 @@ def main(argv=None):
 
     parser = E.ArgumentParser()
 
-    parser.add_argument("--version", action='version', version='%(prog)s {version}'.format(version="1.0"))
+    parser.add_argument("--version", action='version',
+                        version='%(prog)s {version}'.format(version="1.0"))
 
     parser.add_argument(
         "-m", "--method", dest="methods", type=str, action="append",

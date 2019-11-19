@@ -226,7 +226,7 @@ def checkDepedencies(pipeline):
             statement = get_append_string(node)
 
         if len(statement) > 0 and not statement.startswith(' -'):
-            #print(statement)
+            # print(statement)
             statement = cleanup_statement(statement)
             statements.append(statement)
 
@@ -268,14 +268,14 @@ def checkDepedencies(pipeline):
         # use bashlex to parse statements
         commands = []
         try:
-            #print(statement)
+            # print(statement)
             parts = bashlex.parse(statement)
             get_cmd_names(parts[0], commands)
         except bashlex.errors.ParsingError:
             pass
 
         for command in commands:
-            #print(command)
+            # print(command)
             if command.lower() not in exceptions:
                 if command not in deps:
                     deps[command] = 1

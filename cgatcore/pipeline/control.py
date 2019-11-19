@@ -353,7 +353,8 @@ def peek_parameters(workingdir,
 
     statement = "cgatflow {} dump -v 0".format(pipeline)
 
-    os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
+    os.environ.update(
+        {'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
     process = subprocess.Popen(statement,
                                cwd=workingdir,
                                shell=True,
@@ -513,7 +514,8 @@ def setup_logging(args, pipeline=None):
     return logger
 
 
-VersionData = collections.namedtuple("VersionData", ("code_location", "version"))
+VersionData = collections.namedtuple(
+    "VersionData", ("code_location", "version"))
 
 
 def get_version():
@@ -1011,6 +1013,7 @@ class LoggingFilterProgress(logging.Filter):
         execution.
 
     """
+
     def __init__(self,
                  ruffus_text):
 
@@ -1193,7 +1196,8 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
         defaults=defaults)
 
     logger = logging.getLogger("cgatcore.pipeline")
-    logger.info("started in directory: {}".format(get_params().get("start_dir")))
+    logger.info("started in directory: {}".format(
+        get_params().get("start_dir")))
 
     # At this point, the PARAMS dictionary has already been
     # built. It now needs to be updated with selected command
@@ -1205,7 +1209,8 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     logger.info("code location: {}".format(code_location))
     logger.info("code version: {}".format(version))
 
-    logger.info("working directory is: {}".format(get_params().get("work_dir")))
+    logger.info("working directory is: {}".format(
+        get_params().get("work_dir")))
     work_dir = get_params().get("work_dir")
     if not os.path.exists(work_dir):
         E.info("working directory {} does not exist - creating".format(work_dir))
@@ -1226,7 +1231,8 @@ def run_workflow(args, argv=None, pipeline=None):
 
     logger = logging.getLogger("cgatcore.pipeline")
 
-    logger.debug("starting run_workflow with action {}".format(args.pipeline_action))
+    logger.debug("starting run_workflow with action {}".format(
+        args.pipeline_action))
 
     if args.force_run:
         if args.force_run == "all":
@@ -1287,7 +1293,8 @@ def run_workflow(args, argv=None, pipeline=None):
                 if args.pipeline_action == "make":
 
                     if not args.without_cluster and not HAS_DRMAA and not get_params()['testing']:
-                        E.critical("DRMAA API not found so cannot talk to a cluster.")
+                        E.critical(
+                            "DRMAA API not found so cannot talk to a cluster.")
                         E.critical("Please use --local to run the pipeline"
                                    " on this host: {}".format(os.uname()[1]))
                         sys.exit(-1)
@@ -1417,7 +1424,8 @@ def run_workflow(args, argv=None, pipeline=None):
                 logger.error(ex)
                 logger.error("end of all error messages")
 
-                raise ValueError("pipeline failed with %i errors" % len(ex.args)) from ex
+                raise ValueError("pipeline failed with %i errors" %
+                                 len(ex.args)) from ex
             else:
                 raise
 
