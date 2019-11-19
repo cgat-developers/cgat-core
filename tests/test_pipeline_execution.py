@@ -168,7 +168,7 @@ class TestExecutionRunLocal(unittest.TestCase):
                     memory=self.test_memory_size,
                     outfile=outfile),
                 to_cluster=self.to_cluster,
-                cluster_memory_ulimit=True,                
+                cluster_memory_ulimit=True,
                 job_memory="{}G".format(
                     0.5 * self.test_memory_size / 10**9))
         else:

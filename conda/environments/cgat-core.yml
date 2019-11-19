@@ -9,12 +9,12 @@ dependencies:
 # python dependencies
 - python
 - gevent
-- nose
 - numpy
 - pandas
 - paramiko
 - pep8
 - pytest
+- pytest-pep8
 - drmaa
 - pyyaml
 - ruffus

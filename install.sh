@@ -378,11 +378,11 @@ conda_test() {
 	# run tests
 	log "running tests..."
 	if [[ $TEST_ALL ]] ; then
-	    pytest tests
+	    pytest --pep8 tests
 	elif [[ $TEST_IMPORT ]] ; then
-	    nosetests -v tests/test_import.py ;
+	    pytest tests/test_import.py ;
 	elif [[ $TEST_STYLE ]] ; then
-	    nosetests -v tests/test_style.py ;
+	    pytest --pep8 -m pep8
 	fi
 
     else

@@ -43,19 +43,51 @@ Why not contribute to our project, its a great way of making the project better,
 To create a pull request perform these steps:
 
 1. Create a github account.
+   
 2. Create a personal fork of the project on github.
-3. Clone the fork onto your local machine. Your remote repo on github is called ``origin``.
+   
+3. Clone the fork onto your local machine. Your remote repo on github
+   is called ``origin``.
+   
 4. Add the orginal repository as a remote called ``upstream``.
-5. If you made the fork a while ago then please make sure you ``git pull upstream`` to keep your repository up to date
-6. Create a new branch to work on! We usually name our branches with capital first and last followed by a dash and something unique. For example: ``git checkout -b AC-new_doc``.
-7. Impliment your fix/enhancement and make sure your code is effectively documented.
-8. Our code has tests and these will be ran when a pull request is submitted, however you can run our tests before you make the pull request, we have a number written in the ``tests/`` directory. For example: to run our import tests please run ``nosetests tests/test_import.py``.
+   
+5. If you made the fork a while ago then please make sure you ``git
+   pull upstream`` to keep your repository up to date
+   
+6. Create a new branch to work on! We usually name our branches with
+   capital first and last followed by a dash and something unique. For
+   example: ``git checkout -b AC-new_doc``.
+   
+7. Impliment your fix/enhancement and make sure your code is
+   effectively documented.
+   
+8. Our code has tests and these will be ran when a pull request is
+   submitted, however you can run our tests before you make the pull
+   request, we have a number written in the ``tests/`` directory. To
+   run all tests, type ``pytest --pep8 tests``
+   
 9. Add or change our documentation in the ``docs/`` directory.
-10. Squash all of your commits into a single commit with gits `interactive rebase <https://help.github.com/articles/about-git-rebase/>`_.
+   
+10. Squash all of your commits into a single commit with gits
+    `interactive rebase
+    <https://help.github.com/articles/about-git-rebase/>`_.
+    
 11. Push your branch to your fork on github ``git push origin``
-12. From your fork in github.com, open a pull request in the correct branch.
-13. ... This is where someone will review your changes and modify them or approve them ...
-14. Once the pull request is approved and merged you can pull the changes from the ``upstream`` to your local repo and delete your branch.
+    
+12. From your fork in github.com, open a pull request in the correct
+    branch.
+    
+13. ... This is where someone will review your changes and modify them
+    or approve them ...
+    
+14. Once the pull request is approved and merged you can pull the
+    changes from the ``upstream`` to your local repo and delete your
+    branch.
+    
+.. note::
 
-.. note:: Always write your commit messages in the present tense. Your commit messages should describe what the commit does to the code and not what you did to the code.
+   Always write your commit messages in the present tense. Your commit
+   messages should describe what the commit does to the code and not
+   what you did to the code.
+   
 

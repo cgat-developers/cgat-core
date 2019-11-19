@@ -5,7 +5,8 @@ try:
     import boto3
     import botocore
 except ImportError as e:
-    raise WorkflowError("The boto3 package needs to be installed. %s" % (e.msg))
+    raise WorkflowError(
+        "The boto3 package needs to be installed. %s" % (e.msg))
 
 from cgatcore.remote import AbstractRemoteObject
 
@@ -19,20 +20,21 @@ class S3RemoteObject(AbstractRemoteObject):
         self._S3object = S3Connection(*args, **kwargs)
 
     def exists(self, bucket_name):
-        
+
         try:
             self._S3object.bucket_exists(bucket_name)
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 return False
             else:
-                raise S3FileException("The file cannot be parsed as an s3 path in form 'bucket/key': %s" % self.local_file())
+                raise S3FileException(
+                    "The file cannot be parsed as an s3 path in form 'bucket/key': %s" % self.local_file())
 
         return True
 
     def download(self, bucket_name, key, file_dir):
         self._S3object.remote_download(bucket_name, key, file_dir)
-        os.sync() # ensure flush to disk
+        os.sync()  # ensure flush to disk
         return file_dir
 
     def upload(self, bucket_name, key, file_dir):
@@ -43,12 +45,13 @@ class S3RemoteObject(AbstractRemoteObject):
         self._S3object.remote_delete_file(bucket_name, key)
         return key
 
+
 class S3Connection():
     '''This is a connection to a remote S3 bucket for AWS
     server using the boto3 API.'''
 
     def __init__(self, *args, **kwargs):
-        # 
+        #
 
         self.S3 = boto3.resource("s3", **kwargs)
 
@@ -92,19 +95,23 @@ class S3Connection():
         if not bucket_name:
             raise ValueError("Bucket name must be specified to upload file")
         if not os.path.exists(file_dir):
-            raise ValueError("File path specified does not exitis: {}".format(file_path))
+            raise ValueError(
+                "File path specified does not exitis: {}".format(file_path))
         if not os.path.isfile(file_dir):
-            raise ValueError("File path specified is not a file: {}".format(file_path))
+            raise ValueError(
+                "File path specified is not a file: {}".format(file_path))
 
         if not self.bucket_exists(bucket_name):
-            self.S3.create_bucket(Bucket=bucket_name) # Implement other features fuch as CreateBucketConfiguration
+            # Implement other features fuch as CreateBucketConfiguration
+            self.S3.create_bucket(Bucket=bucket_name)
 
         f = self.S3.Object(bucket_name, key)
 
         try:
             f.upload_file(file_path)
         except:
-            raise Exception("filename is not correctly specified: {}".format(file_dir))
+            raise Exception(
+                "filename is not correctly specified: {}".format(file_dir))
 
     def remote_delete_file(self, bucket_name, key):
         '''Will remove the object from the remote S3 bucket'''

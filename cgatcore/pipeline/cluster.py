@@ -101,14 +101,16 @@ class DRMAACluster(object):
         stdout, stderr and resource usage.
         '''
         try:
-            retval = self.session.wait(job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+            retval = self.session.wait(
+                job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
         except Exception as msg:
             # ignore message 24, indicates jobs that have been qdel'ed
             if not str(msg).startswith("code 24"):
                 raise
             retval = None
 
-        stdout, stderr = self.get_drmaa_job_stdout_stderr(stdout_path, stderr_path)
+        stdout, stderr = self.get_drmaa_job_stdout_stderr(
+            stdout_path, stderr_path)
         if retval is not None:
             if retval.exitStatus == 0:
                 if retval.wasAborted is True:
@@ -117,7 +119,7 @@ class DRMAACluster(object):
                         "(Job may have been cancelled by the user or the scheduler due to memory constraints)"
                         "The stderr was \n{}\nstatement = {}".format(
                             job_id, retval.hasExited, "".join(stderr), statement))
-                
+
             else:
                 msg = ("Job {} has non-zero exitStatus {}: hasExited={},  wasAborted={}"
                        "hasSignal={}, terminatedSignal='{}' "
@@ -358,7 +360,8 @@ class SlurmCluster(DRMAACluster):
 
         if job_memory != "unlimited":
             if job_memory.endswith("G"):
-                job_memory_per_cpu = int(math.ceil(float(job_memory[:-1]) * 1000))
+                job_memory_per_cpu = int(
+                    math.ceil(float(job_memory[:-1]) * 1000))
             elif job_memory.endswith("M"):
                 job_memory_per_cpu = int(math.ceil(float(job_memory[:-1])))
             else:
@@ -384,7 +387,8 @@ class SlurmCluster(DRMAACluster):
                     n += float(x) * f
                 v = n
             elif k in ("Start", "End", "Submit"):
-                v = time.mktime(datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S").timetuple())
+                v = time.mktime(datetime.datetime.strptime(
+                    v, "%Y-%m-%dT%H:%M:%S").timetuple())
             elif k in ("ExitCode", ):
                 v = int(v.split(":")[0])
             elif v.endswith("K"):
@@ -399,7 +403,8 @@ class SlurmCluster(DRMAACluster):
                 pass
             return k, v
 
-        d = dict(map(convert_value, zip(cls.map_drmaa2benchmark_data.values(), data.split("|"))))
+        d = dict(map(convert_value, zip(
+            cls.map_drmaa2benchmark_data.values(), data.split("|"))))
         retval = retval._replace(resourceUsage=d)
         return [retval]
 
@@ -411,7 +416,8 @@ class SlurmCluster(DRMAACluster):
 
         stdout = E.run(statement, return_stdout=True).splitlines()
         if len(stdout) != 2:
-            E.warn("expected 2 lines in {}, but got {}".format(statement, len(stdout)))
+            E.warn("expected 2 lines in {}, but got {}".format(
+                statement, len(stdout)))
 
         return self.parse_accounting_data(stdout[-1], retval)
 
@@ -550,7 +556,8 @@ def get_queue_manager(queue_manager, *args, **kwargs):
     elif qm == "pbspro":
         return PBSProCluster(*args, **kwargs)
     else:
-        raise ValueError("Queue manager {} not supported".format(queue_manager))
+        raise ValueError(
+            "Queue manager {} not supported".format(queue_manager))
 
 
 MAP_QACCT2BENCHMARK_DATA = {

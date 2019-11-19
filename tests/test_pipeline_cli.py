@@ -8,13 +8,14 @@ mock = Mock()
 cgatcore.pipeline.execution.GLOBAL_SESSION = mock()
 
 # python 3.7 vs 3.8 difference
+
+
 def get_options(obj):
     args = obj.call_args.args
     if isinstance(args, dict):
         return args
     else:
         return list(obj.call_args)[0][0]
-
 
 
 @patch.object(GridExecutor, "setup_job")
@@ -31,7 +32,7 @@ def test_default_queue_arguments(grid_run_patch):
         assert options["queue_manager"] == "sge"
 
 
-@patch.object(GridExecutor, "setup_job")        
+@patch.object(GridExecutor, "setup_job")
 def test_default_queue_can_be_overridden(grid_run_patch):
     P.initialize(argv=["mytool", "--cluster-queue=test.q"])
     with patch("cgatcore.pipeline.execution.will_run_on_cluster", return_value=True):
@@ -65,4 +66,3 @@ def test_all_cluster_parameters_can_be_set(grid_run_patch, option, field, value)
         grid_run_patch.assert_called_once()
         options = get_options(grid_run_patch)
         assert options[field] == value
-        

@@ -551,6 +551,7 @@ def check_presence_of_files(filenames):
             missing.append(filename)
     return missing
 
+
 SYMBOLS = {
     'customary': ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'),
     'customary_ext': ('byte', 'kilo', 'mega', 'giga',
@@ -1410,7 +1411,8 @@ def mount_file(fn):
         try:
             shutil.rmtree(mountpoint)
         except OSError as ex:
-            E.warn("could not delete mountpoint {}: {}".format(mountpoint, str(ex)))
+            E.warn("could not delete mountpoint {}: {}".format(
+                mountpoint, str(ex)))
     else:
         yield fn
 

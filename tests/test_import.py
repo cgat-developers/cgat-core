@@ -9,16 +9,12 @@
 Purpose
 -------
 
-This script attempts to import all the python code
-in the cgat-core repository.
+This script attempts to import all the python code in the cgat-core
+repository.
 
 Importing a script/module is a pre-requisite for building
 documentation with sphinx. A script/module that can not be imported
 will fail within sphinx.
-
-This script is best run within nosetests::
-
-   nosetests tests/test_import.py
 
 '''
 
@@ -26,8 +22,6 @@ import os
 import glob
 import traceback
 import imp
-
-from nose.tools import ok_
 
 # DIRECTORIES to examine
 EXPRESSIONS = (
@@ -61,20 +55,18 @@ def check_import(filename, outfile):
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
         traceback.print_exc(file=outfile)
-        ok_(False, '%s scripts/modules - ImportError: %s' %
-            (basename, msg))
+        assert False, '%s scripts/modules - ImportError: %s' % (basename, msg)
     except Exception as msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
 
         traceback.print_exc(file=outfile)
-        ok_(False, '%s scripts/modules - Exception: %s' %
-            (basename, str(msg)))
+        assert False, '%s scripts/modules - Exception: %s' % (basename, str(msg))
 
-    ok_(True)
+    assert True
 
 
-def test_imports():
+def test_import():
     '''test importing
 
     Relative imports will cause a failure because
