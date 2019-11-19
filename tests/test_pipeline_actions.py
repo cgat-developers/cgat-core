@@ -5,6 +5,7 @@ from cgatcore.pipeline.wrappers import PassThroughRunner, EmptyRunner
 import ruffus
 import pytest
 
+
 @pytest.fixture(scope="module")
 def build_pipeline():
     pipeline = ruffus.Pipeline(name="test1")
@@ -17,7 +18,7 @@ def build_pipeline():
         task_func=EmptyRunner(name="all"),
         input=start_tasks,
         output="all")
-    
+
     yield pipeline
 
 
@@ -33,5 +34,3 @@ def test_pipeline_action_state(capsys, build_pipeline):
     P.run_workflow(E.get_args(), pipeline=build_pipeline)
     captured = capsys.readouterr()
     assert captured.out.startswith("function\tactive")
-
-        
