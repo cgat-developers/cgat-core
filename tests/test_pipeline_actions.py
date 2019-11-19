@@ -32,6 +32,6 @@ def test_pipeline_action_state(capsys, build_pipeline):
     P.initialize(argv=["toolname", "state"])
     P.run_workflow(E.get_args(), pipeline=build_pipeline)
     captured = capsys.readouterr()
-    assert captured.readout.startswith("function\tactive")
+    assert captured.out.startswith("function\tactive")
 
         
