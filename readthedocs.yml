@@ -1,6 +1,2 @@
 conda:
-    file: conda/environments/cgat-core.yml
-
-python:
-    version: 3.7
-    pip_install: true
+    file: conda/environments/readthedocs.yml
