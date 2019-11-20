@@ -34,23 +34,23 @@ def get_columns(fields, columns="all"):
         return c
 
 
-def read_and_transpose_table(infile, options):
+def read_and_transpose_table(infile, args):
     """read table from infile and transpose
     """
     rows = []
-    if options.transpose_format == "default":
+    if args.transpose_format == "default":
 
         for line in infile:
             if line[0] == "#":
                 continue
             rows.append(line[:-1].split("\t"))
 
-    elif options.transpose_format == "separated":
+    elif args.transpose_format == "separated":
         for line in infile:
             if line[0] == "#":
                 continue
             key, vals = line[:-1].split("\t")
-            row = [key] + vals.split(options.separator)
+            row = [key] + vals.split(args.separator)
             rows.append(row)
 
     ncols = max([len(x) for x in rows])
@@ -62,57 +62,57 @@ def read_and_transpose_table(infile, options):
         for c in range(0, len(rows[r])):
             new_rows[c][r] = rows[r][c]
 
-    if options.set_transpose_field:
-        new_rows[0][0] = options.set_transpose_field
+    if args.set_transpose_field:
+        new_rows[0][0] = args.set_transpose_field
 
     for row in new_rows:
-        options.stdout.write("\t".join(row) + "\n")
+        args.stdout.write("\t".join(row) + "\n")
 
 
-def read_and_group_table(infile, options):
+def read_and_group_table(infile, args):
     """read table from infile and group.
     """
     fields, table = CSV.readTable(
-        infile, with_header=options.has_headers, as_rows=True)
-    options.columns = get_columns(fields, options.columns)
-    assert options.group_column not in options.columns
+        infile, with_header=args.has_headers, as_rows=True)
+    args.columns = get_columns(fields, args.columns)
+    assert args.group_column not in args.columns
 
     converter = float
-    new_fields = [fields[options.group_column]] + [fields[x]
-                                                   for x in options.columns]
+    new_fields = [fields[args.group_column]] + [fields[x]
+                                                   for x in args.columns]
 
-    if options.group_function == "min":
+    if args.group_function == "min":
         f = min
-    elif options.group_function == "max":
+    elif args.group_function == "max":
         f = max
-    elif options.group_function == "sum":
+    elif args.group_function == "sum":
         f = lambda z: reduce(lambda x, y: x + y, z)
-    elif options.group_function == "mean":
+    elif args.group_function == "mean":
         f = numpy.mean
-    elif options.group_function == "cat":
+    elif args.group_function == "cat":
         f = lambda x: ";".join([y for y in x if y != ""])
         converter = str
-    elif options.group_function == "uniq":
+    elif args.group_function == "uniq":
         f = lambda x: ";".join([y for y in set(x) if y != ""])
         converter = str
-    elif options.group_function == "stats":
+    elif args.group_function == "stats":
         # Stats lives in cgat-apps/CGAT
         f = lambda x: str(Stats.DistributionalParameters(x))
         # update headers
-        new_fields = [fields[options.group_column]]
-        for c in options.columns:
+        new_fields = [fields[args.group_column]]
+        for c in args.columns:
             new_fields += list(["%s_%s" %
                                 (fields[c], x) for x in Stats.DistributionalParameters().getHeaders()])
 
     # convert values to floats (except for group_column)
-    # Delete rows with unconvertable values and not in options.columns
+    # Delete rows with unconvertable values and not in args.columns
     new_table = []
     for row in table:
         skip = False
-        new_row = [row[options.group_column]]
+        new_row = [row[args.group_column]]
 
-        for c in options.columns:
-            if row[c] == options.missing_value:
+        for c in args.columns:
+            if row[c] == args.missing_value:
                 new_row.append(row[c])
             else:
                 try:
@@ -128,12 +128,12 @@ def read_and_group_table(infile, options):
                               group_column=0,
                               group_function=f)
 
-    options.stdout.write("\t".join(new_fields) + "\n")
+    args.stdout.write("\t".join(new_fields) + "\n")
     for row in new_rows:
-        options.stdout.write("\t".join(map(str, row)) + "\n")
+        args.stdout.write("\t".join(map(str, row)) + "\n")
 
 
-def read_and_expand_table(infile, options):
+def read_and_expand_table(infile, args):
     '''splits fields in table at separator.
 
     If a field in a row contains multiple values,
@@ -142,15 +142,15 @@ def read_and_expand_table(infile, options):
     '''
 
     fields, table = CSV.readTable(
-        infile, with_header=options.has_headers, as_rows=True)
+        infile, with_header=args.has_headers, as_rows=True)
 
-    options.stdout.write("\t".join(fields) + "\n")
+    args.stdout.write("\t".join(fields) + "\n")
 
     for row in table:
 
         data = []
         for x in range(len(fields)):
-            data.append(row[x].split(options.separator))
+            data.append(row[x].split(args.separator))
 
         nrows = max([len(d) for d in data])
 
@@ -158,10 +158,10 @@ def read_and_expand_table(infile, options):
             d += [""] * (nrows - len(d))
 
         for n in range(nrows):
-            options.stdout.write("\t".join([d[n] for d in data]) + "\n")
+            args.stdout.write("\t".join([d[n] for d in data]) + "\n")
 
 
-def read_and_collapse_table(infile, options, missing_value=""):
+def read_and_collapse_table(infile, args, missing_value=""):
     '''collapse a table.
 
     Collapse a table of two columns with row names in the first
@@ -169,7 +169,7 @@ def read_and_collapse_table(infile, options, missing_value=""):
     '''
 
     fields, table = CSV.readTable(
-        infile, with_header=options.has_headers, as_rows=True)
+        infile, with_header=args.has_headers, as_rows=True)
 
     if len(fields) != 2:
         raise NotImplementedError("can only work on tables with two columns")
@@ -202,27 +202,27 @@ def read_and_collapse_table(infile, options, missing_value=""):
     assert len(sizes) == 1, "unequal number of row_names"
     size = list(sizes)[0]
 
-    options.stdout.write(
+    args.stdout.write(
         "row\t%s\n" % ("\t".join(["column_%i" % x for x in range(size)])))
 
     for key, row in list(values.items()):
-        options.stdout.write("%s\t%s\n" % (key, "\t".join(row)))
+        args.stdout.write("%s\t%s\n" % (key, "\t".join(row)))
 
 
-def computeFDR(infile, options):
+def computeFDR(infile, args):
     '''compute FDR on a table.
     '''
 
     fields, table = CSV.readTable(
-        infile, with_header=options.has_headers, as_rows=True)
+        infile, with_header=args.has_headers, as_rows=True)
 
-    options.stdout.write("\t".join(fields) + "\n")
+    args.stdout.write("\t".join(fields) + "\n")
 
     for row in table:
 
         data = []
         for x in range(len(fields)):
-            data.append(row[x].split(options.separator))
+            data.append(row[x].split(args.separator))
 
         nrows = max([len(d) for d in data])
 
@@ -230,16 +230,16 @@ def computeFDR(infile, options):
             d += [""] * (nrows - len(d))
 
         for n in range(nrows):
-            options.stdout.write("\t".join([d[n] for d in data]) + "\n")
+            args.stdout.write("\t".join([d[n] for d in data]) + "\n")
 
 
-def read_and_join_table(infile, options):
+def read_and_join_table(infile, args):
 
     fields, table = CSV.readTable(
-        infile, with_header=options.has_headers, as_rows=True)
+        infile, with_header=args.has_headers, as_rows=True)
 
-    join_column = options.join_column - 1
-    join_name = options.join_column_name - 1
+    join_column = args.join_column - 1
+    join_name = args.join_column_name - 1
 
     join_rows = list(set([x[join_column] for x in table]))
     join_rows.sort()
@@ -274,33 +274,33 @@ def read_and_join_table(infile, options):
             start += 1
 
     # print new table
-    options.stdout.write(fields[join_column])
+    args.stdout.write(fields[join_column])
     for name in join_names:
         for column in join_columns:
-            options.stdout.write(
-                "\t%s%s%s" % (name, options.separator, fields[column]))
-    options.stdout.write("\n")
+            args.stdout.write(
+                "\t%s%s%s" % (name, args.separator, fields[column]))
+    args.stdout.write("\n")
 
     for row in new_table:
-        options.stdout.write("\t".join(row) + "\n")
+        args.stdout.write("\t".join(row) + "\n")
 
 
-def read_and_randomize_rows(infile, options):
+def read_and_randomize_rows(infile, args):
     """read table from stdin and randomize rows, keeping header."""
 
     c = E.Counter()
-    if options.has_headers:
+    if args.has_headers:
         keep_header = 1
     else:
         keep_header = 0
     for x in range(keep_header):
         c.header += 1
-        options.stdout.write(infile.readline())
+        args.stdout.write(infile.readline())
 
     lines = infile.readlines()
     c.lines_input = len(lines)
     random.shuffle(lines)
-    options.stdout.write("".join(lines))
+    args.stdout.write("".join(lines))
     c.lines_output = len(lines)
     E.info(c)
 
@@ -308,7 +308,7 @@ def read_and_randomize_rows(infile, options):
 def main(argv=None):
     """script main.
 
-    parses command line options in sys.argv, unless *argv* is given.
+    parses command line args in sys.argv, unless *argv* is given.
     """
 
     if argv is None:
@@ -479,7 +479,7 @@ def main(argv=None):
         invert_match=False,
     )
 
-    args = E.start(parser, add_pipe_options=True)
+    args = E.start(parser, add_pipe_args=True, unknowns=True)
 
     args.parameters = args.parameters.split(",")
 
