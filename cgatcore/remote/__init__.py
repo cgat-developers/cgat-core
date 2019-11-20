@@ -2,6 +2,7 @@ import os
 import sys
 from abc import abstractmethod
 
+
 class AbstractRemoteObject():
     '''This is an abstract class that all RemoteObjects will
        inherit from. This is an abstract class to ridgidly define

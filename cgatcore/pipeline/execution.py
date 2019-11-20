@@ -237,7 +237,8 @@ def execute(statement, **kwargs):
         statement = statement[:-1]
 
     # always use bash
-    os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
+    os.environ.update(
+        {'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
     process = subprocess.Popen(statement % kwargs,
                                cwd=cwd,
                                shell=True,
@@ -393,7 +394,8 @@ class Executor(object):
         self.job_threads = kwargs.get("job_threads", 1)
 
         if "job_memory" in kwargs and "job_total_memory" in kwargs:
-            raise ValueError("both job_memory and job_total_memory have been given")
+            raise ValueError(
+                "both job_memory and job_total_memory have been given")
 
         self.job_total_memory = kwargs.get('job_total_memory', None)
         self.job_memory = kwargs.get('job_memory', None)
@@ -407,7 +409,8 @@ class Executor(object):
             elif self.job_memory:
                 self.job_total_memory = self.job_memory * self.job_threads
             else:
-                self.job_memory = get_params()["cluster"].get("memory_default", "4G")
+                self.job_memory = get_params()["cluster"].get(
+                    "memory_default", "4G")
                 if self.job_memory == "unlimited":
                     self.job_total_memory = "unlimited"
                 else:
@@ -437,7 +440,8 @@ class Executor(object):
         self.shellfile = kwargs.get("shell_logfile", None)
         if self.shellfile:
             if not self.shellfile.startswith(os.sep):
-                self.shellfile = os.path.join(self.work_dir, os.path.basename(self.shellfile))
+                self.shellfile = os.path.join(
+                    self.work_dir, os.path.basename(self.shellfile))
 
     def __enter__(self):
         return self
@@ -473,7 +477,8 @@ class Executor(object):
         for var in ["MKL_NUM_THREADS",
                     "OPENBLAS_NUM_THREADS",
                     "OMP_NUM_THREADS"]:
-            setup_cmds.append("export {}={}".format(var, self.options.get("job_threads", 1)))
+            setup_cmds.append("export {}={}".format(
+                var, self.options.get("job_threads", 1)))
 
         if "arv=" in statement:
 
@@ -529,7 +534,8 @@ class Executor(object):
             setup_cmds.append(
                 "export PATH={}:$PATH".format(
                     os.path.join(
-                        get_conda_environment_directory(self.options["job_condaenv"]),
+                        get_conda_environment_directory(
+                            self.options["job_condaenv"]),
                         "bin")))
 
         statement = "\n".join((
@@ -696,7 +702,8 @@ class Executor(object):
 
             # translate specs
             if self.queue_manager:
-                data.update(self.queue_manager.map_resource_usage(data, DATA2TYPE))
+                data.update(
+                    self.queue_manager.map_resource_usage(data, DATA2TYPE))
 
             cpu_time = float(get_val(data, "cpu_t", 0))
             start_time = float(get_val(data, "start_time", 0))
@@ -774,12 +781,14 @@ class GridExecutor(Executor):
 
             full_statement, job_path = self.build_job_script(statement)
 
-            stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(jt, job_path)
+            stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
+                jt, job_path)
 
             job_id = self.session.runJob(jt)
             job_ids.append(job_id)
             filenames.append((job_path, stdout_path, stderr_path))
-            self.logger.info("job has been submitted with job_id %s" % str(job_id))
+            self.logger.info(
+                "job has been submitted with job_id %s" % str(job_id))
             # give back control for bulk submission
             gevent.sleep(GEVENT_TIMEOUT_STARTUP)
 
@@ -849,7 +858,8 @@ class GridArrayExecutor(GridExecutor):
         full_statement, job_path = self.build_job_script(master_statement)
 
         jt = self.setup_job(self.options["cluster"])
-        stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(jt, job_path)
+        stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
+            jt, job_path)
 
         job_id, stdout, stderr, resource_usage = self.run_array_job(
             self.session, jt, stdout_path, stderr_path,
@@ -917,7 +927,8 @@ class LocalExecutor(Executor):
                 return iotools.str2val(v)
 
             # remove any non-key-value pairs
-            data.update(dict([(x[0], _convert(x[0], x[1])) for x in pairs if len(x) == 2]))
+            data.update(dict([(x[0], _convert(x[0], x[1]))
+                              for x in pairs if len(x) == 2]))
 
             # remove % sign
             data.update(
@@ -965,7 +976,8 @@ class LocalExecutor(Executor):
             while 1:
                 start_time = time.time()
 
-                os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
+                os.environ.update(
+                    {'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
                 process = subprocess.Popen(
                     full_statement,
                     cwd=self.work_dir,
@@ -983,7 +995,8 @@ class LocalExecutor(Executor):
                 end_time = time.time()
 
                 if process.returncode == 126:
-                    self.logger.warn("repeating execution: message={}".format(stderr))
+                    self.logger.warn(
+                        "repeating execution: message={}".format(stderr))
                     time.sleep(1)
                     continue
 
@@ -1213,7 +1226,8 @@ def run(statement, **kwargs):
     for data in benchmark_data:
         logger.info(json.dumps(data))
 
-    BenchmarkData = collections.namedtuple('BenchmarkData', sorted(benchmark_data[0]))
+    BenchmarkData = collections.namedtuple(
+        'BenchmarkData', sorted(benchmark_data[0]))
     return [BenchmarkData(**d) for d in benchmark_data]
 
 

@@ -353,7 +353,8 @@ def peek_parameters(workingdir,
 
     statement = "cgatflow {} dump -v 0".format(pipeline)
 
-    os.environ.update({'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
+    os.environ.update(
+        {'BASH_ENV': os.path.join(os.environ['HOME'], '.bashrc')})
     process = subprocess.Popen(statement,
                                cwd=workingdir,
                                shell=True,
@@ -513,7 +514,8 @@ def setup_logging(args, pipeline=None):
     return logger
 
 
-VersionData = collections.namedtuple("VersionData", ("code_location", "version"))
+VersionData = collections.namedtuple(
+    "VersionData", ("code_location", "version"))
 
 
 def get_version():
@@ -586,7 +588,7 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
     """
     if argv is None:
         argv = sys.argv
-    
+
     if optparse is True:
 
         parser = E.OptionParser(version="%prog version: $Id$",
@@ -746,7 +748,6 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
             add_cluster_options=True,
             argv=argv,
             logger_callback=logger_callback)
-
         options.pipeline_name = argv[0]
         if args:
             options.pipeline_action = args[0]
@@ -903,17 +904,15 @@ def update_params_with_commandline_options(params, args):
 
     params["pipeline_name"] = args.pipeline_name
     params["dryrun"] = args.dry_run
-    if args.cluster_queue is not None:
-        params["cluster_queue"] = args.cluster_queue
-    if args.cluster_priority is not None:
-        params["cluster_priority"] = args.cluster_priority
-    if args.cluster_num_jobs is not None:
-        params["cluster_num_jobs"] = args.cluster_num_jobs
-    if args.cluster_options is not None:
-        params["cluster_options"] = args.cluster_options
-    if args.cluster_parallel_environment is not None:
-        params["cluster_parallel_environment"] =\
-            args.cluster_parallel_environment
+
+    # translate cluster options into dict
+    for key in params["cluster"].keys():
+        arg_key = "cluster_{}".format(key)
+        if hasattr(args, arg_key):
+            val = getattr(args, arg_key)
+            if val is not None:
+                params["cluster"][key] = val
+
     if args.without_cluster:
         params["without_cluster"] = True
 
@@ -1014,6 +1013,7 @@ class LoggingFilterProgress(logging.Filter):
         execution.
 
     """
+
     def __init__(self,
                  ruffus_text):
 
@@ -1196,7 +1196,8 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
         defaults=defaults)
 
     logger = logging.getLogger("cgatcore.pipeline")
-    logger.info("started in directory: {}".format(get_params().get("start_dir")))
+    logger.info("started in directory: {}".format(
+        get_params().get("start_dir")))
 
     # At this point, the PARAMS dictionary has already been
     # built. It now needs to be updated with selected command
@@ -1208,7 +1209,8 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     logger.info("code location: {}".format(code_location))
     logger.info("code version: {}".format(version))
 
-    logger.info("working directory is: {}".format(get_params().get("work_dir")))
+    logger.info("working directory is: {}".format(
+        get_params().get("work_dir")))
     work_dir = get_params().get("work_dir")
     if not os.path.exists(work_dir):
         E.info("working directory {} does not exist - creating".format(work_dir))
@@ -1229,7 +1231,8 @@ def run_workflow(args, argv=None, pipeline=None):
 
     logger = logging.getLogger("cgatcore.pipeline")
 
-    logger.debug("starting run_workflow with action {}".format(args.pipeline_action))
+    logger.debug("starting run_workflow with action {}".format(
+        args.pipeline_action))
 
     if args.force_run:
         if args.force_run == "all":
@@ -1290,7 +1293,8 @@ def run_workflow(args, argv=None, pipeline=None):
                 if args.pipeline_action == "make":
 
                     if not args.without_cluster and not HAS_DRMAA and not get_params()['testing']:
-                        E.critical("DRMAA API not found so cannot talk to a cluster.")
+                        E.critical(
+                            "DRMAA API not found so cannot talk to a cluster.")
                         E.critical("Please use --local to run the pipeline"
                                    " on this host: {}".format(os.uname()[1]))
                         sys.exit(-1)
@@ -1371,7 +1375,7 @@ def run_workflow(args, argv=None, pipeline=None):
                         checksum_level=args.ruffus_checksums_level)
 
                 elif args.pipeline_action == "state":
-                    ruffus.ruffus_return_dag(
+                    ruffus_return_dag(
                         args.stdout,
                         target_tasks=args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks,
@@ -1420,7 +1424,8 @@ def run_workflow(args, argv=None, pipeline=None):
                 logger.error(ex)
                 logger.error("end of all error messages")
 
-                raise ValueError("pipeline failed with %i errors" % len(ex.args)) from ex
+                raise ValueError("pipeline failed with %i errors" %
+                                 len(ex.args)) from ex
             else:
                 raise
 

@@ -321,7 +321,7 @@ def get_parameters(filenames=None,
     # check if this is only for import
     if only_import is None:
         only_import = is_test() or "__name__" not in caller_locals or \
-                      caller_locals["__name__"] != "__main__"
+            caller_locals["__name__"] != "__main__"
 
     # important: only update the PARAMS variable as
     # it is referenced in other modules. Thus the type

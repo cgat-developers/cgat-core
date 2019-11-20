@@ -497,6 +497,7 @@ class ArgumentParser(argparse.ArgumentParser):
     ''''CGAT derivative of ArgumentParser. OptionParser is still
     implimented for backwards compatibility
     '''
+
     def __init__(self, *args, **kwargs):
 
         # if "--short" is a command line option
@@ -850,7 +851,7 @@ def start(parser=None,
             timeit_header=None,
             random_seed=None,
             tracing=None,
-            )
+        )
 
         if add_csv_options:
             parser.add_option("--csv-dialect", dest="csv_dialect", type="string",
@@ -859,7 +860,7 @@ def start(parser=None,
             parser.set_defaults(
                 csv_dialect="excel-tab",
                 csv_lineterminator="\n",
-                )
+            )
 
         if add_cluster_options:
             group = OptionGroup(parser, "cluster options")
@@ -876,7 +877,7 @@ def start(parser=None,
                              type="int",
                              help="number of jobs to submit to the queue execute "
                              "in parallel [%default].")
-            group.add_option("--cluster-parallel",
+            group.add_option("--cluster-parallel-environment",
                              dest="cluster_parallel_environment",
                              type="string",
                              help="name of the parallel environment to use "
@@ -988,7 +989,8 @@ def start(parser=None,
                 if global_options.stderr == "stderr":
                     global_options.stderr = global_options.stderr
                 else:
-                    global_options.stderr = open_file(global_options.stderr, "w")
+                    global_options.stderr = open_file(
+                        global_options.stderr, "w")
             if global_options.stdlog != sys.stdout:
                 global_options.stdlog = open_file(global_options.stdlog, "a")
             if global_options.stdin != sys.stdin:
@@ -1012,7 +1014,7 @@ def start(parser=None,
                 logging.config.dictConfig(dict_yaml)
             else:
                 raise OSError("file {} with logging configuration does not exist".format(
-                        global_options.log_config_filename))
+                    global_options.log_config_filename))
         else:
             # configure logging from command line options
             # map from 0-10 to logging scale
@@ -1475,7 +1477,8 @@ def run(statement,
     else:
         retcode = subprocess.call(statement, shell=True, **kwargs)
         if retcode < 0:
-            raise OSError("process was terminated by signal: {}".format(-retcode))
+            raise OSError(
+                "process was terminated by signal: {}".format(-retcode))
         elif retcode > 0:
             raise OSError("process exited with code: {}".format(retcode))
         return retcode
@@ -1542,6 +1545,7 @@ class cached_property(object):
 
     Modified from https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
     '''
+
     def __init__(self, hello):
         print(hello)
 

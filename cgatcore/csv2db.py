@@ -154,7 +154,8 @@ def run(infile, options, chunk_size=10000):
         try:
             statement = "CREATE INDEX %s_index%i ON %s (%s)" % (
                 tablename, nindex, tablename, index)
-            cc = database.executewait(dbhandle, statement, retries=options.retries)
+            cc = database.executewait(
+                dbhandle, statement, retries=options.retries)
             cc.close()
             E.info("added index on column %s" % (index))
             counter.indexes_created += 1
@@ -167,7 +168,8 @@ def run(infile, options, chunk_size=10000):
             try:
                 statement = "ALTER TABLE %s DROP COLUMN %s".format(
                     tablename, column)
-                cc = database.executewait(dbhandle, statement, retries=options.retries)
+                cc = database.executewait(
+                    dbhandle, statement, retries=options.retries)
                 cc.close()
                 E.info("removed empty column %s" % (column))
                 counter.empty_columns_removed += 1
@@ -327,7 +329,8 @@ def main(argv=sys.argv):
             #     name or assign a non-blank .name before adding to a Table.
             replace_empty_strings = (lambda arg: '-' if len(arg) == 0 else arg)
             args.header_names = \
-                [x for x in map(replace_empty_strings, args.header_names.split(','))]
+                [x for x in map(replace_empty_strings,
+                                args.header_names.split(','))]
         else:
             args.header_names = re.split("\s+", args.header_names.strip())
 

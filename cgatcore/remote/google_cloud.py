@@ -38,12 +38,13 @@ class GCRemoteObject(AbstractRemoteObject):
         self._GCobject.remote_delete_file(bucket_name, key)
         return key
 
+
 class GCConnection():
     '''This is a connection to a remote google cloud bucket
        using the goggle.cloud SDK.'''
 
     def __init__(self, *args, **kwargs):
-        # 
+        #
 
         self.GC = storage.Client(*args, **kwargs)
         self.blob = None
@@ -53,7 +54,7 @@ class GCConnection():
             self.GC.get_bucket(bucket_name)
             return True
         except KeyError as e:
-            print("%s bucket does not exist in google cloud"% (e))
+            print("%s bucket does not exist in google cloud" % (e))
 
     def remote_download(self,
                         bucket_name,
@@ -89,9 +90,11 @@ class GCConnection():
         if not bucket_name:
             raise ValueError("Bucket name must be specified to upload file")
         if not os.path.exists(file_dir):
-            raise ValueError("File path specified does not exitis: {}".format(file_path))
+            raise ValueError(
+                "File path specified does not exitis: {}".format(file_path))
         if not os.path.isfile(file_dir):
-            raise ValueError("File path specified is not a file: {}".format(file_path))
+            raise ValueError(
+                "File path specified is not a file: {}".format(file_path))
 
         if not self.bucket_exists(bucket_name):
             self.GC.create_bucket(bucket_name)
@@ -102,7 +105,8 @@ class GCConnection():
         try:
             blob.upload_from_filename(file_path)
         except:
-            raise Exception("filename is not correctly specified: {}".format(file_dir))
+            raise Exception(
+                "filename is not correctly specified: {}".format(file_dir))
 
     def remote_delete_file(self, bucket_name, key):
         '''Will remove the object from the remote S3 bucket'''
