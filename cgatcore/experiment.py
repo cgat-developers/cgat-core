@@ -1033,7 +1033,7 @@ def start(parser=None,
 
             logging.basicConfig(
                 level=lvl,
-                format=format,
+                format=logformat,
                 stream=global_options.stdlog)
 
             # set up multi-line logging
@@ -1265,7 +1265,7 @@ def start(parser=None,
 
             logging.basicConfig(
                 level=lvl,
-                format=format,
+                format=logformat,
                 stream=global_args.stdlog)
 
             # set up multi-line logging
