@@ -257,15 +257,16 @@ def execute(statement, **kwargs):
             "The stderr was: \n%s\n%s\n" %
             (-process.returncode, stderr, statement))
 
-    ret_stdout = ""
-    ret_stderr = ""
-
-    if stdout is not None:
-        ret_stdout = stdout.decode("utf-8")
-    if stderr is not None:
-        ret_stderr = stderr.decode("utf-8")
-
-    return ret_stdout, ret_stderr
+#    ret_stdout = ""
+#    ret_stderr = ""
+#
+#    if stdout is not None:
+#        ret_stdout = stdout.decode("utf-8")
+#    if stderr is not None:
+#        ret_stderr = stderr.decode("utf-8")
+#
+#    return ret_stdout, ret_stderr
+    return stdout, stderr
 
 
 def interpolate_statement(statement, kwargs):
