@@ -480,7 +480,7 @@ def main(argv=None):
         invert_match=False,
     )
 
-    (args, unknown) = E.start(parser, add_pipe_args=True, unknowns=True)
+    (args, unknown) = E.start(parser, unknowns=True)
 
     args.parameters = args.parameters.split(",")
 
