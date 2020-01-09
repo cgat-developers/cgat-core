@@ -242,9 +242,9 @@ def execute(statement, **kwargs):
     process = subprocess.Popen(statement % kwargs,
                                cwd=cwd,
                                shell=True,
-                               stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
+                               stdin=sys.stdin,
+                               stdout=sys.stdout,
+                               stderr=sys.stderr,
                                env=os.environ.copy(),
                                executable="/bin/bash")
 
