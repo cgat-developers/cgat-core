@@ -215,7 +215,7 @@ conda_install() {
 
     log "downloading miniconda"
     # download and install conda
-    curl -O https://repo.continuum.io/miniconda/${MINICONDA}
+    curl -O https://repo.anaconda.com/miniconda/${MINICONDA}
 
     log "installing miniconda"
     bash ${MINICONDA} -b -p $CONDA_INSTALL_DIR
