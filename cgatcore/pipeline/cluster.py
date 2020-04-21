@@ -111,36 +111,53 @@ class DRMAACluster(object):
 
         stdout, stderr = self.get_drmaa_job_stdout_stderr(
             stdout_path, stderr_path)
+
         if retval is not None:
+            error_msg = None
             if retval.exitStatus == 0:
                 if retval.wasAborted is True:
                     get_logger().warning(
-                        "Job {} marked as hasAborted=True but completed successfully, hasExited={} "
+                        "Job {} has exit status 0, but marked as hasAborted=True, hasExited={} "
                         "(Job may have been cancelled by the user or the scheduler due to memory constraints)"
                         "The stderr was \n{}\nstatement = {}".format(
                             job_id, retval.hasExited, "".join(stderr), statement))
-
+                if retval.hasSignal is True:
+                    error_msg = ("Job {} has zero exitStatus {} but received signal: hasExited={},  wasAborted={}"
+                                 "hasSignal={}, terminatedSignal='{}' "
+                                 "\nstatement = {}".format(
+                                     job_id, retval.exitStatus, retval.hasExited, retval.wasAborted,
+                                     retval.hasSignal, retval.terminatedSignal,
+                                     statement))
             else:
-                msg = ("Job {} has non-zero exitStatus {}: hasExited={},  wasAborted={}"
-                       "hasSignal={}, terminatedSignal='{}' "
-                       "\nstatement = {}".format(
-                           job_id, retval.exitStatus, retval.hasExited, retval.wasAborted,
-                           retval.hasSignal, retval.terminatedSignal,
-                           statement))
+                error_msg = ("Job {} has non-zero exitStatus {}: hasExited={},  wasAborted={}"
+                             "hasSignal={}, terminatedSignal='{}' "
+                             "\nstatement = {}".format(
+                                 job_id, retval.exitStatus, retval.hasExited, retval.wasAborted,
+                                 retval.hasSignal, retval.terminatedSignal,
+                                 statement))
+
+            if error_msg:
                 if stderr:
-                    msg += "\n stderr = {}".format("".join(stderr))
+                    error_msg += "\n stderr = {}".format("".join(stderr))
                 if self.ignore_errors:
-                    get_logger().warning(msg)
+                    get_logger().warning(error_msg)
                 else:
-                    raise OSError(msg)
+                    raise OSError(error_msg)
+        else:
+            retval = JobInfo(job_id, {})
 
         # get hostname from job script
-        hostname = stdout[-3][:-1]
+        try:
+            hostname = stdout[-3][:-1]
+        except IndexError:
+            hostname = "unknown"
+
         try:
             resource_usage = self.get_resource_usage(job_id, retval, hostname)
         except (ValueError, KeyError, TypeError, IndexError) as ex:
             E.warn("could not collect resource usage for job {}: {}".format(job_id, ex))
-            resource_usage = [None]
+            retval.resourceUsage["hostname"] = hostname
+            resource_usage = [retval]
 
         try:
             os.unlink(job_path)
@@ -387,8 +404,13 @@ class SlurmCluster(DRMAACluster):
                     n += float(x) * f
                 v = n
             elif k in ("Start", "End", "Submit"):
-                v = time.mktime(datetime.datetime.strptime(
-                    v, "%Y-%m-%dT%H:%M:%S").timetuple())
+                try:
+                    v = time.mktime(datetime.datetime.strptime(
+                        v, "%Y-%m-%dT%H:%M:%S").timetuple())
+                except ValueError as ex:
+                    E.warning("could not parse time value '{}' for field '{}': {}".format(
+                        v, k, ex))
+                    v = None
             elif k in ("ExitCode", ):
                 v = int(v.split(":")[0])
             elif v.endswith("K"):
