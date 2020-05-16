@@ -9,6 +9,9 @@ import cgatcore.pipeline as P
 import cgatcore.iotools as iotools
 
 
+QUEUE_MANAGER = P.get_parameters().get("cluster", {}).get("queue_manager", None)
+
+
 @contextlib.contextmanager
 def run_on_cluster(to_cluster):
     if to_cluster:
@@ -32,7 +35,7 @@ class BaseTest(unittest.TestCase):
         shutil.rmtree(self.work_dir)
 
 
-class TestexecutionRun(BaseTest):
+class TestExecutionRun(BaseTest):
 
     def setUp(self):
         P.get_parameters()
@@ -72,7 +75,7 @@ class TestexecutionRun(BaseTest):
         self.assertEqual(hostname, execution_hostname)
 
 
-class TestexecutionRunLocal(unittest.TestCase):
+class TestExecutionRunLocal(unittest.TestCase):
 
     test_memory_size = 100000000
     base_memory_size = 3000000000
@@ -165,6 +168,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                     memory=self.test_memory_size,
                     outfile=outfile),
                 to_cluster=self.to_cluster,
+                cluster_memory_ulimit=True,
                 job_memory="{}G".format(
                     0.5 * self.test_memory_size / 10**9))
         else:
@@ -189,6 +193,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                     infile=infile,
                     outfile=outfile),
                 to_cluster=self.to_cluster,
+                cluster_memory_ulimit=True,
                 job_memory="{}G".format(
                     0.5 * self.test_memory_size / 10**9))
         else:
@@ -205,6 +210,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                 memory=self.test_memory_size,
                 outfile=outfile),
             to_cluster=self.to_cluster,
+            cluster_memory_ulimit=True,
             job_memory="{}G".format(
                 (self.base_memory_size + self.test_memory_size) / 10**9))
 
@@ -214,6 +220,27 @@ class TestexecutionRunLocal(unittest.TestCase):
             memory_used = int(outf.read().strip())
 
         self.assertEqual(memory_used, self.test_memory_size)
+
+    def test_job_should_fail_if_killed(self):
+        self.assertRaises(
+            OSError,
+            P.run,
+            "kill -9 $$",
+            to_cluster=self.to_cluster)
+
+    def test_job_should_fail_if_usersignal1(self):
+        self.assertRaises(
+            OSError,
+            P.run,
+            "kill -SIGUSR1 $$",
+            to_cluster=self.to_cluster)
+
+    def test_job_should_fail_if_usersignal1(self):
+        self.assertRaises(
+            OSError,
+            P.run,
+            "kill -SIGUSR2 $$",
+            to_cluster=self.to_cluster)
 
     def test_job_should_pass_if_unlimited_memory_required(self):
         outfile = os.path.join(self.work_dir, "out")
@@ -227,6 +254,7 @@ class TestexecutionRunLocal(unittest.TestCase):
                 memory=self.test_memory_size,
                 outfile=outfile),
             to_cluster=self.to_cluster,
+            cluster_memory_ulimit=True,
             job_memory="unlimited".format())
         self.assertTrue(benchmark_data)
 
@@ -315,12 +343,8 @@ class TestexecutionRunLocal(unittest.TestCase):
         self.assertGreaterEqual(data.wall_t, 0)
         self.assertGreaterEqual(data.user_t, 0)
         self.assertGreaterEqual(data.sys_t, 0)
-        self.assertLess(data.cpu_t, data.total_t)
-        # Not always true? 15.052 vs 15.0
-        # self.assertLess(data.cpu_t, data.wall_t)
-        self.assertLess(data.wall_t, data.total_t)
         self.assertLess(data.start_time, data.end_time)
-        self.assertLess(data.submit_time, data.end_time)
+        self.assertLess(data.submission_time, data.end_time)
         self.assertEqual(data.statement, statement)
 
     def test_single_job_returns_runtime_information(self):
@@ -365,19 +389,57 @@ class TestexecutionRunLocal(unittest.TestCase):
             self.validate_benchmark_data(d, s)
 
 
-class TestexecutionRuncluster(TestexecutionRunLocal):
+@unittest.skipIf(QUEUE_MANAGER is None, "no cluster configured for testing")
+class TestExecutionRunCluster(TestExecutionRunLocal):
     to_cluster = True
 
     def setUp(self):
-        TestexecutionRunLocal.setUp(self)
+        TestExecutionRunLocal.setUp(self)
         P.start_session()
 
     def tearDown(self):
-        TestexecutionRunLocal.tearDown(self)
+        TestExecutionRunLocal.tearDown(self)
         P.close_session()
 
     def file_exists(self, filename, hostname=None, expect=False):
         return iotools.remote_file_exists(filename, hostname, expect)
+
+    def test_job_should_fail_if_cancelled(self):
+
+        if not P.will_run_on_cluster(P.get_parameters()):
+            return
+
+        if QUEUE_MANAGER == "slurm":
+            self.assertRaises(
+                OSError,
+                P.run,
+                "scancel $SLURM_JOB_ID",
+                to_cluster=self.to_cluster)
+        elif QUEUE_MANAGER == "sge":
+            self.assertRaises(
+                OSError,
+                P.run,
+                "qdel $SGE_TASK_ID",
+                to_cluster=self.to_cluster)
+
+    @unittest.skipIf(QUEUE_MANAGER != "slurm", "test relevant in SLURM only")
+    def test_job_should_pass_if_memory_bounds_hit_with_io(self):
+        # slurm issue - memory hit due to I/O buffering and error
+        # is reported.
+        outfile = os.path.join(self.work_dir, "out")
+        benchmark_data = P.run(
+            "python -c 'import numpy; "
+            "a = numpy.array(numpy.arange(0, 10 * {memory}), numpy.int8); "
+            "numpy.save(\"outfile\", a); "
+            "'".format(
+                memory=self.test_memory_size,
+                outfile=outfile),
+            to_cluster=self.to_cluster,
+            cluster_memory_ulimit=False,
+            job_memory="{}G".format(
+                (self.base_memory_size + self.test_memory_size) / 10**9))
+
+        self.assertTrue(benchmark_data)
 
 
 if __name__ == "__main__":

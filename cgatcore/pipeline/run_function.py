@@ -133,5 +133,7 @@ def main(argv=None):
             "Expecting infile+outfile+params or infile+outfile or params")
 
     E.stop()
+
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

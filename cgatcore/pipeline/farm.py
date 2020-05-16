@@ -1,4 +1,4 @@
-##!/bin/env python
+# !/bin/env python
 '''farm.py - process data stream on cluster
 ===========================================
 
@@ -466,7 +466,7 @@ def build_command(data):
     cmd = re.sub("%STDIN%", filename, cmd)
 
     cmd += " 2>> {filename}.err > {filename}.out".format(filename=filename)
-    
+
     return cmd
 
 
@@ -707,7 +707,7 @@ def main(argv=None):
 
     P.get_parameters()
     P.start_session()
-    
+
     if not options.collect:
         tmpdir = os.path.abspath(tempfile.mkdtemp(dir=options.tmpdir))
 
@@ -870,6 +870,7 @@ def main(argv=None):
             niterations))
 
     E.stop()
+
 
 if __name__ == '__main__':
     sys.exit(main())

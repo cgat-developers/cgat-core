@@ -435,7 +435,7 @@ def iterate(infile):
         n += 1
         if n == 1:
             # replace non-alphanumeric characters with _
-            header = re.sub("[^a-zA-Z0-9_\s]", "_", line[:-1]).split()
+            header = re.sub(r"[^a-zA-Z0-9_\s]", "_", line[:-1]).split()
             DATA = collections.namedtuple("DATA", header)
             continue
 
@@ -550,6 +550,7 @@ def check_presence_of_files(filenames):
         if not os.path.exists(filename):
             missing.append(filename)
     return missing
+
 
 SYMBOLS = {
     'customary': ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'),
@@ -685,8 +686,8 @@ def convert_dictionary_values(d, map={}):
        supply map = {'default' : "int", "id" : "str" }
     """
 
-    rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
-    rx_float = re.compile("^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
+    rx_int = re.compile(r"^\s*[+-]*[0-9]+\s*$")
+    rx_float = re.compile(r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
 
     # pre-process with 'default'
     if "default" in map:
@@ -1410,7 +1411,8 @@ def mount_file(fn):
         try:
             shutil.rmtree(mountpoint)
         except OSError as ex:
-            E.warn("could not delete mountpoint {}: {}".format(mountpoint, str(ex)))
+            E.warn("could not delete mountpoint {}: {}".format(
+                mountpoint, str(ex)))
     else:
         yield fn
 

@@ -1,0 +1,126 @@
+.. _S3:
+
+==============
+AWS S3 Storage
+==============
+
+This section described how to interact with amazon cloud simple
+remote storage (S3). In order to interact with the S3 resource we
+use the `boto3 <https://boto3.readthedocs.io>`_ SDK.
+
+This is a work in progress and we would really like feedback for extra features or if there
+are any bugs then please report them as `issues on github <https://github.com/cgat-developers/cgat-core/issues>`_.
+
+
+Setting up credentials
+----------------------
+
+In order to use the AWS remote feature you will need to configure
+your credentials (The access key and secret key). You can set up
+these credentials by adding the keys as environment variables in
+a file `~/.aws/credentials` as detailed in the `boto3 configuration page <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration>`_. In brief you will need to add the keys as follows::
+
+    [default]
+    aws_access_key_id = YOUR_ACCESS_KEY
+    aws_secret_access_key = YOUR_SECRET_KEY
+
+These access keys can be found within your S3 AWS console and you can access them by following these steps:
+* `Log in to your AWS Management Console. <http://aws.amazon.com/>`_
+* Click on your user name at the top right of the page.
+* Click My Security Credentials.
+* Click Users in left hand menu and select a user.
+* Click the Security credentials tab.
+* YOUR_ACCESS_KEY is located in the Access key section
+
+If you have lost YOUR_SECRET_KEY then you will need to Create a new access key, please see `AWS documentation <https://aws.amazon.com/blogs/security/wheres-my-secret-access-key/>`_ on how to do this. Please not that every 90 days AWS will rotate your access keys.
+
+In additon, you may also want to configure the default region::
+
+    [default]
+    region=us-east-1
+
+Once configuration variables have been created then you are ready to interact
+with the S3 storage.
+
+Download from AWS S3
+--------------------
+
+Using remote files with AWS can be acieved easily by using `download`, `upload` and `delete_file` functions that are written into a RemoteClass.
+
+Firstly you will need to initiate the class as follows::
+
+    from cgatcore.remote.aws import *
+    S3 = S3RemoteObject()
+
+In order to download a file and use it within the decorator you can follows the example::
+
+    @transform(S3.download('aws-test-boto',"pipeline.yml", "./pipeline.yml"),
+           regex("(.*)\.(.*)"),
+           r"\1.counts")
+
+This will download the file `pipeline.yml` in the AWS bucket `aws-test-boto` locally to `./pipeline.yml` 
+and it will be picked up by the decoratory function as normal.
+
+Upload to AWS S3
+----------------
+
+In order to upload files to aws S3 you simply need to run::
+
+    S3.upload('aws-test-boto',"pipeline2.yml", "./pipeline.yml")
+
+This will upload to the `aws-test-boto` S3 bucket the `./pipeline.yml` file and it will be saved as
+`pipeline2.yml` in that bucket.
+
+Delete file from AWS S3
+-----------------------
+
+In order to delete a file from the AWS S3 bucket then you simply run::
+
+    S3.delete_file('aws-test-boto',"pipeline2.yml")
+
+This will delete the `pipeline2.yml` file from the `aws-test-boto` bucket.
+
+Functional example
+------------------
+
+As a simple example, the following one function pipeline demonstrates the way you can interact with AWS S3::
+
+    from ruffus import *
+    import sys
+    import os
+    import cgatcore.experiment as E
+    from cgatcore import pipeline as P
+    from cgatcore.remote.aws import *
+
+    # load options from the config file
+    PARAMS = P.get_parameters(
+        ["%s/pipeline.yml" % os.path.splitext(__file__)[0],
+    	 "../pipeline.yml",
+     	 "pipeline.yml"])
+
+    S3 = S3RemoteObject()
+
+
+    @transform(S3.download('aws-test-boto',"pipeline.yml", "./pipeline.yml"),
+           regex("(.*)\.(.*)"),
+           r"\1.counts")
+    def countWords(infile, outfile):
+        '''count the number of words in the pipeline configuration files.'''
+
+    	# Upload file to S3
+    	S3.upload('aws-test-boto',"pipeline2.yml", "/ifs/projects/adam/test_remote/data/pipeline.yml")
+
+    	# the command line statement we want to execute
+    	statement = '''awk 'BEGIN { printf("word\\tfreq\\n"); } 
+    	{for (i = 1; i <= NF; i++) freq[$i]++}
+    	END { for (word in freq) printf "%%s\\t%%d\\n", word, freq[word] }'
+    	< %(infile)s > %(outfile)s'''
+
+   	 P.run(statement)
+
+   	  # Delete file from S3
+    	  S3.delete_file('aws-test-boto',"pipeline2.yml")
+
+    	  @follows(countWords)
+    	  def full():
+              pass

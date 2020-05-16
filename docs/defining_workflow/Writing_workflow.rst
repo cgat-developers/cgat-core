@@ -15,23 +15,23 @@ The explicit aim of CGAT-core is to allow users to quickly and easily build thei
 When building pipelines it is often useful to keep in mind the following philosophy:
 
 Flexibility
-    There are always new tools and insights that could be incorporated into a pipeline. Ultimately, a pipeline should be flexible and the code should not constraining you implimenting new features.
+    There are always new tools and insights that could be incorporated into a pipeline. Ultimately, a pipeline should be flexible and the code should not constrain you when implimenting new features.
 Scriptability
-    The pipeline should be scriptable, i.e, the whole pipeline can be run within another pipeline. Similarly, parts of a pipeline can be duplicated to process several data streams in parallel. This is a crucial feature in genome studies as a single analysis will not permit making inferences by itself. For example, consider you find in ChIP-Seq data from a particular transcription factor that it binds frequently in introns. You will need to run the same analysis on data from other transcription factors in order to assess if intronic binding is remarkable. When CGAT write a pipeline we usually write a command line script and then run this script as a command line statement in the pipeline.
+    The pipeline should be scriptable, i.e, the whole pipeline can be run within another pipeline. Similarly, parts of a pipeline can be duplicated to process several data streams in parallel. This is a crucial feature in genome studies as a single analysis will not permit making inferences by itself. When we write a pipeline we usually attempt to write a command line script (and include it in the CGAT-apps repository) and then run this script as a command line statement in the pipeline.
 Reproducibility
     The pipeline is fully automated. The same inputs and configuration will produce the same outputs.
 Reusability
-    The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (pipeline.ini).
+    The pipeline should be able to be re-used on similar data, preferably only requiring changes to a configuration file (pipeline.yml).
 Archivability
-    Once finished, the whole project should be able to archived without too many major dependencies on external data. This should be a simple process and hence all project data should be self-contained. It should not involve going through various directories or databases to figure out which files and tables belong to a project or a project depends on.
+    Once finished, the whole project should be able to be archived without too many major dependencies on external data. This should be a simple process and hence all project data should be self-contained. It should not involve going through various directories or databases to figure out which files and tables belong to a project or a project depends on.
 
 .. _defining_workflow-building:
 
 Building a pipeline
 -------------------
 
-The best way to build a pipeline is to start from an example. In `cgat-showcase <>`_ we have two pipelines that
-show users how simple and complex workflows can be generated to aid computational analysis. 
+The best way to build a pipeline is to start from an example. In `cgat-showcase <https://cgat-showcase.readthedocs.io/en/latest/index.html>`_ we have a toy example of an RNA-seq 
+analysis pipeline that aims to show users how simple workflows can be generated with minimal code. `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ demonstrates a set of complex workflows. 
 
 For a step by step tutorial on how to run the pipelines please refer to our :ref:`getting_started-Tutorial`.
 
@@ -40,9 +40,10 @@ For help on how to construct pipelines from scratch please continue reading for 
 In an empty directory you will need to make a new directory and then a python file
 with the same name. For example::
 
-   mkdir test && touch test
+   mkdir test && touch pipeline_test.py
 
-All pipelines require a yml configuration file contained within the test/ directory::
+All pipelines require a yml configuration file that will allow you to add configurable values to modify the behaviour of your code.
+This is placed within the test/ directory, which should have the same name as the name of your pipeline_test.py file::
 
    touch test/pipeline.yml
 
@@ -58,7 +59,7 @@ Therefore, if you wish to create a module file, we usually save this file in the
    import ModuleTest
 
 This section describes how pipelines can be constructed using the
-:mod:`pipeline` module in cgat-core. The pipeline.py module contains a variety of
+:mod:`pipeline` module in cgat-core. The `pipeline <https://github.com/cgat-developers/cgat-core/tree/master/cgatcore/pipeline>`_ module contains a variety of
 useful functions for pipeline construction.
 
 .. _defining_workflow-p-input:
@@ -66,7 +67,7 @@ useful functions for pipeline construction.
 pipeline input
 --------------
 
-pipelines are executed within a dedicated working
+Pipelines are executed within a dedicated working
 directory. They usually require the following files within this
 directory:
 
@@ -117,13 +118,24 @@ Import statements
 
 In order to run our pipelines you will need to import the cgatcore python
 modules into your pipeline. For every CGAT pipeline we recommend importing the
-basic modules as follows.
+basic modules as follows. Then any additional modules can be imported as required.
 
 .. code-block:: python
 
+   from ruffus import *
    import cgatcore.experiment as E
    from cgatcore import pipeline as P
    import cgatcore.iotools as iotools
+
+Selecting the appropriate Ruffus decorator
+------------------------------------------
+
+Before starting to write a pipeline it is always best to map out
+on a whiteboard the the steps and flow of your potential pipeline. This will allow you
+to identify the input and outputs of each task. Once you have assessed this then the next step is
+to identify which Ruffus decorator you require. Documentation on each decorator can be found in the
+`ruffus documentation <http://www.ruffus.org.uk/decorators/decorators.html>`_
+
 
 
 Running commands within tasks
@@ -132,11 +144,11 @@ Running commands within tasks
 To run a command line program within a pipeline task, build a
 statement and call the :meth:`pipeline.run` method::
 
-   @files( '*.unsorted', suffix('.unsorted'), '.sorted')
+   @transform( '*.unsorted', suffix('.unsorted'), '.sorted')
    def sortFile( infile, outfile ):
 
        statement = '''sort %(infile)s > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 On calling the :meth:`pipeline.run` method, the environment of the
 caller is examined for a variable called ``statement``. The variable
@@ -147,11 +159,11 @@ are substituted with the values of the variables ``infile`` and
 
 The same mechanism also permits setting configuration parameters, for example::
 
-   @files( '*.unsorted', suffix('.unsorted'), '.sorted')
+   @transform( '*.unsorted', suffix('.unsorted'), '.sorted')
    def sortFile( infile, outfile ):
 
        statement = '''sort -t %(tmpdir)s %(infile)s > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 will automatically substitute the configuration parameter ``tmpdir``
 into the command. See ConfigurationValues_ for more on using configuration
@@ -164,24 +176,24 @@ command is used to check for an error. Thus, if an upstream command
 fails, it will go unnoticed.  To detect these errors, insert
 ``&&`` between commands. For example::
 
-   @files( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted)
+   @transform( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted)
    def sortFile( infile, outfile ):
 
        statement = '''gunzip %(infile)s %(infile)s.tmp &&
 		      sort -t %(tmpdir)s %(infile)s.tmp > %(outfile)s &&
 		      rm -f %(infile)s.tmp
-       P.run()
+       P.run(statement)
 
 Of course, the statement aboved could be executed more efficiently
 using pipes::
 
-   @files( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted.gz')
+   @transform( '*.unsorted.gz', suffix('.unsorted.gz'), '.sorted.gz')
    def sortFile( infile, outfile ):
 
        statement = '''gunzip < %(infile)s 
 		      | sort -t %(tmpdir)s 
 		      | gzip > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 The pipeline inserts code automatically to check for error return
 codes if multiple commands are combined in a pipe.
@@ -200,7 +212,7 @@ To run the command from the previous section on the cluster::
        statement = '''gunzip < %(infile)s 
 		      | sort -t %(tmpdir)s 
 		      | gzip > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 The pipeline will automatically create the job submission files,
 submit the job to the cluster and wait for its return.
@@ -225,7 +237,7 @@ variables::
        statement = '''gunzip < %(infile)s 
 		      | sort -t %(tmpdir)s 
 		      | gzip > %(outfile)s'''
-       P.run()
+       P.run(statement)
 
 The above statement will be run in the queue ``longjobs.q`` at a
 priority of ``-10``.  Additionally, it will be executed in the
@@ -241,7 +253,7 @@ Array jobs can be controlled through the ``job_array`` variable::
        statement = '''grid_task.bash %(infile)s %(outfile)s
           > %(outfile)s.$SGE_TASK_ID 2> %(outfile)s.err.$SGE_TASK_ID
        '''
-       P.run()
+       P.run(statement)
 
 
 Note that the :file:`grid_task.bash` file must be grid engine
@@ -256,7 +268,58 @@ files will remain after aborted runs to be cleaned up manually.
 
 .. _defining_workflow-databases:
 
-databases
+
+Useful information regarding decorators
+---------------------------------------
+
+To see a full list of ruffus decorators that control the flow of the pipeline please
+see the `ruffus documentation <http://www.ruffus.org.uk/decorators/decorators.html>`_.
+
+However, during peer review it was pointed out that it would be helpful to include a few examples of
+how you can modify the infile name and transform it to the output filename. There are a few ways of doing this:
+
+The first way is to capture the suffix so the outfile is placed into the same folder as the infile::
+
+  # pairs are a tuple of read pairs (read1, read2) 
+  @transform(pairs,
+             suffix(.fastq.gz),
+	     ("_trimmed.fastq.gz", "_trimmed.fastq.gz"))
+
+This will transform an input <name_of_file>.fastq.gz and result in an output
+with a new siffix <name_of_file>_trimmed.fastq.gz.
+
+Another way to add a output file into aother filer is to use a regex::
+
+   @follows(mkdir("new_folder.dir"))
+   @transform(pairs,
+             regex((\S+).fastq.gz),
+	     (r"new_folder.dir/\1_trimmed.fastq.gz", r"new_folder.dir/\1_trimmed.fastq.gz"))
+
+This can also be achieved using the formatter function::
+
+  @follows(mkdir("new_folder.dir"))
+   @transform(pairs,
+             formatter((\S+).fastq.gz),
+	     ("new_folder.dir/{SAMPLE[0]}_trimmed.fastq.gz", r"new_folder.dir/{SAMPLE[0]}_trimmed.fastq.gz"))
+
+
+Combining commands together
+---------------------------
+
+In order to combine commands together you will need to use `&&`
+to make sure your commands are chained correctly. For example::
+
+  statement = """
+              module load cutadapt &&
+	      cutadapt ....
+              """
+
+  P.run(statement)
+  
+If you didnt have the `&&` then the command will fail because the cutadapt command will be
+executed as part of the module load statement.
+	     
+Databases
 ---------
 
 Loading data into the database
@@ -354,7 +417,51 @@ task. For example we impliment this in our pipelines as::
     statement = '''LANG=en_GB.UTF-8 multiqc . -f;
                    mv multiqc_report.html MultiQC_report.dir/'''
 
-    P.run(statement) 
+    P.run(statement)
+
+
+Rmarkdown
+=========
+
+MultiQC is very useful for running third generation computational biology tools. However, currently
+it is very difficult to use it as a bespoke reporting tool. Therefore, one was of running
+bespoke reports is using the Rmarkdown framework and using the render functionality of knitr.
+
+Rendering an Rmarkdown document is very easy if you place the .Rmd file in the same test/ directory as the pipeline.yml.
+Then the file can easily run using::
+
+    @follows(mkdir("Rmarkdown.dir"))
+    @originate("Rmarkdown.dir/report.html")
+    def render_rmarkdown(outfile):
+
+    NOTEBOOK_ROOT = os.path.join(os.path.dirname(__file__), "test")
+
+    statement = '''cp %(NOTEBOOK_ROOT)s/report.Rmd Rmarkdown.dir &&
+                   cd Rmarkdown.dir/ && R -e "rmarkdown::render('report.Rmd',encoding = 'UTF-8')" '''
+
+    P.run(statement)
+
+This should generate an html output of whatever report your wrote for your particular task.
+
+
+Jupyter notebook
+================
+
+Another bespoke reporting that we also perform for our pipelines is to use a Jupyter notebook
+implimentation and execture it in using the commandline. All that is required is that you
+place your jupyter notebook into the same test/ directory as the pipeline.yml and call the following::
+
+    @follows(mkdir("jupyter_report.dir"))
+    @originate("jupyter_report.dir/report.html")
+    def render_jupyter(outfile):
+    
+    NOTEBOOK_ROOT = os.path.join(os.path.dirname(__file__), "test")
+
+    statement = '''cp %(NOTEBOOK_ROOT)s/report.ipynb jupyter_report.dir/ && cd jupyter_report.dir/ &&
+                    jupyter nbconvert --ExecutePreprocessor.timeout=None --to html --execute *.ipynb --allow-errors;
+
+    P.run(statement)
+
 
 .. _ConfigurationValues:
 
@@ -380,8 +487,10 @@ Here is the order in which the configuration values are read:
 2. Parameters stored in :file:`pipeline.yml` files in different locations.
 3. Variables declared in the ruffus tasks calling ``P.run()``;
    e.g. ``job_memory=32G``
-4. ``cluster_*`` options specified in the command line;
+4. :file:`.cgat.yml` file in the home directory
+5. ``cluster_*`` options specified in the command line;
    e.g. ``python pipeline_example.py --cluster-parallel=dedicated make full``
+
 
 This means that configuration values for the cluster provided as
 command-line options will have the highest priority. Therefore::
@@ -480,3 +589,23 @@ get an task-specific parameter values in a python task, use::
 Thus, task specific are implemented generically using the
 :meth:`pipeline.run` mechanism, but pipeline authors need to
 explicitely code for track specific parameters.
+
+Using different conda environments
+----------------------------------
+
+In addition to running a pipeline using your default conda environment, specifying `job_condaenv="<name of conda environment>"` to the
+P.run() function allows you run the statement using a different conda environment. For example::
+
+    @follows(mkdir("MultiQC_report.dir"))
+    @originate("MultiQC_report.dir/multiqc_report.html")
+    def renderMultiqc(infile):
+    '''build mulitqc report'''
+
+    statement = '''LANG=en_GB.UTF-8 multiqc . -f;
+                   mv multiqc_report.html MultiQC_report.dir/'''
+
+    P.run(statement, job_condaenv="multiqc")
+
+This can be extremely useful when you have python 2 only code but are running in a python 3 environment. Or
+more importantly, when you have conflicting dependancies in software and you need to seperate them out into
+two different environments.xs

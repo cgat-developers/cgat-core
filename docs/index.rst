@@ -4,6 +4,12 @@
 CGAT-core documentation!
 ========================
 
+.. image:: https://img.shields.io/github/license/cgat-developers/cgat-core.svg
+    :alt: Licence
+
+.. image:: https://img.shields.io/conda/v/bioconda/cgatcore.svg
+    :alt: Conda
+
 .. image:: https://readthedocs.org/projects/cgat-core/badge/?version=latest
     :target: http://cgat-core.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
@@ -20,20 +26,18 @@ CGAT-core documentation!
     :alt: Twitter URL
 
 
-
-other shields:
-Conda
-
 CGAT-core is a workflow management system that allows users to quickly and reproducibly build scalable
 data analysis pipelines. CGAT-core is  a set of libraries and helper functions used to enable researchers
 to design and build computational workflows for the analysis of large-scale data-analysis.
 
-Used in combination with CGAT-apps, we have deomonstrated the functionality of our
-flexible implementation using a set of well documented, easy to install and easy to use workflows,
-called CGAT-flow.
+Used in combination with `CGAT-apps <https://github.com/cgat-developers/cgat-apps>`_, we have deomonstrated the functionality of our
+flexible workflow management system using a simple RNA-seq pipeline in `cgat-showcase <https://github.com/cgat-developers/cgat-showcase>`_.
 
 CGAT-core is open-sourced, powerful and user-friendly, and has been continually developed
 as a Next Generation Sequencing (NGS) workflow management system over the past 10 years.
+
+For more advanced examples of cgatcore utilities please refer to our `cgat-flow <https://github.com/cgat-developers/cgat-flow>`_ repository, however
+please be aware that this is in constant development and has many software dependancies.
 
 
 .. _manual-quick_example:
@@ -42,7 +46,10 @@ as a Next Generation Sequencing (NGS) workflow management system over the past 1
 Citation
 --------
 
-To be added....
+Our workflow management system is published in F1000 Research:
+
+Cribbs AP, Luna-Valero S, George C et al. CGAT-core: a python framework for building scalable, reproducible computational biology workflows [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2019, 8:377
+(`https://doi.org/10.12688/f1000research.18674.1 <https://doi.org/10.12688/f1000research.18674.1>`_)
 
 .. _manual-support:
 
@@ -51,7 +58,6 @@ Support
 -------
 
 - Please refer to our :ref:`FAQ` section
-- In case of questions, please add these to `stack overflow <https://stackoverflow.com/search?q=cgat>`_
 - For bugs and issues, please raise an issue on `github <https://github.com/cgat-developers/cgat-core>`_
 - For contributions, please refer to our contributor section and `github <https://github.com/cgat-developers/cgat-core>`_ source code.
 
@@ -59,9 +65,12 @@ Support
 Examples
 --------
 
-**CGAT-flow**
+**cgat-showcase**
+   This is a toy example of how to develop a simple workflow. Please refer to the `github page <https://github.com/cgat-developers/cgat-showcase>`_ and the `documentation <https://cgat-showcase.readthedocs.io/en/latest/>`_.
+**cgat-flow**
    As an example of the flexibility and functionality of CGAT-core, we have developed a set of fully tested production pipelines for automating the analysis of our NGS data. Please refer to the `github <https://github.com/cgat-developers/cgat-flow>`_ page for information on how to install and use our code.
 **Single cell RNA-seq**
+   The cribbs lab use CGAT-core to develop pseudoalignment pipelines for single cell `dropseq methods <https://github.com/Acribbs/single-cell>`_ 
    The sansom lab use the CGAT-core workflow engine to develop single cell `sequencing analysis workflows <https://github.com/sansomlab/tenx>`_.
 
 
@@ -83,6 +92,7 @@ For a non-comprehensive list of citations please see our :citing and :ref:`proje
    :hidden:
 
    getting_started/Installation.rst
+   getting_started/Cluster_config.rst
    getting_started/Examples.rst
    getting_started/Tutorial.rst
 
@@ -93,7 +103,18 @@ For a non-comprehensive list of citations please see our :citing and :ref:`proje
    :hidden:
 
    defining_workflow/Writing_workflow.rst
+   defining_workflow/run_parameters.rst
    defining_workflow/Tutorial.rst
+
+.. toctree::
+   :caption: Working with remote files
+   :name: build
+   :maxdepth: 1
+   :hidden:
+
+   remote/S3.rst
+   remote/GC.rst
+   remote/Azure.rst
 
 .. toctree::
    :caption: cgatcore functions
