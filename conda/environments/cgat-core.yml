@@ -16,7 +16,7 @@ dependencies:
 - pytest
 - pytest-pep8
 - drmaa
-- pyyaml
+- pyyaml>=0.5.1
 - ruffus
 - setuptools
 - six
