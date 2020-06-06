@@ -52,8 +52,7 @@ def quote_tablename(name, quote_char="_", flavour="sqlite"):
 def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
              index_label=None, schema=None,
              dtype=None, **kwargs):
-    '''Function to load a table with the reqirement for a primary key.
-       --add-index is also required for the primary key'''
+    '''Function to load a table with the reqirement for a primary key.'''
     if dtype is not None:
         from sqlalchemy.types import to_instance, TypeEngine
         for col, my_type in dtype.items():
