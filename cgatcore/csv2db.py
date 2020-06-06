@@ -60,7 +60,7 @@ def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
                 raise ValueError('The type of %s is not a SQLAlchemy '
                                  'type ' % col)
 
-    table = pd.io.sql.SQLTable(name, self,
+    table = pandas.io.sql.SQLTable(name, self,
                                frame=frame,
                                index=index,
                                if_exists=if_exists,
@@ -68,7 +68,6 @@ def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
                                schema=schema,
                                dtype=dtype, **kwargs)
     table.create()
-    table.insert(chunksize)
 
 
 def get_flavour(database_url):
@@ -157,12 +156,13 @@ def run(infile, options, chunk_size=10000):
                 else:
                     empty_columns = empty_columns.intersection(empty_list)
 
-            if not options.keys:
+            if options.keys:
                 pandas_sql = pandas.io.sql.pandasSQL_builder(dbhandle, schema=None)
+                E.info("here ==========")
 
                 to_sql_pkey(pandas_sql, df, tablename,
                             index=True, index_label=options.indices,
-                            keys=options.keys, if_exists='replace')            
+                            keys=" ".join(options.keys), if_exists='replace')
             
             else:
                 df.to_sql(tablename,
