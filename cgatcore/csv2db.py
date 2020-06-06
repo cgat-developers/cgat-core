@@ -49,6 +49,28 @@ def quote_tablename(name, quote_char="_", flavour="sqlite"):
         return re.sub("[-(),\[\]]:", "_", name)
 
 
+def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
+             index_label=None, schema=None, chunksize=None,
+             dtype=None, **kwargs):
+    '''Function to load a table with the reqirement for a primary key'''
+    if dtype is not None:
+        from sqlalchemy.types import to_instance, TypeEngine
+        for col, my_type in dtype.items():
+            if not isinstance(to_instance(my_type), TypeEngine):
+                raise ValueError('The type of %s is not a SQLAlchemy '
+                                 'type ' % col)
+
+    table = pd.io.sql.SQLTable(name, self,
+                               frame=frame,
+                               index=index,
+                               if_exists=if_exists,
+                               index_label=index_label,
+                               schema=schema,
+                               dtype=dtype, **kwargs)
+    table.create()
+    table.insert(chunksize)
+
+
 def get_flavour(database_url):
     if "sqlite" in database_url:
         return "sqlite"
@@ -135,11 +157,19 @@ def run(infile, options, chunk_size=10000):
                 else:
                     empty_columns = empty_columns.intersection(empty_list)
 
-            df.to_sql(tablename,
-                      con=dbhandle,
-                      schema=options.database_schema,
-                      index=False,
-                      if_exists=if_exists)
+            if not options.keys:
+                pandas_sql = pandas.io.sql.pandasSQL_builder(dbhandle, schema=None)
+
+                to_sql_pkey(pandas_sql, df, tablename,
+                            index=True, index_label=options.indices,
+                            keys=options.keys, if_exists='replace')            
+            
+            else:
+                df.to_sql(tablename,
+                          con=dbhandle,
+                          schema=options.database_schema,
+                          index=False,
+                          if_exists=if_exists)
 
             counter.input += len(df)
     except pandas.errors.EmptyDataError:
@@ -275,6 +305,10 @@ def buildParser():
                         action="store_true",
                         help="append to existing table.")
 
+    parser.add_argument("--primary-key", dest="keys",
+                        action="append",
+                        help="creat a primary key for a given column.")
+
     parser.add_argument(
         "--utf8", dest="utf", action="store_true",
         help="standard in is encoded as UTF8 rather than local default"
@@ -303,6 +337,7 @@ def buildParser():
         retry=False,
         utf=False,
         append=False,
+        keys=[]
     )
 
     return parser
