@@ -49,6 +49,28 @@ def quote_tablename(name, quote_char="_", flavour="sqlite"):
         return re.sub("[-(),\[\]]:", "_", name)
 
 
+def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
+             index_label=None, schema=None,
+             dtype=None, **kwargs):
+    '''Function to load a table with the reqirement for a primary key.'''
+    if dtype is not None:
+        from sqlalchemy.types import to_instance, TypeEngine
+        for col, my_type in dtype.items():
+            if not isinstance(to_instance(my_type), TypeEngine):
+                raise ValueError('The type of %s is not a SQLAlchemy '
+                                 'type ' % col)
+
+    table = pandas.io.sql.SQLTable(name, self,
+                               frame=frame,
+                               index=index,
+                               if_exists=if_exists,
+                               index_label=index_label,
+                               schema=schema,
+                               dtype=dtype, **kwargs)
+    table.create()
+    table.insert()
+
+
 def get_flavour(database_url):
     if "sqlite" in database_url:
         return "sqlite"
@@ -135,11 +157,19 @@ def run(infile, options, chunk_size=10000):
                 else:
                     empty_columns = empty_columns.intersection(empty_list)
 
-            df.to_sql(tablename,
-                      con=dbhandle,
-                      schema=options.database_schema,
-                      index=False,
-                      if_exists=if_exists)
+            if options.keys:
+                pandas_sql = pandas.io.sql.pandasSQL_builder(dbhandle, schema=None)
+
+                to_sql_pkey(pandas_sql, df, tablename,
+                            index=True,
+                            keys=" ".join(options.keys), if_exists='replace')
+            
+            else:
+                df.to_sql(tablename,
+                          con=dbhandle,
+                          schema=options.database_schema,
+                          index=False,
+                          if_exists=if_exists)
 
             counter.input += len(df)
     except pandas.errors.EmptyDataError:
@@ -218,16 +248,6 @@ def buildParser():
                         help="force lower case column names "
                         )
 
-    # parser.add_argument("-u", "--ignore-duplicates", dest="ignore_duplicates",
-    #                   action="store_true",
-    #                   help="ignore columns with duplicate names "
-    #                   "[default=%default].")
-
-    # parser.add_argument("-s", "--ignore-same", dest="ignore_same",
-    #                   action="store_true",
-    #                   help="ignore columns with identical values "
-    #                   "[default=%default].")
-
     parser.add_argument("--chunk-size", dest="chunk_size", type=int,
                         help="chunk-size, upload table in block of rows "
                         )
@@ -248,11 +268,6 @@ def buildParser():
     parser.add_argument("-e", "--ignore-empty", dest="ignore_empty",
                         action="store_true",
                         help="ignore columns which are all empty ")
-
-    # parser.add_argument("-q", "--quick", dest="insert_quick",
-    #                   action="store_true",
-    #                   help="try quick file based import - needs to "
-    #                   "be supported by the backend [default=%default].")
 
     parser.add_argument("-i", "--add-index", dest="indices", type=str,
                         action="append",
@@ -275,6 +290,10 @@ def buildParser():
                         action="store_true",
                         help="append to existing table.")
 
+    parser.add_argument("--primary-key", dest="keys",
+                        action="append",
+                        help="creat a primary key for a given column.")
+
     parser.add_argument(
         "--utf8", dest="utf", action="store_true",
         help="standard in is encoded as UTF8 rather than local default"
@@ -286,7 +305,6 @@ def buildParser():
         lowercase_columns=False,
         tablename="csv",
         from_zipped=False,
-        ignore_duplicates=False,
         ignore_identical=False,
         ignore_empty=False,
         insert_many=False,
@@ -298,11 +316,11 @@ def buildParser():
         backend="sqlite",
         indices=[],
         missing_values=("na", "NA", ),
-        insert_quick=False,
         allow_empty=False,
         retry=False,
         utf=False,
         append=False,
+        keys=[]
     )
 
     return parser
