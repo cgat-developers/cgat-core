@@ -20,7 +20,7 @@ sudo: required
 # http://mailchi.mp/travis-ci/ubuntu-trusty-update-2017q4-and-new-ltslatest-process?e=073d892e7f
 group: edge
 
-language: generic
+language: python
 
 python:
   - "3.7"
