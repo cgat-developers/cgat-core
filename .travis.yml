@@ -22,6 +22,11 @@ group: edge
 
 language: generic
 
+python:
+  - "3.7"
+  - "3.8"
+  - "3.8-dev"  # 3.8 development branch
+
 env:
   - TEST_ALL=1
 
@@ -30,6 +35,5 @@ env:
 services:
   - xvfb
 
-script: 
+script:
   - travis_wait 30 ./install.sh --travis
-
