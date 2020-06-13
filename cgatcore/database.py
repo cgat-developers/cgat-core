@@ -12,6 +12,7 @@ Reference
 import time
 import re
 import sqlalchemy
+import apsw
 from pandas import DataFrame
 
 
@@ -274,3 +275,106 @@ def write_DataFrame(dataframe,
                 db_execute(cc, istat)
 
         cc.close()
+
+
+def __getfiledata(path):
+    '''
+    pull out the column and data information from the tsv file
+    in preperation for loading to virtual table.
+    '''
+    columns=None
+    data=[]
+    counter=1
+    for p in path:
+        with open(p, "r") as infile:
+            for line in infile:
+                counter+=1
+
+                if columns is None:
+                    columns= line
+
+                data.append(line.replace("\t", ",").strip().split(','))
+    return columns, data
+
+
+def apsw_connect(dbname=None, modname="tsv"):
+    '''
+    attempt to connect to apsw database.
+
+    This method will attempt to establish a
+    connection to a database .
+
+    Arguments
+    ---------
+    modname: string
+        A module name to register with sqlite
+    dbname: string
+        A database name to connect to
+
+    Returns
+    -------
+    con : object
+        A connection to a database.
+    '''
+
+    dbh =  apsw.Connection(dbname)
+
+    cursor=connection.cursor()
+
+    connection.createmodule(modname, __VirtualTable())
+
+    return cursor
+
+
+class __VirtualTable:
+    '''
+    Create a virtual table from  a tsv file.
+    '''
+    def Create(self, db, modulename, dbname, tablename, *args):
+        columns,data=_getfiledata([x for x in args])
+        columns = ['%s' % (x,) for x in columns.split()]
+        schema="create table foo("+ ','.join(["'%s'" %  x for x in columns]) +")"
+
+        return schema,__Table(columns,data)
+    Connect=Create
+
+# Represents a table
+class __Table:
+    def __init__(self, columns, data):
+        self.columns=columns
+        self.data=data
+
+    def BestIndex(self, *args):
+        return None
+
+    def Open(self):
+        return __Cursor(self)
+
+    def Disconnect(self):
+        pass
+
+    Destroy=Disconnect
+
+# Represents a cursor
+class __Cursor:
+    def __init__(self, table):
+        self.table=table
+
+    def Filter(self, *args):
+        self.pos=0
+
+    def Eof(self):
+        return self.pos>=len(self.table.data)
+
+    def Rowid(self):
+        return self.table.data[self.pos][0]
+
+    def Column(self, col):
+
+        return self.table.data[self.pos][col]
+
+    def Next(self):
+        self.pos+=1
+
+    def Close(self):
+        pass
