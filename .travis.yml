@@ -20,12 +20,7 @@ sudo: required
 # http://mailchi.mp/travis-ci/ubuntu-trusty-update-2017q4-and-new-ltslatest-process?e=073d892e7f
 group: edge
 
-language: python
-
-python:
-  - "3.7"
-  - "3.8"
-  - "3.8-dev"  # 3.8 development branch
+language: generic
 
 env:
   - TEST_ALL=1
