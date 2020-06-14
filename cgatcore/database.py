@@ -277,7 +277,7 @@ def write_DataFrame(dataframe,
         cc.close()
 
 
-def __getfiledata(path):
+def _getfiledata(path):
     '''
     pull out the column and data information from the tsv file
     in preperation for loading to virtual table.
@@ -317,16 +317,16 @@ def apsw_connect(dbname=None, modname="tsv"):
         A connection to a database.
     '''
 
-    dbh =  apsw.Connection(dbname)
+    connection =  apsw.Connection(dbname)
 
     cursor=connection.cursor()
 
-    connection.createmodule(modname, __VirtualTable())
+    connection.createmodule(modname, _VirtualTable())
 
     return cursor
 
 
-class __VirtualTable:
+class _VirtualTable:
     '''
     Create a virtual table from  a tsv file.
     '''
@@ -335,11 +335,11 @@ class __VirtualTable:
         columns = ['%s' % (x,) for x in columns.split()]
         schema="create table foo("+ ','.join(["'%s'" %  x for x in columns]) +")"
 
-        return schema,__Table(columns,data)
+        return schema,_Table(columns,data)
     Connect=Create
 
 # Represents a table
-class __Table:
+class _Table:
     def __init__(self, columns, data):
         self.columns=columns
         self.data=data
@@ -348,7 +348,7 @@ class __Table:
         return None
 
     def Open(self):
-        return __Cursor(self)
+        return _Cursor(self)
 
     def Disconnect(self):
         pass
@@ -356,7 +356,7 @@ class __Table:
     Destroy=Disconnect
 
 # Represents a cursor
-class __Cursor:
+class _Cursor:
     def __init__(self, table):
         self.table=table
 
