@@ -116,7 +116,7 @@ class DRMAACluster(object):
             error_msg = None
             if retval.exitStatus == 0:
                 if retval.wasAborted is True:
-                    get_logger().warning(
+                    error_msg = (
                         "Job {} has exit status 0, but marked as hasAborted=True, hasExited={} "
                         "(Job may have been cancelled by the user or the scheduler due to memory constraints)"
                         "The stderr was \n{}\nstatement = {}".format(
