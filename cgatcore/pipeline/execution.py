@@ -47,7 +47,7 @@ GLOBAL_SESSION = None
 
 # Timeouts for event loop
 GEVENT_TIMEOUT_STARTUP = 5
-GEVENT_TIMEOUT_WAIT = 1
+GEVENT_TIMEOUT_WAIT = 30
 
 
 # dictionary mapping job metrics to data type
