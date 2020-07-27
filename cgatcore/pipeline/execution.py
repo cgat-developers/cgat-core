@@ -446,11 +446,11 @@ class Executor(object):
         self.monitor_interval_queued = kwargs.get('monitor_interval_queued', None)
         if self.monitor_interval_queued is None:
             self.monitor_interval_queued = get_params()["cluster"].get(
-                'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT))
+                'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT)
         self.monitor_interval_running = kwargs.get('monitor_interval_running', None)
         if self.monitor_interval_running is None:
             self.monitor_interval_running = get_params()["cluster"].get(
-                'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT))
+                'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
 
     def __enter__(self):
         return self
