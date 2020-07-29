@@ -30,3 +30,4 @@ dependencies:
 - google-cloud-sdk
 - ftputil
 - pysftp
+- apsw
