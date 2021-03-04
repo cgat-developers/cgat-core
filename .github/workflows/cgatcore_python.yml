@@ -29,7 +29,3 @@ jobs:
           conda info
           conda list
           conda install pytest
-      - shell: bash -l {0}
-        run: |
-          pytest -v tests/test_import.py
-          pytest -v tests/test_style.py
