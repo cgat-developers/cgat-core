@@ -28,7 +28,7 @@ jobs:
         run: |
           conda info
           conda list
-          conda env upate -f ./requirements.yml
+          conda env update -f ./requirements.yml
       - shell: bash -l {0}
         run: |
           pytest -v tests/test_import.py
