@@ -24,11 +24,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge, bioconda, defaults
           channel-priority: true
-          environment-file: ./conda/environments/cgat-core.yml
       - shell: bash -l {0}
         run: |
           conda info
           conda list
+          conda env upate -f ./requirements.yml
       - shell: bash -l {0}
         run: |
           pytest -v tests/test_import.py
