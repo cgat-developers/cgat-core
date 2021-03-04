@@ -28,5 +28,5 @@ jobs:
           conda list
       - shell: bash -l {0}
         run: |
-          nosetests -v tests/test_import.py
-          nosetests -v tests/test_style.py
+          pytest -v tests/test_import.py
+          pytest -v tests/test_style.py
