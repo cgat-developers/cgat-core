@@ -7,7 +7,7 @@ channels:
 
 dependencies:
 # python dependencies
-- python
+- python==3.7
 - gevent
 - numpy
 - pandas
