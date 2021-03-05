@@ -36,5 +36,6 @@ jobs:
           conda env update --file ./cgat-core.yml
         working-directory: ./conda/environments
       - name: Test
+        run: |
         conda env export
         pytest --pep8 tests
