@@ -37,5 +37,5 @@ jobs:
         working-directory: ./conda/environments
       - name: Test
         run: |
-        conda env export
-        pytest --pep8 tests
+          conda env export
+          pytest --pep8 tests
