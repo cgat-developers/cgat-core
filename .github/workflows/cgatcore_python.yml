@@ -24,11 +24,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge, bioconda, defaults
           channel-priority: true
-      - shell: bash -l {0}
+      - name: Show conda
         run: |
           conda info
           conda list
           conda install pytest
+      - name: Upate conda
+        run: |
           echo $PWD
           conda env update --file ./conda/environments/cgat-core.yml
         working-directory: ./conda/environments
