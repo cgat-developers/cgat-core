@@ -29,6 +29,7 @@ jobs:
           conda info
           conda list
           conda install pytest
+          ls -R
       - name: Upate conda
         run: |
           conda env update --file /home/runner/work/cgat-core/cgat-core/conda/environments/cgat-core.yml
