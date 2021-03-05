@@ -37,4 +37,5 @@ jobs:
         run: |
           eval "$(conda shell.bash hook)"
           conda activate cgat-core
+          python setup.py install
           pytest --pep8 tests
