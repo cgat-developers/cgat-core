@@ -31,5 +31,5 @@ jobs:
           conda install pytest
       - name: Upate conda
         run: |
-          conda env update --file $GITHUB_WORKSPACE/conda/environments/cgat-core.yml
+          conda env update --file /home/runner/work/cgat-core/conda/environments/cgat-core.yml
         working-directory: ./conda/environments
