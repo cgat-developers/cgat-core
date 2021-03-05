@@ -29,9 +29,9 @@ jobs:
         run: |
           conda info
           conda list
-      - name: Upate conda
+      - name: Update conda
         run: |
-          conda env update --file ./cgat-core.yml
+          mamba env create --file ./cgat-core.yml
         working-directory: ./conda/environments
       - name: Test
         run: |
