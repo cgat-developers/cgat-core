@@ -30,11 +30,11 @@ jobs:
           conda info
           conda list
           conda install pytest
-          ls -R
       - name: Upate conda
         run: |
           conda env update --file ./cgat-core.yml
         working-directory: ./conda/environments
       - name: Test
         run: |
+          conda activate cgat-core
           pytest --pep8 tests
