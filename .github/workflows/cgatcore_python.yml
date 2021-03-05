@@ -29,3 +29,7 @@ jobs:
           conda info
           conda list
           conda install pytest
+      -name: install conda env
+        run: |
+          conda env update --file ./cgat-core.yml
+        working-directory: ./conda/environments
