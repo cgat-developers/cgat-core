@@ -29,13 +29,12 @@ jobs:
         run: |
           conda info
           conda list
-          conda install pytest
       - name: Upate conda
         run: |
           conda env update --file ./cgat-core.yml
-          eval "$(conda shell.bash hook)"
-          conda activate cgat-core
         working-directory: ./conda/environments
       - name: Test
         run: |
+          eval "$(conda shell.bash hook)"
+          conda activate cgat-core
           pytest --pep8 tests
