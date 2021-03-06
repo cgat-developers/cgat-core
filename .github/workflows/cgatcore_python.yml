@@ -41,7 +41,6 @@ jobs:
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
-          auto-activate-base: false
       - name: Show conda
         run: |
           conda info
