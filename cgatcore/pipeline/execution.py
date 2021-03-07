@@ -193,8 +193,16 @@ def get_conda_environment_directory(env_name):
         elif len(parts) == 3:
             env_map[parts[0]] = parts[2]
     if env_name not in env_map:
+        
+        # IMS: conda envs can be located at abitrary locations, and not be
+        # registered with conda. NB this can't tellif the directory contains a
+        # valid env.
+        if os.path.exists(env_name) and os.path.isdir(env_name):
+            return(env_name)
+
         raise IOError("conda environment {} does not exist, found {}".format(
             env_name, sorted(env_map.keys())))
+            
     return env_map[env_name]
 
 
