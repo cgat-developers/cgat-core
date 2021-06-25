@@ -7,6 +7,8 @@ channels:
 
 dependencies:
 # python dependencies
+- nose
+- pycodestyle
 - python
 - gevent
 - numpy
