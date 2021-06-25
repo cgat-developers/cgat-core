@@ -44,4 +44,7 @@ jobs:
       - name: Test
         run: |
           python setup.py install
-          pytest --pep8 tests
+          pycodestyle --ignore=E501 tests
+          python tests/template_pipeline.py make all
+          nosetests -v tests/test_*
+
