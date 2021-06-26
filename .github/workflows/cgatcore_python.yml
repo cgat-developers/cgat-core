@@ -51,4 +51,5 @@ jobs:
           nosetests -v tests/test_pipeline_cluster.py
           nosetests -v tests/test_pipeline_control.py
           nosetests -v tests/test_pipeline_execution.py
-
+          pytest tests/test_pipeline_cli.py
+          pytest tests/test_pipeline_actions.py
