@@ -39,7 +39,7 @@ from cgatcore.pipeline.cluster import get_queue_manager, JobInfo
 try:
     import drmaa
     HAS_DRMAA = True
-except (ImportError, RuntimeError):
+except (ImportError, RuntimeError, OSError):
     HAS_DRMAA = False
 
 # global drmaa session
@@ -193,7 +193,7 @@ def get_conda_environment_directory(env_name):
         elif len(parts) == 3:
             env_map[parts[0]] = parts[2]
     if env_name not in env_map:
-        
+
         # IMS: conda envs can be located at abitrary locations, and not be
         # registered with conda. NB this can't tellif the directory contains a
         # valid env.
@@ -202,7 +202,7 @@ def get_conda_environment_directory(env_name):
 
         raise IOError("conda environment {} does not exist, found {}".format(
             env_name, sorted(env_map.keys())))
-            
+
     return env_map[env_name]
 
 

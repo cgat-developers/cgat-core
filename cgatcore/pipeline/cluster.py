@@ -24,7 +24,7 @@ import cgatcore.experiment as E
 
 try:
     import drmaa
-except (ImportError, RuntimeError):
+except (ImportError, RuntimeError, OSError):
     pass
 
 
