@@ -307,7 +307,7 @@ import yaml
 # import convenience functions from logging
 import logging
 import logging.config
-from logging import warning, info, log, debug, error, critical
+from logging import warning, info, log, debug, error, critical, exception
 from logging import warning as warn
 
 
