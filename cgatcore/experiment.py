@@ -1010,7 +1010,7 @@ def start(parser=None,
             if os.path.exists(global_options.log_config_filename):
                 # configure logging from filename
                 with open(global_options.log_config_filename) as inf:
-                    dict_yaml = yaml.load(inf)
+                    dict_yaml = yaml.safe_load(inf)
                 logging.config.dictConfig(dict_yaml)
             else:
                 raise OSError("file {} with logging configuration does not exist".format(
@@ -1242,7 +1242,7 @@ def start(parser=None,
             if os.path.exists(global_args.log_config_filename):
                 # configure logging from filename
                 with open(global_args.log_config_filename) as inf:
-                    dict_yaml = yaml.load(inf)
+                    dict_yaml = yaml.safe_load(inf)
                 logging.config.dictConfig(dict_yaml)
             else:
                 raise OSError("file {} with logging configuration does not exist".format(
