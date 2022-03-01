@@ -202,8 +202,8 @@ class TestExecutionRunLocal(unittest.TestCase):
     def test_job_should_pass_if_enough_memory_required(self):
         outfile = os.path.join(self.work_dir, "out")
         benchmark_data = P.run(
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
+            "python -c 'from array import array; "
+            "a = array(\"B\", (1 for x in range(0, {memory}))); "
             "out = open(\"{outfile}\", \"w\"); "
             "out.write(str(len(a)) + \"\\n\"); "
             "out.close()'".format(
@@ -246,8 +246,8 @@ class TestExecutionRunLocal(unittest.TestCase):
         outfile = os.path.join(self.work_dir, "out")
 
         benchmark_data = P.run(
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
+            "python -c 'from array import array; "
+            "a = array(\"B\", (1 for x in range(0, {memory}))); "
             "out = open(\"{outfile}\", \"w\"); "
             "out.write(str(len(a)) + \"\\n\"); "
             "out.close()'".format(
@@ -428,8 +428,8 @@ class TestExecutionRunCluster(TestExecutionRunLocal):
         # is reported.
         outfile = os.path.join(self.work_dir, "out")
         benchmark_data = P.run(
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, 10 * {memory}), numpy.int8); "
+            "python -c 'from array import array; "
+            "a = array(\"B\", (1 for x in range(0, {memory}))); "
             "numpy.save(\"outfile\", a); "
             "'".format(
                 memory=self.test_memory_size,
