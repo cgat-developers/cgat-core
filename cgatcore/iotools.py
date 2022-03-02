@@ -42,7 +42,6 @@ import gzip
 import subprocess
 import itertools
 import tempfile
-import paramiko
 import cgatcore.experiment as E
 
 
@@ -1415,21 +1414,3 @@ def mount_file(fn):
                 mountpoint, str(ex)))
     else:
         yield fn
-
-
-def remote_file_exists(filename, hostname=None, expect=False):
-
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        ssh.connect(hostname, username=getpass.getuser())
-    except paramiko.SSHException as ex:
-        # disable test on VM, key issues.
-        return expect
-    except TimeoutError as ex:
-        # times out on OS X, localhost
-        return expect
-
-    stdin, stdout, ssh_stderr = ssh.exec_command("ls -d {}".format(filename))
-    out = stdout.read().decode("utf-8")
-    return out.strip() == filename

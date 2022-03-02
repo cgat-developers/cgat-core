@@ -13,7 +13,6 @@ dependencies:
 - gevent
 - numpy
 - pandas
-- paramiko
 - pep8
 - pytest
 - pytest-pep8

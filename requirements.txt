@@ -4,5 +4,4 @@ pandas
 ruffus
 pep8
 yaml
-paramiko
 apsw
