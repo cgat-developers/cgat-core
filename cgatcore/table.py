@@ -78,8 +78,7 @@ def read_and_group_table(infile, args):
     assert args.group_column not in args.columns
 
     converter = float
-    new_fields = [fields[args.group_column]] + [fields[x]
-                                                   for x in args.columns]
+    new_fields = [fields[args.group_column]] + [fields[x] for x in args.columns]
 
     if args.group_function == "min":
         f = min

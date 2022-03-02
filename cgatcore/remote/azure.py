@@ -3,7 +3,7 @@ import sys
 
 try:
     import azure
-except:
+except Exception:
     raise ImportError(
         "The azure-batch and azure-mgmt-storage packages needs to be installed.")
 
@@ -27,7 +27,7 @@ class AzureRemoteObject(AbstractRemoteObject):
 
         try:
             self._Azureobject.bucket_exists(bucket_name)
-        except:
+        except Exception:
             raise KeyError("No bucket exists, please specify a valid bucket")
         return True
 
@@ -62,7 +62,7 @@ class AzureConnection():
         try:
             self.Azure.exists(container_name)
             return True
-        except:
+        except Exception:
             return False
 
     def remote_download(self,
@@ -81,7 +81,7 @@ class AzureConnection():
             dest_path = os.path.realpath(os.path.expanduser(dest_dir))
         try:
             self.Azure.get_blob_to_path(container_name, blob_name, dest_path)
-        except:
+        except Exception:
             raise Exception('''No file was downloaded, make sure the correct
                             file or path is specified. It currently is: {}'''.format(dest_path))
 
@@ -108,7 +108,7 @@ class AzureConnection():
         try:
             self.Azure.create_blob_from_path(
                 container_name, blob_name, file_dir)
-        except:
+        except Exception:
             raise Exception(
                 "filename is not correctly specified: {}".format(file_dir))
 
@@ -122,6 +122,6 @@ class AzureConnection():
 
         try:
             self.Azure.delete_blob(container_name, blob_name)
-        except:
+        except Exception:
             raise Exception(
                 "No deletion of blob took place, please make sure the container_name and/or blob_name are correct")

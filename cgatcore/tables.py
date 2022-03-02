@@ -128,9 +128,9 @@ def concatenate_tables(outfile, options, args):
             # table is empty
             continue
 
-        def _output_line(l, map_old2new):
+        def _output_line(line, map_old2new):
             data = [missing_value] * len(all_titles)
-            for x, value in enumerate(l[:-1].split("\t")):
+            for x, value in enumerate(line[:-1].split("\t")):
                 if map_old2new[x] is None:
                     continue
 
@@ -147,8 +147,8 @@ def concatenate_tables(outfile, options, args):
             map_old2new = list(range(len(all_titles)))
             _output_line(first_lines[nindex], map_old2new)
 
-        for l in table:
-            _output_line(l, map_old2new)
+        for line in table:
+            _output_line(line, map_old2new)
 
 
 def join_tables(outfile, options, args):
@@ -248,7 +248,7 @@ def join_tables(outfile, options, args):
                     try:
                         p = re.search(
                             options.regex_filename, prefix).groups()[0]
-                    except:
+                    except Exception:
                         E.warn("can't extract title from filename %s" % prefix)
                         p = "unknown"
                     titles.append("%s" % p)
@@ -285,7 +285,7 @@ def join_tables(outfile, options, args):
                     titles = ["ID"]
                 try:
                     p = re.search(options.regex_filename, prefix).groups()[0]
-                except:
+                except Exception:
                     E.warn("can't extract title from filename %s" % prefix)
                     p = "unknown"
                 titles.append("%s" % p)
@@ -597,13 +597,13 @@ def main(argv=sys.argv):
         if "," in args.headers:
             args.headers = args.headers.split(",")
         else:
-            args.headers = re.split("\s+", args.headers.strip())
+            args.headers = re.split(r"\s+", args.headers.strip())
 
     if args.sort and args.sort not in ("numeric", "alphabetic"):
         if "," in args.sort:
             args.sort = args.sort.split(",")
         else:
-            args.sort = re.split("\s+", args.sort)
+            args.sort = re.split(r"\s+", args.sort)
 
     if args.merge:
         args.columns = []

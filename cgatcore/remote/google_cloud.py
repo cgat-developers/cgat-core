@@ -22,7 +22,7 @@ class GCRemoteObject(AbstractRemoteObject):
     def exists(self, bucket):
         try:
             self._S3object.bucket_exists(bucket_name)
-        except:
+        except Exception:
             raise KeyError("The bucket does not exist in google storage")
 
     def download(self, bucket_name, key, file_dir):
@@ -75,7 +75,7 @@ class GCConnection():
 
         try:
             blob.download_to_filename(dest_path)
-        except:
+        except Exception:
             raise Exception('''no file was downloaded, make sure the correct
                             file or path is specified. It currently is: {}'''.format(dest_path))
 
@@ -104,7 +104,7 @@ class GCConnection():
 
         try:
             blob.upload_from_filename(file_path)
-        except:
+        except Exception:
             raise Exception(
                 "filename is not correctly specified: {}".format(file_dir))
 

@@ -282,16 +282,16 @@ def _getfiledata(path):
     pull out the column and data information from the tsv file
     in preperation for loading to virtual table.
     '''
-    columns=None
-    data=[]
-    counter=1
+    columns = None
+    data = []
+    counter = 1
     for p in path:
         with open(p, "r") as infile:
             for line in infile:
-                counter+=1
+                counter += 1
 
                 if columns is None:
-                    columns= line
+                    columns = line
 
                 data.append(line.replace("\t", ",").strip().split(','))
     return columns, data
@@ -317,9 +317,9 @@ def apsw_connect(dbname=None, modname="tsv"):
         A connection to a database.
     '''
 
-    connection =  apsw.Connection(dbname)
+    connection = apsw.Connection(dbname)
 
-    cursor=connection.cursor()
+    cursor = connection.cursor()
 
     connection.createmodule(modname, _VirtualTable())
 
@@ -331,18 +331,19 @@ class _VirtualTable:
     Create a virtual table from  a tsv file.
     '''
     def Create(self, db, modulename, dbname, tablename, *args):
-        columns,data=_getfiledata([x for x in args])
-        columns = ['%s' % (x,) for x in columns.split()]
-        schema="create table foo("+ ','.join(["'%s'" %  x for x in columns]) +")"
+        columns, data = _getfiledata([x for x in args])
+        columns = ['%s' % (x, ) for x in columns.split()]
+        schema = "create table foo(" + ','.join(["'%s'" % x for x in columns]) + ")"
 
-        return schema,_Table(columns,data)
-    Connect=Create
+        return schema, _Table(columns, data)
+    Connect = Create
+
 
 # Represents a table
 class _Table:
     def __init__(self, columns, data):
-        self.columns=columns
-        self.data=data
+        self.columns = columns
+        self.data = data
 
     def BestIndex(self, *args):
         return None
@@ -353,18 +354,19 @@ class _Table:
     def Disconnect(self):
         pass
 
-    Destroy=Disconnect
+    Destroy = Disconnect
+
 
 # Represents a cursor
 class _Cursor:
     def __init__(self, table):
-        self.table=table
+        self.table = table
 
     def Filter(self, *args):
-        self.pos=0
+        self.pos = 0
 
     def Eof(self):
-        return self.pos>=len(self.table.data)
+        return self.pos >= len(self.table.data)
 
     def Rowid(self):
         return self.table.data[self.pos][0]
@@ -374,7 +376,7 @@ class _Cursor:
         return self.table.data[self.pos][col]
 
     def Next(self):
-        self.pos+=1
+        self.pos += 1
 
     def Close(self):
         pass

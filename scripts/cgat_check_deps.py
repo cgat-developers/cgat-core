@@ -160,7 +160,7 @@ def cleanup_statement(statement):
     # cleanup whitespaces, tabs, and newlines
     result = " ".join(statement.split())
     # cleanup parameter interpolation
-    result = re.sub("\%\(\w+\)\w+", "CGATparameter", result)
+    result = re.sub(r"\%\(\w+\)\w+", "CGATparameter", result)
     return result
 
 

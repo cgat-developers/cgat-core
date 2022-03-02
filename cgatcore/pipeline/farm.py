@@ -1,5 +1,5 @@
 # !/bin/env python
-'''farm.py - process data stream on cluster
+r'''farm.py - process data stream on cluster
 ===========================================
 
 
@@ -310,29 +310,29 @@ class ResultBuilder:
         """parse header in infile."""
         # skip comments until header
         while 1:
-            l = infile.readline()
-            if not l:
+            line = infile.readline()
+            if not line:
                 break
             if self.header_regex:
                 if self.header_regex.search(l):
                     break
-            elif l[0] != "#":
+            elif line[0] != "#":
                 break
             options.stdlog.write(l)
 
         # print only the first header and check if
         # all the headers are the same.
         if self.header:
-            if self.header != l:
+            if self.header != line:
                 raise ValueError(
                     "inconsistent header in file %s\n"
-                    "got=%s\nexpected=%s" % (infile, l, self.header))
+                    "got=%s\nexpected=%s" % (infile, line, self.header))
         else:
-            outfile.write(l)
-            self.header = l
-            self.nfields = l.count("\t")
+            outfile.write(line)
+            self.header = line
+            self.nfields = line.count("\t")
             if self.nfields == 0:
-                E.warn("only single column in header: %s" % l[:-1])
+                E.warn("only single column in header: %s" % line[:-1])
 
             if self.mFieldIndex is None and self.mFieldName:
                 try:
@@ -356,28 +356,28 @@ class ResultBuilder:
             if options.output_header:
                 self.parseHeader(infile, outfile, options)
 
-            for l in infile:
+            for line in infile:
                 nfields = l.count("\t")
 
-                if l[0] == "#":
+                if line[0] == "#":
                     options.stdlog.write(l)
                 elif self.nfields is not None and nfields != self.nfields:
                     # validate number of fields in row, raise warning
                     # for those not matching and skip.
                     E.warn(
                         "# line %s has unexpected number of fields: %i != %i" %
-                        (l[:-1], nfields, self.nfields))
+                        (line[:-1], nfields, self.nfields))
                 else:
                     if self.mFieldIndex is not None:
-                        data = l[:-1].split("\t")
+                        data = line[:-1].split("\t")
                         try:
                             data[self.mFieldIndex] = self.mMapper(
                                 fi, data[self.mFieldIndex])
                         except IndexError:
                             raise IndexError(
                                 "can not find field %i in %s" %
-                                (self.mFieldIndex, l))
-                        l = "\t".join(data) + "\n"
+                                (self.mFieldIndex, line))
+                        line = "\t".join(data) + "\n"
 
                     outfile.write(l)
             infile.close()
@@ -391,15 +391,15 @@ class ResultBuilderFasta(ResultBuilder):
     def __call__(self, filenames, outfile, options):
         for fi, fn in filenames:
             infile = iotools.open_file(fn, "r")
-            for l in infile:
-                if l[0] == "#":
-                    options.stdlog.write(l)
+            for line in infile:
+                if line[0] == "#":
+                    options.stdlog.write(line)
                     continue
-                elif l[0] == ">":
-                    x = re.search(">(\S+)", l[:-1])
+                elif line[0] == ">":
+                    x = re.search(r">(\S+)", line[:-1])
                     id = self.mMapper(fi, x.groups()[0])
-                    l = ">%s%s" % (id, l[x.end(0):])
-                outfile.write(l)
+                    line = ">%s%s" % (id, line[x.end(0):])
+                outfile.write(line)
             infile.close()
 
 
@@ -442,8 +442,8 @@ class ResultBuilderLog(ResultBuilder):
             infile = iotools.open_file(fn, "r")
             outfile.write(
                 "######### logging output for %s ###################\n" % fi)
-            for l in infile:
-                outfile.write(l)
+            for line in infile:
+                outfile.write(line)
             infile.close()
 
 
@@ -456,7 +456,7 @@ def build_command(data):
         os.mkdir(outdir)
         cmd = re.sub("%DIR%", outdir, cmd)
 
-    x = re.search("'--log=(\S+)'", cmd) or re.search("'--L\s+(\S+)'", cmd)
+    x = re.search(r"'--log=(\S+)'", cmd) or re.search(r"'--L\s+(\S+)'", cmd)
     if x:
         logfile = filename + ".log"
         cmd = cmd[:x.start()] + "--log=%s" % logfile + cmd[x.end():]
@@ -791,7 +791,7 @@ def main(argv=None):
                           )(started_requests, options.stdout, options)
 
         # deal with logfiles : combine them into a single file
-        rr = re.search("'--log=(\S+)'", cmd) or re.search("'--L\s+(\S+)'", cmd)
+        rr = re.search(r"'--log=(\S+)'", cmd) or re.search(r"'--L\s+(\S+)'", cmd)
         if rr:
             E.info("logging output goes to %s" % rr.groups()[0])
             logfile = iotools.open_file(rr.groups()[0], "a")

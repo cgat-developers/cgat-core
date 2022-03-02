@@ -89,10 +89,10 @@ class EventPool(gevent.pool.Pool):
 
     def __len__(self):
         """make sure that pool always evaluates to true."""
-        l = gevent.pool.Pool.__len__(self)
-        if not l:
+        line = gevent.pool.Pool.__len__(self)
+        if not line:
             return 1
-        return l
+        return line
 
     def close(self):
         pass
@@ -1081,7 +1081,7 @@ class LoggingFilterProgress(logging.Filter):
                 self.jobs[job_name] = (task_name, job_name)
                 if job_status == "update":
                     to_run += 1
-                self.map_job2task[re.sub("\s", "", job_name)] = task_name
+                self.map_job2task[re.sub(r"\s", "", job_name)] = task_name
 
             self.tasks[task_name] = [task_status,
                                      len(jobs),

@@ -59,7 +59,7 @@ class S3Connection():
         try:
             self.S3.meta.client.head_bucket(Bucket=bucket_name)
             return True
-        except:
+        except Exception:
             return False
 
     def remote_download(self,
@@ -80,7 +80,7 @@ class S3Connection():
 
         try:
             f.download_file(dest_path)
-        except:
+        except Exception:
             raise Exception('''no file was downloaded, make sure the correct
                             file or path is specified. It currently is: {}'''.format(dest_path))
 
@@ -109,7 +109,7 @@ class S3Connection():
 
         try:
             f.upload_file(file_path)
-        except:
+        except Exception:
             raise Exception(
                 "filename is not correctly specified: {}".format(file_dir))
 

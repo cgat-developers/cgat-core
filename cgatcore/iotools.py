@@ -808,7 +808,7 @@ def nested_iter(nested):
                     yield x
 
 
-def flatten(l, ltypes=(list, tuple)):
+def flatten(nested_list, ltypes=(list, tuple)):
     '''flatten a nested list.
 
     This method works with any list-like container
@@ -816,7 +816,7 @@ def flatten(l, ltypes=(list, tuple)):
 
     Arguments
     ---------
-    l : list
+    nested_list : list
         A nested list.
     ltypes : list
         A list of valid container types.
@@ -826,19 +826,19 @@ def flatten(l, ltypes=(list, tuple)):
     list : list
         A flattened list.
     '''
-    ltype = type(l)
-    l = list(l)
+    ltype = type(nested_list)
+    nested_list = list(nested_list)
     i = 0
-    while i < len(l):
-        while isinstance(l[i], ltypes):
-            if not l[i]:
-                l.pop(i)
+    while i < len(nested_list):
+        while isinstance(nested_list[i], ltypes):
+            if not nested_list[i]:
+                nested_list.pop(i)
                 i -= 1
                 break
             else:
-                l[i:i + 1] = l[i]
+                nested_list[i:i + 1] = nested_list[i]
         i += 1
-    return ltype(l)
+    return ltype(nested_list)
 
 
 def invert_dictionary(dict, make_unique=False):
@@ -1106,19 +1106,19 @@ def read_map(infile,
     # default is to return a tuple for multiple values
     datatype = None
 
-    for l in infile:
-        if l[0] == "#":
+    for line in infile:
+        if line[0] == "#":
             continue
         n += 1
 
         if has_header and n == 1:
             if columns == "all":
-                header = l[:-1].split("\t")
+                header = line[:-1].split("\t")
                 # remove the first column
                 datatype = collections.namedtuple("DATA", header[1:])
             continue
 
-        d = l[:-1].split("\t")
+        d = line[:-1].split("\t")
         if len(d) < 2:
             continue
         key = key_function(d[key_column])
@@ -1170,15 +1170,15 @@ def read_list(infile,
 
     m = []
     title = None
-    for l in infile:
-        if l[0] == "#":
+    for line in infile:
+        if line[0] == "#":
             continue
         if with_title and not title:
-            title = l[:-1].split("\t")[column]
+            title = line[:-1].split("\t")[column]
             continue
 
         try:
-            d = map_function(l[:-1].split("\t")[column])
+            d = map_function(line[:-1].split("\t")[column])
         except ValueError:
             continue
 
@@ -1243,20 +1243,20 @@ def readMultiMap(infile,
     m = dtype()
     r = dtype()
     n = 0
-    for l in infile:
-        if l[0] == "#":
+    for line in infile:
+        if line[0] == "#":
             continue
         n += 1
 
         if has_header and n == 1:
             continue
 
-        d = l[:-1].split("\t")
+        d = line[:-1].split("\t")
         try:
             key = map_functions[0](d[columns[0]])
             val = map_functions[1](d[columns[1]])
         except (ValueError, IndexError) as msg:
-            raise ValueError("parsing error in line %s: %s" % (l[:-1], msg))
+            raise ValueError("parsing error in line %s: %s" % (line[:-1], msg))
 
         if key not in m:
             m[key] = []
