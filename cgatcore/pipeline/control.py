@@ -18,6 +18,7 @@ from multiprocessing.pool import ThreadPool
 import multiprocessing
 import contextlib
 import collections
+from collections.abc import Mapping
 import json
 import logging
 import math
@@ -388,7 +389,7 @@ def peek_parameters(workingdir,
             if key.startswith("interface"):
                 if isinstance(value, str):
                     dump[key] = os.path.join(workingdir, value)
-                elif isinstance(value, collections.Mapping):
+                elif isinstance(value, Mapping):
                     for kkey, vvalue in list(value.items()):
                         value[key] = os.path.join(workingdir, vvalue)
 

@@ -14,11 +14,7 @@ import getpass
 import logging
 import re
 from collections import defaultdict
-try:
-    from collections.abc import Sequence, Mapping  # noqa
-except ImportError:
-    from collections import Sequence, Mapping  # noqa
-
+from collections.abc import Sequence, Mapping
 import yaml
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
