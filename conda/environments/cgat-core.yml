@@ -15,7 +15,7 @@ dependencies:
 - pandas
 - paramiko
 - pep8
-- pytest<=5.4.3
+- pytest
 - pytest-pep8
 - drmaa
 - pyyaml>=5.1
