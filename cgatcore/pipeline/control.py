@@ -1424,9 +1424,7 @@ def run_workflow(args, argv=None, pipeline=None):
                 logger.error("start of all error messages")
                 logger.error(ex)
                 logger.error("end of all error messages")
-
-                raise ValueError("pipeline failed with %i errors" %
-                                 len(ex.args)) from ex
+                raise ValueError("pipeline failed with errors") from ex
             else:
                 raise
 
