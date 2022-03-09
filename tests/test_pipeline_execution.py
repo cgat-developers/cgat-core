@@ -27,7 +27,7 @@ QUEUE_MANAGER = P.get_parameters().get("cluster", {}).get("queue_manager", None)
 def remote_file_exists(filename, hostname=None, expect=False):
 
     if not HAVE_PARAMIKO:
-        return True
+        return expect
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
