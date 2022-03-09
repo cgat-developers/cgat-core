@@ -7,15 +7,11 @@ channels:
 
 dependencies:
 # python dependencies
-- nose
-- pycodestyle
 - python
 - gevent
 - numpy
 - pandas
 - pep8
-- pytest
-- pytest-pep8
 - drmaa
 - pyyaml>=5.1
 - ruffus
@@ -32,3 +28,9 @@ dependencies:
 - ftputil
 - pysftp
 - apsw
+# Testing
+- nose
+- pycodestyle
+- paramiko
+- pytest
+- pytest-pep8
