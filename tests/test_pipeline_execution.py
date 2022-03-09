@@ -3,6 +3,7 @@
 import shutil
 import unittest
 import contextlib
+import getpass
 import socket
 import os
 import paramiko
@@ -421,7 +422,7 @@ class TestExecutionRunCluster(TestExecutionRunLocal):
         P.close_session()
 
     def file_exists(self, filename, hostname=None, expect=False):
-        return iotools.remote_file_exists(filename, hostname, expect)
+        return remote_file_exists(filename, hostname, expect)
 
     def test_job_should_fail_if_cancelled(self):
 
