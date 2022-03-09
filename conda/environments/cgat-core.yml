@@ -28,6 +28,7 @@ dependencies:
 - ftputil
 - pysftp
 - apsw
+- openssl
 # Testing
 - nose
 - pycodestyle
