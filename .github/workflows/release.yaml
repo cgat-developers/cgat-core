@@ -21,7 +21,7 @@ jobs:
         python-version: [3.9]
 
     steps:
-      - name: Checkout pysam
+      - name: Checkout cgatcore
         uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
