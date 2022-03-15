@@ -42,16 +42,16 @@ def quote_tablename(name, quote_char="_", flavour="sqlite"):
         # no special characters. Column names can not start with a number.
         if name[0] in "0123456789":
             name = "_" + name
-        return re.sub("[-(),\[\].:]", "_", name)
+        return re.sub(r"[-(),\[\].:]", "_", name)
     elif flavour in ("mysql", "postgres"):
         if name[0] in "0123456789":
             name = "_" + name
-        return re.sub("[-(),\[\]]:", "_", name)
+        return re.sub(r"[-(),\[\]]:", "_", name)
 
 
 def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
-             index_label=None, schema=None,
-             dtype=None, **kwargs):
+                index_label=None, schema=None,
+                dtype=None, **kwargs):
     '''Function to load a table with the reqirement for a primary key.'''
     if dtype is not None:
         from sqlalchemy.types import to_instance, TypeEngine
@@ -61,12 +61,12 @@ def to_sql_pkey(self, frame, name, if_exists='fail', index=True,
                                  'type ' % col)
 
     table = pandas.io.sql.SQLTable(name, self,
-                               frame=frame,
-                               index=index,
-                               if_exists=if_exists,
-                               index_label=index_label,
-                               schema=schema,
-                               dtype=dtype, **kwargs)
+                                   frame=frame,
+                                   index=index,
+                                   if_exists=if_exists,
+                                   index_label=index_label,
+                                   schema=schema,
+                                   dtype=dtype, **kwargs)
     table.create()
     table.insert()
 
@@ -163,7 +163,6 @@ def run(infile, options, chunk_size=10000):
                 to_sql_pkey(pandas_sql, df, tablename,
                             index=True,
                             keys=" ".join(options.keys), if_exists='replace')
-            
             else:
                 df.to_sql(tablename,
                           con=dbhandle,
@@ -350,7 +349,7 @@ def main(argv=sys.argv):
                 [x for x in map(replace_empty_strings,
                                 args.header_names.split(','))]
         else:
-            args.header_names = re.split("\s+", args.header_names.strip())
+            args.header_names = re.split(r"\s+", args.header_names.strip())
 
     run(infile, args)
 

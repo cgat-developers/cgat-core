@@ -18,6 +18,7 @@ from multiprocessing.pool import ThreadPool
 import multiprocessing
 import contextlib
 import collections
+from collections.abc import Mapping
 import json
 import logging
 import math
@@ -89,10 +90,10 @@ class EventPool(gevent.pool.Pool):
 
     def __len__(self):
         """make sure that pool always evaluates to true."""
-        l = gevent.pool.Pool.__len__(self)
-        if not l:
+        line = gevent.pool.Pool.__len__(self)
+        if not line:
             return 1
-        return l
+        return line
 
     def close(self):
         pass
@@ -388,7 +389,7 @@ def peek_parameters(workingdir,
             if key.startswith("interface"):
                 if isinstance(value, str):
                     dump[key] = os.path.join(workingdir, value)
-                elif isinstance(value, collections.Mapping):
+                elif isinstance(value, Mapping):
                     for kkey, vvalue in list(value.items()):
                         value[key] = os.path.join(workingdir, vvalue)
 
@@ -1081,7 +1082,7 @@ class LoggingFilterProgress(logging.Filter):
                 self.jobs[job_name] = (task_name, job_name)
                 if job_status == "update":
                     to_run += 1
-                self.map_job2task[re.sub("\s", "", job_name)] = task_name
+                self.map_job2task[re.sub(r"\s", "", job_name)] = task_name
 
             self.tasks[task_name] = [task_status,
                                      len(jobs),
@@ -1423,9 +1424,7 @@ def run_workflow(args, argv=None, pipeline=None):
                 logger.error("start of all error messages")
                 logger.error(ex)
                 logger.error("end of all error messages")
-
-                raise ValueError("pipeline failed with %i errors" %
-                                 len(ex.args)) from ex
+                raise ValueError("pipeline failed with errors") from ex
             else:
                 raise
 

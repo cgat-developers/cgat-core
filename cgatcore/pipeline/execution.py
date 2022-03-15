@@ -620,7 +620,7 @@ class Executor(object):
 
             tmpfile.write("\ntrap clean_all EXIT\n\n")
 
-            if self.job_memory not in("unlimited", "etc") and \
+            if self.job_memory not in ("unlimited", "etc") and \
                self.options.get("cluster_memory_ulimit", False):
                 # restrict virtual memory
                 # Note that there are resources in SGE which could do this directly

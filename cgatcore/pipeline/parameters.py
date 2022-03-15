@@ -14,11 +14,7 @@ import getpass
 import logging
 import re
 from collections import defaultdict
-try:
-    from collections.abc import Sequence, Mapping  # noqa
-except ImportError:
-    from collections import Sequence, Mapping  # noqa
-
+from collections.abc import Sequence, Mapping
 import yaml
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
@@ -309,9 +305,8 @@ def get_parameters(filenames=None,
         return PARAMS
 
     if filenames is None:
-        filenames = ["pipeline.yml"]
-
-    if isinstance(filenames, str):
+        filenames = ["pipeline.yml", "cgat.yml"]
+    elif isinstance(filenames, str):
         filenames = [filenames]
 
     old_id = id(PARAMS)
@@ -353,8 +348,7 @@ def get_parameters(filenames=None,
                           ".cgat.yml")
         if os.path.exists(fn):
             if 'pipeline.yml' in filenames:
-                index = filenames.index('pipeline.yml')
-                filenames.insert(index, fn)
+                filenames.insert(filenames.index('pipeline.yml'), fn)
             else:
                 filenames.append(fn)
 

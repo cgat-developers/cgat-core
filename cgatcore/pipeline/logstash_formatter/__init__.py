@@ -59,7 +59,7 @@ class LogstashFormatter(logging.Formatter):
         else:
             try:
                 self.source_host = socket.gethostname()
-            except:
+            except Exception:
                 self.source_host = ""
 
     def format(self, record):
@@ -82,7 +82,7 @@ class LogstashFormatter(logging.Formatter):
             msg = msg.format(**fields)
         except (KeyError, IndexError, ValueError):
             pass
-        except:
+        except Exception:
             # in case we can not format the msg properly we log it as is instead of crashing
             msg = msg
 
@@ -154,7 +154,7 @@ class LogstashFormatterV1(LogstashFormatter):
                 msg = msg.format(**fields)
             except (KeyError, IndexError):
                 pass
-            except:
+            except Exception:
                 # in case we can not format the msg properly we log it as is instead of crashing
                 msg = msg
             fields['message'] = msg

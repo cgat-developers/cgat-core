@@ -3,13 +3,46 @@
 import shutil
 import unittest
 import contextlib
+import getpass
 import socket
 import os
+try:
+    import paramiko
+    HAVE_PARAMIKO = True
+except ImportError:
+    # OSX tests fail with:
+    #    ImportError: dlopen(/usr/local/miniconda/envs/cgat-core/lib/python3.9/site-packages/cryptography/hazmat/bindings/_openssl.abi3.so, 2): Library not loaded: @rpath/libssl.1.1.dylib  # noqa
+    #      Referenced from: /usr/local/miniconda/envs/cgat-core/lib/python3.9/site-packages/cryptography/hazmat/bindings/_openssl.abi3.so  # noqa
+    #        Reason: image not found
+    # This seems to be temporary issue, see other projects. https://github.com/dask/distributed/issues/5601
+    HAVE_PARAMIKO = False
+
 import cgatcore.pipeline as P
 import cgatcore.iotools as iotools
 
 
 QUEUE_MANAGER = P.get_parameters().get("cluster", {}).get("queue_manager", None)
+
+
+def remote_file_exists(filename, hostname=None, expect=False):
+
+    if not HAVE_PARAMIKO:
+        return expect
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(hostname, username=getpass.getuser())
+    except paramiko.SSHException as ex:
+        # disable test on VM, key issues.
+        return expect
+    except TimeoutError as ex:
+        # times out on OS X, localhost
+        return expect
+
+    stdin, stdout, ssh_stderr = ssh.exec_command("ls -d {}".format(filename))
+    out = stdout.read().decode("utf-8")
+    return out.strip() == filename
 
 
 @contextlib.contextmanager
@@ -202,8 +235,8 @@ class TestExecutionRunLocal(unittest.TestCase):
     def test_job_should_pass_if_enough_memory_required(self):
         outfile = os.path.join(self.work_dir, "out")
         benchmark_data = P.run(
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
+            "python -c 'from array import array; "
+            "a = array(\"B\", (1 for x in range(0, {memory}))); "
             "out = open(\"{outfile}\", \"w\"); "
             "out.write(str(len(a)) + \"\\n\"); "
             "out.close()'".format(
@@ -246,8 +279,8 @@ class TestExecutionRunLocal(unittest.TestCase):
         outfile = os.path.join(self.work_dir, "out")
 
         benchmark_data = P.run(
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, {memory}), numpy.int8); "
+            "python -c 'from array import array; "
+            "a = array(\"B\", (1 for x in range(0, {memory}))); "
             "out = open(\"{outfile}\", \"w\"); "
             "out.write(str(len(a)) + \"\\n\"); "
             "out.close()'".format(
@@ -402,7 +435,7 @@ class TestExecutionRunCluster(TestExecutionRunLocal):
         P.close_session()
 
     def file_exists(self, filename, hostname=None, expect=False):
-        return iotools.remote_file_exists(filename, hostname, expect)
+        return remote_file_exists(filename, hostname, expect)
 
     def test_job_should_fail_if_cancelled(self):
 
@@ -428,8 +461,8 @@ class TestExecutionRunCluster(TestExecutionRunLocal):
         # is reported.
         outfile = os.path.join(self.work_dir, "out")
         benchmark_data = P.run(
-            "python -c 'import numpy; "
-            "a = numpy.array(numpy.arange(0, 10 * {memory}), numpy.int8); "
+            "python -c 'from array import array; "
+            "a = array(\"B\", (1 for x in range(0, {memory}))); "
             "numpy.save(\"outfile\", a); "
             "'".format(
                 memory=self.test_memory_size,

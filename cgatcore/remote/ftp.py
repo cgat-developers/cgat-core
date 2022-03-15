@@ -69,7 +69,7 @@ class FTPRemoteObject(AbstractRemoteObject):
             try:
                 conn.seep_alive()
                 conn.close()
-            except:
+            except Exception:
                 pass
 
     def exists(self):
@@ -90,7 +90,7 @@ class FTPRemoteObject(AbstractRemoteObject):
                         self.local_path, exists_ok=True))
                 try:
                     ftpc.syncronize_times()
-                except:
+                except Exception:
                     pass
 
                 ftpc.download(source=self.remote_path, target=self.local_path)

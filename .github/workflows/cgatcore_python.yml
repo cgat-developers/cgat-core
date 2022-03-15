@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
-        python-version: ["3.7", "3.8"]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     defaults:
       run:
@@ -44,12 +44,4 @@ jobs:
       - name: Test
         run: |
           python setup.py install
-          pycodestyle --ignore=E501 tests
-          python tests/template_pipeline.py make all
-          nosetests -v tests/test_import.py
-          nosetests -v tests/test_iotools.py
-          nosetests -v tests/test_pipeline_cluster.py
-          nosetests -v tests/test_pipeline_control.py
-          nosetests -v tests/test_pipeline_execution.py
-          pytest tests/test_pipeline_cli.py
-          pytest tests/test_pipeline_actions.py
+          ./all-tests.sh
