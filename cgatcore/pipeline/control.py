@@ -598,8 +598,9 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
         parser.add_option("--pipeline-action", dest="pipeline_action",
                           type="choice",
                           choices=(
-                              "make", "show", "plot", "dump", "config", "clone",
-                              "check", "regenerate", "state", "printconfig"),
+                              "make", "show", "plot", "dump", "config",
+                              "clone", "check", "regenerate", "state",
+                              "printconfig", "svg"),
                           help="action to take [default=%default].")
 
         parser.add_option("--pipeline-format", dest="pipeline_format",
@@ -759,8 +760,10 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
 
         parser.add_argument("--pipeline-action", dest="pipeline_action",
                             type=str,
-                            choices=("make", "show", "plot", "dump", "config", "clone",
-                                     "check", "regenerate", "state", "printconfig"),
+                            choices=(
+                                "make", "show", "plot", "dump", "config",
+                                "clone", "check", "regenerate", "state",
+                                "printconfig", "svg"),
                             help="action to take.")
 
         parser.add_argument("--pipeline-format", dest="pipeline_format",
