@@ -24,6 +24,7 @@ import logging
 import math
 import os
 import re
+import inspect
 import shutil
 import subprocess
 import sys
@@ -46,6 +47,7 @@ except (ImportError, RuntimeError, OSError):
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 from cgatcore.pipeline.parameters import input_validation, get_params, get_parameters
+from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
 from cgatcore.pipeline.execution import execute, start_session,\
     close_session
@@ -104,6 +106,28 @@ class EventPool(gevent.pool.Pool):
 
 def get_logger():
     return logging.getLogger("cgatcore.pipeline")
+
+
+def get_param_output(options=None):
+    """return a string containing script parameters.
+
+    Parameters are all variables that start with ``param_``.
+    """
+    result = []
+    if options:
+        members = options
+        for k, v in sorted(members.items()):
+            result.append("%-40s: %s" % (k, str(v)))
+    else:
+        vars = inspect.currentframe().f_back.f_locals
+        for var in [x for x in list(vars.keys()) if re.match("param_", x)]:
+            result.append("%-40s: %s" %
+                          (var, str(vars[var])))
+
+    if result:
+        return "\n".join(result)
+    else:
+        return "# no parameters."
 
 
 def write_config_files(pipeline_path, general_path):
@@ -1208,6 +1232,10 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     # line options as these should always take precedence over
     # configuration files.
     update_params_with_commandline_options(get_params(), args)
+ 
+    logger.info(get_header())
+
+    logger.info(get_param_output(get_params()))
 
     code_location, version = get_version()
     logger.info("code location: {}".format(code_location))
