@@ -1033,21 +1033,21 @@ def start(parser=None,
             else:
                 logformat = '%(asctime)s %(levelname)s %(message)s'
 
+            logging.basicConfig(
+                level=lvl,
+                format=logformat,
+                stream=global_options.stdlog)
+
+            # set up multi-line logging
+            # Note that .handlers is not part of the API, might change
+            # Solution is to configure handlers explicitely.
+            for handler in logging.getLogger().handlers:
+                handler.setFormatter(MultiLineFormatter(logformat))
+
         if logger_callback:
             logger = logger_callback(global_options)
         else:
             logger = logging.getLogger("cgatcore")
-
-        logging.basicConfig(
-            level=lvl,
-            format=logformat,
-            stream=global_options.stdlog)
-
-        # set up multi-line logging
-        # Note that .handlers is not part of the API, might change
-        # Solution is to configure handlers explicitely.
-        for handler in logging.getLogger().handlers:
-            handler.setFormatter(MultiLineFormatter(logformat))
 
         if global_options.tracing == "function":
             sys.settrace(trace_calls)
