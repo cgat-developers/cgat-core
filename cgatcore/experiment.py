@@ -1033,7 +1033,6 @@ def start(parser=None,
             else:
                 logformat = '%(asctime)s %(levelname)s %(message)s'
 
-
         if logger_callback:
             logger = logger_callback(global_options)
         else:
