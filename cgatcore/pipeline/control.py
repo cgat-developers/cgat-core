@@ -1232,7 +1232,7 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     # line options as these should always take precedence over
     # configuration files.
     update_params_with_commandline_options(get_params(), args)
- 
+
     logger.info(get_header())
 
     logger.info(get_param_output(get_params()))
