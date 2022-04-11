@@ -1049,9 +1049,6 @@ def start(parser=None,
         else:
             logger = logging.getLogger("cgatcore")
 
-        logger.info(get_header())
-        logger.info(get_params(global_options))
-
         if global_options.tracing == "function":
             sys.settrace(trace_calls)
 
