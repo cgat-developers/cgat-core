@@ -5,3 +5,5 @@ ruffus
 pep8
 yaml
 apsw
+pyyaml
+sqlalchemy
