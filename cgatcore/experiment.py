@@ -663,6 +663,88 @@ def get_args():
     return global_args
 
 
+def _setup_seed(options):
+    if options.random_seed is not None:
+        random.seed(options.random_seed)
+
+
+def _setup_pipes(options, add_pipe_options):
+    if add_pipe_options:
+        if options.stdout != sys.stdout:
+            options.stdout = open_file(options.stdout, "w")
+        if options.stderr != sys.stderr:
+            if options.stderr == "stderr":
+                options.stderr = options.stderr
+            else:
+                options.stderr = open_file(
+                    options.stderr, "w")
+        if options.stdlog != sys.stdout:
+            options.stdlog = open_file(options.stdlog, "a")
+        if options.stdin != sys.stdin:
+            options.stdin = open_file(options.stdin, "r")
+    else:
+        options.stderr = sys.stderr
+        options.stdout = sys.stdout
+        options.stdlog = sys.stdout
+        options.stdin = sys.stdin
+
+
+def _setup_logging(options, logger_callback):
+    # reset log_config_filename if logging.yml does not exist
+    if options.log_config_filename == "logging.yml" and not os.path.exists(
+            options.log_config_filename):
+        options.log_config_filename = None
+
+    if options.log_config_filename:
+        if os.path.exists(options.log_config_filename):
+            # configure logging from filename
+            with open(options.log_config_filename) as inf:
+                dict_yaml = yaml.safe_load(inf)
+            logging.config.dictConfig(dict_yaml)
+        else:
+            raise OSError("file {} with logging configuration does not exist".format(
+                options.log_config_filename))
+    else:
+        # configure logging from command line options
+        # map from 0-10 to logging scale
+        # 0: quiet
+        # 1: little verbositiy
+        # >1: increased verbosity
+        if options.loglevel == 0:
+            lvl = logging.ERROR
+        elif options.loglevel == 1:
+            lvl = logging.INFO
+        else:
+            lvl = logging.DEBUG
+
+        if options.stdout == options.stdlog:
+            logformat = '# %(asctime)s %(levelname)s %(message)s'
+        else:
+            logformat = '%(asctime)s %(levelname)s %(message)s'
+
+        logging.basicConfig(
+            level=lvl,
+            format=logformat,
+            stream=options.stdlog)
+
+        # set up multi-line logging
+        # Note that .handlers is not part of the API, might change
+        # Solution is to configure handlers explicitely.
+        for handler in logging.getLogger().handlers:
+            handler.setFormatter(MultiLineFormatter(logformat))
+
+    if logger_callback:
+        logger = logger_callback(options)
+    else:
+        logger = logging.getLogger("cgatcore")
+    return logger
+
+
+def _setup_tracing(options):
+    if options.tracing == "function":
+        sys.settrace(trace_calls)
+
+
 def start(parser=None,
           argv=None,
           quiet=False,
@@ -979,80 +1061,7 @@ def start(parser=None,
         if not no_parsing:
             (global_options, global_args) = parser.parse_args(argv[1:])
 
-        if global_options.random_seed is not None:
-            random.seed(global_options.random_seed)
-
-        if add_pipe_options:
-            if global_options.stdout != sys.stdout:
-                global_options.stdout = open_file(global_options.stdout, "w")
-            if global_options.stderr != sys.stderr:
-                if global_options.stderr == "stderr":
-                    global_options.stderr = global_options.stderr
-                else:
-                    global_options.stderr = open_file(
-                        global_options.stderr, "w")
-            if global_options.stdlog != sys.stdout:
-                global_options.stdlog = open_file(global_options.stdlog, "a")
-            if global_options.stdin != sys.stdin:
-                global_options.stdin = open_file(global_options.stdin, "r")
-        else:
-            global_options.stderr = sys.stderr
-            global_options.stdout = sys.stdout
-            global_options.stdlog = sys.stdout
-            global_options.stdin = sys.stdin
-
-        # reset log_config_filename if logging.yml does not exist
-        if global_options.log_config_filename == "logging.yml" and not os.path.exists(
-                global_options.log_config_filename):
-            global_options.log_config_filename = None
-
-        if global_options.log_config_filename:
-            if os.path.exists(global_options.log_config_filename):
-                # configure logging from filename
-                with open(global_options.log_config_filename) as inf:
-                    dict_yaml = yaml.safe_load(inf)
-                logging.config.dictConfig(dict_yaml)
-            else:
-                raise OSError("file {} with logging configuration does not exist".format(
-                    global_options.log_config_filename))
-        else:
-            # configure logging from command line options
-            # map from 0-10 to logging scale
-            # 0: quiet
-            # 1: little verbositiy
-            # >1: increased verbosity
-            if global_options.loglevel == 0:
-                lvl = logging.ERROR
-            elif global_options.loglevel == 1:
-                lvl = logging.INFO
-            else:
-                lvl = logging.DEBUG
-
-            if global_options.stdout == global_options.stdlog:
-                logformat = '# %(asctime)s %(levelname)s %(message)s'
-            else:
-                logformat = '%(asctime)s %(levelname)s %(message)s'
-
-            logging.basicConfig(
-                level=lvl,
-                format=logformat,
-                stream=global_options.stdlog)
-
-            # set up multi-line logging
-            # Note that .handlers is not part of the API, might change
-            # Solution is to configure handlers explicitely.
-            for handler in logging.getLogger().handlers:
-                handler.setFormatter(MultiLineFormatter(logformat))
-
-        if logger_callback:
-            logger = logger_callback(global_options)
-        else:
-            logger = logging.getLogger("cgatcore")
-
-        if global_options.tracing == "function":
-            sys.settrace(trace_calls)
-
-        return global_options, global_args
+        opt1, opt2 = global_options, global_args
 
     # Argparse options
     else:
@@ -1209,85 +1218,20 @@ def start(parser=None,
         if not no_parsing:
             global_args, unknown = parser.parse_known_args(argv[1:])
 
-        if global_args.random_seed is not None:
-            random.seed(global_args.random_seed)
-
-        if add_pipe_options:
-            if global_args.stdout != sys.stdout:
-                global_args.stdout = open_file(global_args.stdout, "w")
-            if global_args.stderr != sys.stderr:
-                if global_args.stderr == "stderr":
-                    global_args.stderr = global_args.stderr
-                else:
-                    global_args.stderr = open_file(global_args.stderr, "w")
-            if global_args.stdlog != sys.stdout:
-                global_args.stdlog = open_file(global_args.stdlog, "a")
-            if global_args.stdin != sys.stdin:
-                global_args.stdin = open_file(global_args.stdin, "r")
-        else:
-            global_args.stderr = sys.stderr
-            global_args.stdout = sys.stdout
-            global_args.stdlog = sys.stdout
-            global_args.stdin = sys.stdin
-
-        # reset log_config_filename if logging.yml does not exist
-        if global_args.log_config_filename == "logging.yml" and not os.path.exists(
-                global_args.log_config_filename):
-            global_args.log_config_filename = None
-
-        if global_args.log_config_filename:
-            if os.path.exists(global_args.log_config_filename):
-                # configure logging from filename
-                with open(global_args.log_config_filename) as inf:
-                    dict_yaml = yaml.safe_load(inf)
-                logging.config.dictConfig(dict_yaml)
-            else:
-                raise OSError("file {} with logging configuration does not exist".format(
-                    global_args.log_config_filename))
-        else:
-            # configure logging from command line options
-            # map from 0-10 to logging scale
-            # 0: quiet
-            # 1: little verbositiy
-            # >1: increased verbosity
-            if global_args.loglevel == 0:
-                lvl = logging.ERROR
-            elif global_args.loglevel == 1:
-                lvl = logging.INFO
-            else:
-                lvl = logging.DEBUG
-
-            if global_args.stdout == global_args.stdlog:
-                logformat = '# %(asctime)s %(levelname)s %(message)s'
-            else:
-                logformat = '%(asctime)s %(levelname)s %(message)s'
-
-            logging.basicConfig(
-                level=lvl,
-                format=logformat,
-                stream=global_args.stdlog)
-
-            # set up multi-line logging
-            # Note that .handlers is not part of the API, might change
-            # Solution is to configure handlers explicitely.
-            for handler in logging.getLogger().handlers:
-                handler.setFormatter(MultiLineFormatter(logformat))
-
-        if logger_callback:
-            logger = logger_callback(global_args)
-        else:
-            logger = logging.getLogger("cgatcore")
-
-        logger.info(get_header())
-        logger.info(get_params(global_args))
-
-        if global_args.tracing == "function":
-            sys.settrace(trace_calls)
-
         if unknowns:
-            return global_args, unknown
+            opt1, opt2 = global_args, unknown
         else:
-            return global_args
+            opt1, opt2 = global_args, None
+
+    _setup_seed(opt1)
+    _setup_pipes(opt1, add_pipe_options)
+    _setup_tracing(opt1)
+    logger = _setup_logging(opt1, logger_callback)
+
+    logger.info(get_header())
+    logger.info(get_params(opt1))
+
+    return opt1, opt2
 
 
 def stop(logger=None):

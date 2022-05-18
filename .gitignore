@@ -54,3 +54,8 @@ _test_commandline.yaml
 .mr.developer.cfg
 .project
 .pydevproject
+
+
+# sample workflow
+means.txt
+sample*
