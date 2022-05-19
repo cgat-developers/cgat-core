@@ -1062,6 +1062,7 @@ def start(parser=None,
             (global_options, global_args) = parser.parse_args(argv[1:])
 
         opt1, opt2 = global_options, global_args
+        retval = (opt1, opt2)
 
     # Argparse options
     else:
@@ -1222,6 +1223,7 @@ def start(parser=None,
             opt1, opt2 = global_args, unknown
         else:
             opt1, opt2 = global_args, None
+        retval = opt1
 
     _setup_seed(opt1)
     _setup_pipes(opt1, add_pipe_options)
@@ -1231,7 +1233,7 @@ def start(parser=None,
     logger.info(get_header())
     logger.info(get_params(opt1))
 
-    return opt1, opt2
+    return retval
 
 
 def stop(logger=None):
