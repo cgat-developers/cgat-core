@@ -1221,9 +1221,10 @@ def start(parser=None,
 
         if unknowns:
             opt1, opt2 = global_args, unknown
+            retval = (opt1, opt2)
         else:
             opt1, opt2 = global_args, None
-        retval = opt1
+            retval = opt1
 
     _setup_seed(opt1)
     _setup_pipes(opt1, add_pipe_options)
