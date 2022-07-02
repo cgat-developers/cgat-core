@@ -144,7 +144,7 @@ def load(infile,
         default. Implies to_cluster=True.
     to_cluster : bool
         By default load jobs are not submitted to the cluster as they sometimes
-        become blocked. Setting this true will override this behavoir. 
+        become blocked. Setting this true will override this behavoir.
     """
 
     if job_memory is None:
@@ -254,7 +254,6 @@ def concatenate_and_load(infiles,
     to_cluster : bool
         By default load jobs are not submitted to the cluster as they sometimes
         become blocked. Setting this true will override this behavoir.
-
     """
     if job_memory is None:
         job_memory = get_params()["cluster_memory_default"]
@@ -369,10 +368,6 @@ def merge_and_load(infiles,
         If given, the respective prefix will be added to each
         column. The number of `prefixes` and `infiles` needs to be the
         same. 
-    to_cluster : bool
-        By default load jobs are not submitted to the cluster as they sometimes
-        become blocked. Setting this true will override this behavoir.
-
     '''
     if len(infiles) == 0:
         raise ValueError("no files for merging")
