@@ -367,7 +367,7 @@ def merge_and_load(infiles,
     prefixes : list
         If given, the respective prefix will be added to each
         column. The number of `prefixes` and `infiles` needs to be the
-        same. 
+        same.
     '''
     if len(infiles) == 0:
         raise ValueError("no files for merging")
