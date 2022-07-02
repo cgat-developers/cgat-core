@@ -98,7 +98,8 @@ def load(infile,
          retry=True,
          limit=0,
          shuffle=False,
-         job_memory=None):
+         job_memory=None,
+         to_cluster=False):
     """import data from a tab-separated file into database.
 
     The table name is given by outfile without the
@@ -140,7 +141,10 @@ def load(infile,
         this permits loading a sample of rows.
     job_memory : string
         Amount of memory to allocate for job. If unset, uses the global
-        default.
+        default. Implies to_cluster=True.
+    to_cluster : bool
+        By default load jobs are not submitted to the cluster as they sometimes
+        become blocked. Setting this true will override this behavoir. 
     """
 
     if job_memory is None:
@@ -187,7 +191,6 @@ def load(infile,
 
     statement = " | ".join(statement) + " > %(outfile)s"
 
-    to_cluster = False
     run(statement)
 
 
@@ -201,7 +204,8 @@ def concatenate_and_load(infiles,
                          retry=True,
                          tablename=None,
                          options="",
-                         job_memory=None):
+                         job_memory=None,
+                         to_cluster=True):
     """concatenate multiple tab-separated files and upload into database.
 
     The table name is given by outfile without the
@@ -246,7 +250,10 @@ def concatenate_and_load(infiles,
         Command line options for the `csv2db.py` script.
     job_memory : string
         Amount of memory to allocate for job. If unset, uses the global
-        default.
+        default. Implies to_cluster=True.
+    to_cluster : bool
+        By default load jobs are not submitted to the cluster as they sometimes
+        become blocked. Setting this true will override this behavoir.
 
     """
     if job_memory is None:
@@ -284,7 +291,6 @@ def concatenate_and_load(infiles,
     | %(load_statement)s
     > %(outfile)s'''
 
-    to_cluster = False
     run(statement)
 
 
@@ -362,7 +368,10 @@ def merge_and_load(infiles,
     prefixes : list
         If given, the respective prefix will be added to each
         column. The number of `prefixes` and `infiles` needs to be the
-        same.
+        same. 
+    to_cluster : bool
+        By default load jobs are not submitted to the cluster as they sometimes
+        become blocked. Setting this true will override this behavoir.
 
     '''
     if len(infiles) == 0:
@@ -417,7 +426,6 @@ def merge_and_load(infiles,
     | %(load_statement)s
     > %(outfile)s
     """
-    to_cluster = False
     run(statement)
 
 
