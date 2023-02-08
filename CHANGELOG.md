@@ -1,3 +1,7 @@
+# Version 0.6.15
+
+- additional py3.10 compatibility [contributed by @tschoonj]
+
 # Version 0.6.10
 
 ## Fixes
