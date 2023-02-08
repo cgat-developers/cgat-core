@@ -51,5 +51,35 @@ class TestiotoolsTouchFileCompressed(TestiotoolsTouchFile):
     basename = "test_iotools_touch_file.txt.gz"
 
 
+class TestiottoolsIsNested(unittest.TestCase):
+
+    def test_is_nested_with_dict(self):
+        test_data = {
+            "key1": {
+                "nested_key1": "nested_key1"
+            }
+        }
+        self.assertTrue(iotools.is_nested(test_data))
+
+
+class TestiottoolsNestedIter(unittest.TestCase):
+
+    def test_nested_iter_with_dict_of_dicts(self):
+        test_data = {
+            "key1": {
+                "nested_key1": "nested_key1"
+            }
+        }
+        list(iotools.nested_iter(test_data))
+
+    def test_nested_iter_with_list_of_dicts(self):
+        test_data = [
+            {
+                "nested_key1": "nested_key1"
+            }
+        ]
+        list(iotools.nested_iter(test_data))
+
+
 if __name__ == "__main__":
     unittest.main()
