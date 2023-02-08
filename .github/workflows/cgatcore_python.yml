@@ -18,9 +18,9 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Cache conda
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         env:
           # Increase this value to reset cache if conda/environments/cgat-core.yml has not changed
           CACHE_NUMBER: 0
@@ -31,12 +31,12 @@ jobs:
             hashFiles('conda/environments/cgat-core.yml') }}
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          mamba-version: "*"
           python-version: ${{ matrix.python-version }}
           channels: conda-forge, bioconda, defaults
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
+          miniforge-variant: Mambaforge
       - name: Show conda
         run: |
           conda info

@@ -182,7 +182,7 @@ def config_to_dictionary(config):
 
 def nested_update(old, new):
     '''Update potentially nested dictionaries. If both old[x] and new[x]
-    inherit from collections.Mapping, then update old[x] with entries from
+    inherit from collections.abc.Mapping, then update old[x] with entries from
     new[x], otherwise set old[x] to new[x]'''
 
     for key, value in new.items():

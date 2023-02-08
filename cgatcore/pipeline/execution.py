@@ -198,7 +198,7 @@ def get_conda_environment_directory(env_name):
         # registered with conda. NB this can't tellif the directory contains a
         # valid env.
         if os.path.exists(env_name) and os.path.isdir(env_name):
-            return(env_name)
+            return env_name
 
         raise IOError("conda environment {} does not exist, found {}".format(
             env_name, sorted(env_map.keys())))
