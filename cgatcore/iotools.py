@@ -768,7 +768,7 @@ def is_nested(container):
     A nested data structure is a dict of dicts or a list of list,
     but not a dict of list or a list of dicts.
     """
-    for t in [collections.Mapping, list, tuple]:
+    for t in [collections.abc.Mapping, list, tuple]:
         if isinstance(container, t):
             return any([isinstance(v, t) for v in container.values()])
     return False
@@ -790,9 +790,9 @@ def nested_iter(nested):
         A container/key/value triple
     """
 
-    if isinstance(nested, collections.Mapping):
+    if isinstance(nested, collections.abc.Mapping):
         for key, value in nested.items():
-            if not isinstance(value, collections.Mapping) and \
+            if not isinstance(value, collections.abc.Mapping) and \
                not isinstance(value, list):
                 yield nested, key, value
             else:
@@ -800,7 +800,7 @@ def nested_iter(nested):
                     yield x
     elif isinstance(nested, list):
         for key, value in enumerate(nested):
-            if not isinstance(value, collections.Mapping) and \
+            if not isinstance(value, collections.abc.Mapping) and \
                not isinstance(value, list):
                 yield nested, key, value
             else:
