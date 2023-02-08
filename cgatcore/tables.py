@@ -418,7 +418,7 @@ def join_tables(outfile, options, args):
                     outfile.write("\t".join(table[key]))
                     c = len(table[key])
 
-                assert(max_size == 1)
+                assert max_size == 1
 
                 outfile.write("\t%s" % options.missing_value * (max_size - c))
 

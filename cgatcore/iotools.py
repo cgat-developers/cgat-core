@@ -1365,7 +1365,7 @@ def text_to_dict(filename, key=None, sep="\t"):
                     fieldn += 1
             count += 1
 
-    return(result)
+    return result
 
 
 def pickle(file_name, obj):
