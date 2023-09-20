@@ -17,7 +17,7 @@ dependencies:
 - ruffus
 - setuptools
 - six
-- sqlalchemy
+- sqlalchemy>=2.0
 # Misc dependencies
 - coreutils
 - nomkl
