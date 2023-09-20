@@ -49,7 +49,7 @@ import cgatcore.iotools as iotools
 from cgatcore.pipeline.parameters import input_validation, get_params, get_parameters
 from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
-from cgatcore.pipeline.execution import execute, start_session,\
+from cgatcore.pipeline.execution import execute, start_session, \
     close_session
 
 
