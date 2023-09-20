@@ -482,7 +482,7 @@ class AppendCommaOption(optparse.Option):
     # they could be accessed as self.action and self.dest?
     def take_action(self, action, dest, opt, value, values, parser):
 
-        if action == "append" and type(value) == list:
+        if action == "append" and isinstance(value, list):
             values.ensure_value(dest, []).extend(value)
         else:
             optparse.Option.take_action(
