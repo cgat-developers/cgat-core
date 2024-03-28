@@ -510,7 +510,7 @@ def as_list(value):
     list
 
     '''
-    if type(value) == str:
+    if isinstance(value, str):
         try:
             values = [x.strip() for x in value.strip().split(",")]
         except AttributeError:

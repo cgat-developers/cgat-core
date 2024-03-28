@@ -1282,7 +1282,7 @@ def write_table(outfile, table, columns=None, fillvalue=""):
 
     '''
 
-    if type(table) == dict:
+    if isinstance(table, dict):
         if columns is None:
             columns = list(table.keys())
         outfile.write("\t".join(columns) + "\n")

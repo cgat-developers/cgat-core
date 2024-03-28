@@ -45,6 +45,9 @@ def executewait(dbhandle, statement, regex_error="locked",
     while 1:
         try:
             cc = dbhandle.execute(statement)
+        except AttributeError:
+            with dbhandle.begin() as conn:
+                cc = conn.execute(sqlalchemy.text(statement))
         except Exception as msg:
             if retries == 0:
                 raise
