@@ -1,99 +1,102 @@
 """Test cases for the pipeline.control module."""
 
-import unittest
 import os
 import shutil
 import subprocess
-
-import cgatcore
-import cgatcore.experiment as E
+import tempfile
+import pytest
 
 import cgatcore.pipeline as P
 import cgatcore.iotools as iotools
+import cgatcore.experiment as E
 
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
-class BaseTest(unittest.TestCase):
-
-    def setUp(self):
-        self.work_dir = P.get_temp_dir(shared=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.work_dir)
-
-    def run_command(self, statement, **kwargs):
-        print(statement)
-        proc = subprocess.Popen(statement,
-                                shell=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                cwd=self.work_dir,
-                                **kwargs)
-        stdout, stderr = proc.communicate()
-        stdout = stdout.decode("utf-8")
-        stderr = stderr.decode("utf-8")
-        self.assertEqual(proc.returncode, 0, msg="stderr = {}".format(stderr))
-        return proc.returncode, stdout, stderr
+@pytest.fixture
+def work_dir():
+    """Fixture to create and clean up a temporary work directory."""
+    temp_dir = P.get_temp_dir(shared=True)
+    yield temp_dir
+    shutil.rmtree(temp_dir)
 
 
-class TestexecutionControl(BaseTest):
+def run_command(statement, work_dir, **kwargs):
+    """Run a shell command in a specified working directory."""
+    print(statement)
+    proc = subprocess.Popen(statement, shell=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, cwd=work_dir, **kwargs)
+    stdout, stderr = proc.communicate()
+    stdout = stdout.decode("utf-8")
+    stderr = stderr.decode("utf-8")
+    assert proc.returncode == 0, f"stderr = {stderr}"
+    return proc.returncode, stdout, stderr
 
-    expected_output_files = ["sample_{:02}.mean".format(x) for x in range(10)] +\
-                            ["sample_{:02}.txt".format(x) for x in range(10)]
 
-    def setUp(self):
-        P.get_parameters()
-        BaseTest.setUp(self)
+@pytest.fixture
+def expected_output_files():
+    """Fixture for expected output files."""
+    return [f"sample_{x:02}.mean" for x in range(10)] + [f"sample_{x:02}.txt" for x in range(10)]
 
-    def check_files(self, present=[], absent=[]):
-        for fn in present:
-            path = os.path.join(self.work_dir, fn)
-            self.assertTrue(os.path.exists(path),
-                            "file {} does not exist".format(path))
 
-        for fn in absent:
-            path = os.path.join(self.work_dir, fn)
-            self.assertFalse(os.path.exists(path),
-                             "file {} does exist but not expected".format(path))
+def check_files(work_dir, present=None, absent=None):
+    """Check for the presence and absence of files."""
+    if present is None:
+        present = []
+    if absent is None:
+        absent = []
 
-    def test_basic_configuration_produces_expected_files(self):
+    for fn in present:
+        path = os.path.join(work_dir, fn)
+        assert os.path.exists(path), f"file {fn} does not exist"
 
-        retval, stdout, stderr = self.run_command(
-            "python {}/template_pipeline.py make all".format(ROOT))
+    for fn in absent:
+        path = os.path.join(work_dir, fn)
+        assert not os.path.exists(path), f"file {fn} exists but was not expected"
 
-        self.check_files(
-            present=self.expected_output_files + ["pipeline.log"],
-            absent=["shell.log"])
 
-    def test_shell_log_is_created_in_workdir(self):
+def test_basic_configuration_produces_expected_files(work_dir, expected_output_files):
+    retval, stdout, stderr = run_command(
+        f"python {ROOT}/template_pipeline.py make all", work_dir)
 
-        retval, stdout, stderr = self.run_command(
-            "python {}/template_pipeline.py make all --shell-logfile=shell.log".format(ROOT))
+    check_files(
+        work_dir,
+        present=expected_output_files + ["pipeline.log"],
+        absent=["shell.log"]
+    )
 
-        self.check_files(
-            present=self.expected_output_files + ["pipeline.log", "shell.log"])
 
-    def test_shell_log_is_created_at_absolute_path(self):
+def test_shell_log_is_created_in_workdir(work_dir, expected_output_files):
+    retval, stdout, stderr = run_command(
+        f"python {ROOT}/template_pipeline.py make all --shell-logfile=shell.log", work_dir)
 
-        shell_file = os.path.join(self.work_dir, "test_shell", "shell.log")
+    check_files(
+        work_dir,
+        present=expected_output_files + ["pipeline.log", "shell.log"]
+    )
 
-        retval, stdout, stderr = self.run_command(
-            "python {}/template_pipeline.py make all --shell-logfile={}".format(ROOT, shell_file))
 
-        self.check_files(
-            present=self.expected_output_files,
-            absent=["shell.log"])
+def test_shell_log_is_created_at_absolute_path(work_dir, expected_output_files):
+    shell_file = os.path.join(work_dir, "test_shell", "shell.log")
 
-        self.assertTrue(os.path.exists(shell_file))
+    retval, stdout, stderr = run_command(
+        f"python {ROOT}/template_pipeline.py make all --shell-logfile={shell_file}", work_dir)
 
-    def test_logging_can_be_configured_from_file(self):
+    check_files(
+        work_dir,
+        present=expected_output_files,
+        absent=["shell.log"]
+    )
 
-        log_config = os.path.join(self.work_dir, "logging.yml")
+    assert os.path.exists(shell_file)
 
-        with open(log_config, "w") as outf:
-            outf.write("""
+
+def test_logging_can_be_configured_from_file(work_dir, expected_output_files):
+    log_config = os.path.join(work_dir, "logging.yml")
+
+    with open(log_config, "w") as outf:
+        outf.write("""
 version: 1
 formatters:
   default:
@@ -127,21 +130,19 @@ loggers:
     level: DEBUG
 """)
 
-        retval, stdout, stderr = self.run_command(
-            "python {}/template_pipeline.py make all --log-config-filename={}".format(ROOT, log_config))
+    retval, stdout, stderr = run_command(
+        f"python {ROOT}/template_pipeline.py make all --log-config-filename={log_config}", work_dir)
 
-        self.check_files(
-            present=self.expected_output_files + ["extra.log"],
-            absent=["pipeline.log", "shell.log"])
+    check_files(
+        work_dir,
+        present=expected_output_files + ["extra.log"],
+        absent=["pipeline.log", "shell.log"]
+    )
 
-        self.assertFalse(
-            iotools.is_empty(os.path.join(self.work_dir, "extra.log")))
+    extra_log_path = os.path.join(work_dir, "extra.log")
+    assert not iotools.is_empty(extra_log_path)
 
-        with open(os.path.join(self.work_dir, "extra.log")) as inf:
-            self.assertTrue("DEBUG" in inf.read())
+    with open(extra_log_path) as inf:
+        assert "DEBUG" in inf.read()
 
-        self.assertTrue("DEBUG" not in stdout)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    assert "DEBUG" not in stdout
