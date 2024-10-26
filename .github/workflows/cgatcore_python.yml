@@ -43,5 +43,5 @@ jobs:
           conda list
       - name: Test
         run: |
-          python setup.py install
+          pip install .
           ./all-tests.sh
