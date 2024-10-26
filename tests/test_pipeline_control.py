@@ -17,6 +17,9 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 @pytest.fixture
 def work_dir():
     """Fixture to create and clean up a temporary work directory."""
+    # Set default value for shared_tmpdir if it is missing
+    if 'shared_tmpdir' not in P.get_params():
+        P.get_params()['shared_tmpdir'] = tempfile.mkdtemp()
     temp_dir = P.get_temp_dir(shared=True)
     yield temp_dir
     shutil.rmtree(temp_dir)
