@@ -109,8 +109,7 @@ def add_doc(value, replace=False):
             # currently hard-coded, can be derived
             # from doc string?
             if not replace:
-                lines.insert(x+1, " " * 4 +
-                             func.__doc__)
+                lines.insert(x + 1, " " * 4 + func.__doc__)
                 func.__doc__ = "\n".join(lines)
             else:
                 func.__doc__ = value.__doc__

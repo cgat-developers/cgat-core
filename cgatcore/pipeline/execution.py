@@ -1386,8 +1386,8 @@ def run_pickled(params):
     try:
         function = getattr(module, func_name)
     except AttributeError as msg:
-        raise AttributeError(msg.message +
-                             "unknown function, available functions are: %s" %
+        raise AttributeError(msg.message
+                             + "unknown function, available functions are: %s" %
                              ",".join([x for x in dir(module)
                                        if not x.startswith("_")]))
 

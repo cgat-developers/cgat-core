@@ -609,7 +609,7 @@ def bytes2human(n, format='%(value).1f%(symbol)s', symbols='customary'):
     symbols = SYMBOLS[symbols]
     prefix = {}
     for i, s in enumerate(symbols[1:]):
-        prefix[s] = 1 << (i+1)*10
+        prefix[s] = 1 << (i + 1) * 10
     for symbol in reversed(symbols[1:]):
         if n >= prefix[symbol]:
             value = float(n) / prefix[symbol]
@@ -668,7 +668,7 @@ def human2bytes(s):
             raise ValueError("can't interpret %r" % init)
     prefix = {sset[0]: 1}
     for i, s in enumerate(sset[1:]):
-        prefix[s] = 1 << (i+1)*10
+        prefix[s] = 1 << (i + 1) * 10
 
     return int(num * prefix[letter])
 

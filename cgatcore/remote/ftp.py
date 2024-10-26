@@ -24,9 +24,9 @@ class FTPRemoteObject(AbstractRemoteObject):
     @contextmanager
     def ftpc(self):
 
-        if (not hasattr(self, "conn") or
-            (hasattr(self, "conn") and
-             not isinstance(self.conn, ftputil.FTPHost))) or self.immediate_close:
+        if (not hasattr(self, "conn")
+            or (hasattr(self, "conn") and not isinstance(self.conn, ftputil.FTPHost)))
+        or self.immediate_close:
             args_use = self.provider.args
             if len(self.args):
                 args_use = self.args

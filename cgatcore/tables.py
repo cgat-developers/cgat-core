@@ -116,7 +116,7 @@ def concatenate_tables(outfile, options, args):
         if min(ncolumns) != max(ncolumns):
             raise ValueError('tables have unequal number of columns '
                              '(min=%i, max=%i)' %
-                             (min(ncolumns),  max(ncolumns)))
+                             (min(ncolumns), max(ncolumns)))
         # create a pseudo dictionary of columns
         titles = collections.OrderedDict(
             [(x, x) for x in range(min(ncolumns))])
@@ -136,8 +136,8 @@ def concatenate_tables(outfile, options, args):
 
                 data[map_old2new[x]] = value
 
-            row = "\t".join([str(x) for x in row_headers[nindex]] +
-                            data) + "\n"
+            row = "\t".join([str(x) for x in row_headers[nindex]]
+                            + data) + "\n"
             outfile.write(row)
 
         if options.input_has_titles:
