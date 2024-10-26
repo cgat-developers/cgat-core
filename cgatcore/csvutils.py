@@ -221,7 +221,7 @@ def readTable(infile,
                     raise ValueError(
                         "missing elements in line %s, received=%s, "
                         "expected=%s" %
-                        (r, str(row),  str(fields)))
+                        (r, str(row), str(fields)))
 
                 raise ValueError
 

@@ -234,8 +234,7 @@ def chunk_iterator_regex_split(infile, args, prefix, use_header=False):
         if line[0] == "#":
             continue
         if rex.search(line[:-1]):
-            if n > 0 and (n % chunk_size == 0 or
-                          (max_lines and nlines > max_lines)):
+            if n > 0 and (n % chunk_size == 0 or (max_lines and nlines > max_lines)):
                 outfile.close()
                 yield filename
                 filename = "%s/%010i.in" % (prefix, n)

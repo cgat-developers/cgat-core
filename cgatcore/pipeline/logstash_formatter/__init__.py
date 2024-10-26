@@ -171,8 +171,8 @@ class LogstashFormatterV1(LogstashFormatter):
         now = datetime.datetime.utcnow()
         event_time = getattr(record,
                              "eventtime",
-                             now.strftime("%Y-%m-%dT%H:%M:%S") +
-                             ".%03d" % (now.microsecond / 1000) + "Z")
+                             now.strftime("%Y-%m-%dT%H:%M:%S")
+                             + ".%03d" % (now.microsecond / 1000) + "Z")
         base_log = {'@timestamp': event_time,
                     '@version': 1,
                     'source_host': self.source_host}

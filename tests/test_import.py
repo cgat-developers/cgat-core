@@ -1,7 +1,7 @@
 '''test_import - test importing all modules
 ===========================================
 
-:Author: Andreas Heger
+:Author: Adam Cribbs
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -17,71 +17,58 @@ documentation with sphinx. A script/module that can not be imported
 will fail within sphinx.
 
 '''
-
 import os
 import glob
 import traceback
-import imp
+import importlib.util
+import pytest
 
 # DIRECTORIES to examine
 EXPRESSIONS = (
     ('FirstLevel', 'cgatcore/*.py'),
-    ('SecondLevel', 'cgatcore/pipeline/*.py'))
+    ('SecondLevel', 'cgatcore/pipeline/*.py')
+)
 
 # Code to exclude
-EXCLUDE = ()
+EXCLUDE = set()
 
 
 def check_import(filename, outfile):
+    """Attempt to import a module and handle errors."""
+    module_name = os.path.splitext(os.path.basename(filename))[0]
 
-    prefix, suffix = os.path.splitext(filename)
-    dirname, basename = os.path.split(prefix)
-
-    if basename in EXCLUDE:
+    if module_name in EXCLUDE:
         return
 
-    if os.path.exists(prefix + ".pyc"):
-        os.remove(prefix + ".pyc")
+    if os.path.exists(filename + "c"):
+        os.remove(filename + "c")
 
-    # ignore script with pyximport for now, something does not work
-    pyxfile = os.path.join(dirname, "_") + basename + "x"
+    pyxfile = os.path.join(os.path.dirname(filename), "_") + module_name + "x"
     if os.path.exists(pyxfile):
         return
 
     try:
-        imp.load_source(basename, filename)
-
+        spec = importlib.util.spec_from_file_location(module_name, filename)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
     except ImportError as msg:
-        outfile.write("FAIL %s\n%s\n" % (basename, msg))
+        outfile.write(f"FAIL {module_name}\n{msg}\n")
         outfile.flush()
         traceback.print_exc(file=outfile)
-        assert False, '%s scripts/modules - ImportError: %s' % (basename, msg)
+        pytest.fail(f"{module_name} - ImportError: {msg}")
     except Exception as msg:
-        outfile.write("FAIL %s\n%s\n" % (basename, msg))
+        outfile.write(f"FAIL {module_name}\n{msg}\n")
         outfile.flush()
-
         traceback.print_exc(file=outfile)
-        assert False, '%s scripts/modules - Exception: %s' % (basename, str(msg))
-
-    assert True
+        pytest.fail(f"{module_name} - Exception: {msg}")
 
 
-def test_import():
-    '''test importing
+@pytest.mark.parametrize("label, expression", EXPRESSIONS)
+def test_import(label, expression):
+    """Test importing all modules in the specified expressions."""
+    with open('test_import.log', 'a') as outfile:
+        files = sorted(glob.glob(expression))
 
-    Relative imports will cause a failure because
-    imp.load_source does not import modules that are in the same
-    directory as the module being loaded from source.
-    '''
-    outfile = open('test_import.log', 'a')
-
-    for label, expression in EXPRESSIONS:
-
-        files = glob.glob(expression)
-        files.sort()
-
-        for f in files:
-            if os.path.isdir(f):
-                continue
-            check_import.description = os.path.abspath(f)
-            yield check_import, os.path.abspath(f), outfile
+        for filename in files:
+            if not os.path.isdir(filename):
+                check_import(filename, outfile)
