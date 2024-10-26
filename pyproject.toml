@@ -24,12 +24,12 @@ classifiers = [
     "Operating System :: MacOS"
 ]
 readme = "README.md"
-homepage = "https://github.com/cgat-developers/cgat-core"
 
 [project.urls]
 Documentation = "https://github.com/cgat-developers/cgat-core"
 Source = "https://github.com/cgat-developers/cgat-core"
 Tracker = "https://github.com/cgat-developers/cgat-core/issues"
+Homepage = "https://github.com/cgat-developers/cgat-core"
 
 [tool.setuptools.packages.find]
 where = ["."]
