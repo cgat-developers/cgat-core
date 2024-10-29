@@ -1,6 +1,7 @@
 # cgatcore/pipeline/__init__.py
 
-"""pipeline.py - Tools for CGAT Ruffus Pipelines
+"""
+pipeline.py - Tools for CGAT Ruffus Pipelines
 =============================================
 
 This module provides a comprehensive set of tools to facilitate the creation and management
@@ -27,24 +28,52 @@ from ruffus import (
     follows
 )
 
-# Import S3-related classes and functions
-from cgatcore.remote.file_handler import S3Pipeline, S3Mapper, s3_path_to_local, suffix
+# Lazy-load S3-related classes and functions through the cgatcore instance
+from cgatcore import cgatcore
 
-# Create a global instance of S3Pipeline
-s3_pipeline = S3Pipeline()
+# Helper function to access S3Pipeline instance lazily
+def get_s3_pipeline():
+    """Instantiate and return the S3Pipeline instance, lazy-loaded to avoid circular imports."""
+    return cgatcore.remote.file_handler.S3Pipeline()
 
-# Expose S3-aware decorators via the S3Pipeline instance
-s3_transform = s3_pipeline.s3_transform
-s3_merge = s3_pipeline.s3_merge
-s3_split = s3_pipeline.s3_split
-s3_originate = s3_pipeline.s3_originate
-s3_follows = s3_pipeline.s3_follows
+# Define S3-aware decorators as properties, accessed only when needed
+s3_pipeline = None
+def s3_transform(*args, **kwargs):
+    global s3_pipeline
+    if s3_pipeline is None:
+        s3_pipeline = get_s3_pipeline()
+    return s3_pipeline.s3_transform(*args, **kwargs)
 
-# Expose S3Mapper instance if needed elsewhere
-s3_mapper = s3_pipeline.s3
+def s3_merge(*args, **kwargs):
+    global s3_pipeline
+    if s3_pipeline is None:
+        s3_pipeline = get_s3_pipeline()
+    return s3_pipeline.s3_merge(*args, **kwargs)
 
-# Expose S3 configuration function
-configure_s3 = s3_pipeline.configure_s3
+def s3_split(*args, **kwargs):
+    global s3_pipeline
+    if s3_pipeline is None:
+        s3_pipeline = get_s3_pipeline()
+    return s3_pipeline.s3_split(*args, **kwargs)
+
+def s3_originate(*args, **kwargs):
+    global s3_pipeline
+    if s3_pipeline is None:
+        s3_pipeline = get_s3_pipeline()
+    return s3_pipeline.s3_originate(*args, **kwargs)
+
+def s3_follows(*args, **kwargs):
+    global s3_pipeline
+    if s3_pipeline is None:
+        s3_pipeline = get_s3_pipeline()
+    return s3_pipeline.s3_follows(*args, **kwargs)
+
+# Expose S3Mapper and configuration function through lazy loading
+def s3_mapper():
+    return get_s3_pipeline().s3
+
+def configure_s3(*args, **kwargs):
+    return get_s3_pipeline().configure_s3(*args, **kwargs)
 
 # Update __all__ to include both standard and S3-aware decorators and functions
 __all__ = [
@@ -54,7 +83,7 @@ __all__ = [
     's3_mapper', 'configure_s3'
 ]
 
-# Add a docstring for the module
+# Module docstring
 __doc__ = """
 This module provides pipeline functionality for cgat-core, including support for AWS S3.
 

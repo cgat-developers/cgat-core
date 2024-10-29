@@ -1,7 +1,7 @@
 # cgatcore/__init__.py
 
 class CgatCore:
-    """Main class to encapsulate CGAT core functionality."""
+    """Main class to encapsulate CGAT core functionality with lazy loading."""
 
     def __init__(self):
         self._pipeline = None
@@ -26,7 +26,3 @@ class CgatCore:
 
 # Create a global instance of the CgatCore class
 cgatcore = CgatCore()
-
-# Expose the pipeline and remote attributes
-pipeline = cgatcore.pipeline
-remote = cgatcore.remote
