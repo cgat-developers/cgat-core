@@ -27,7 +27,8 @@ from ruffus import (
     merge,
     split,
     originate,
-    follows
+    follows,
+    suffix
 )
 
 

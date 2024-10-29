@@ -17,7 +17,8 @@ class TestS3Decorators(unittest.TestCase):
         """
         self.P.configure_s3()  # Ensure S3 configuration is set up
 
-        @self.P.s3_transform("my-bucket/input.txt", self.P.suffix(".processed"), "my-bucket/input.processed")
+        # Pass the suffix pattern as a direct string rather than using the suffix function
+        @self.P.s3_transform("my-bucket/input.txt", ".processed", "my-bucket/input.processed")
         def process_file(infile, outfile):
             # Simulate getting the content from S3
             input_data = self.s3_mock.Object.return_value.get()['Body'].read().decode()
@@ -35,7 +36,6 @@ class TestS3Decorators(unittest.TestCase):
         process_file()  # This should trigger the decorator handling internally
 
         # Verify the upload was called with the correct output file path
-        # Change this line
         self.s3_mock.Object.return_value.upload_file.assert_called_with('HELLO WORLD', 'my-bucket/input.processed.txt')
 
     def test_s3_merge(self):

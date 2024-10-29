@@ -26,3 +26,9 @@ class CgatCore:
 
 # Create a global instance of the CgatCore class
 cgatcore = CgatCore()
+
+# Expose the pipeline and remote modules as top-level attributes
+pipeline = cgatcore.pipeline
+remote = cgatcore.remote
+
+__all__ = ["pipeline", "remote"]
