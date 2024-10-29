@@ -10,6 +10,7 @@ logging, parameterization, task execution, database uploads, temporary file mana
 integration with AWS S3.
 """
 
+
 # Import existing pipeline functionality
 from cgatcore.pipeline.control import *
 from cgatcore.pipeline.database import *
@@ -18,6 +19,7 @@ from cgatcore.pipeline.cluster import *
 from cgatcore.pipeline.execution import *
 from cgatcore.pipeline.utils import *
 from cgatcore.pipeline.parameters import *
+
 
 # Import original Ruffus decorators
 from ruffus import (
@@ -28,21 +30,27 @@ from ruffus import (
     follows
 )
 
+
 # Lazy-load S3-related classes and functions through the cgatcore instance
 from cgatcore import cgatcore
+
 
 # Helper function to access S3Pipeline instance lazily
 def get_s3_pipeline():
     """Instantiate and return the S3Pipeline instance, lazy-loaded to avoid circular imports."""
     return cgatcore.remote.file_handler.S3Pipeline()
 
+
 # Define S3-aware decorators as properties, accessed only when needed
 s3_pipeline = None
+
+
 def s3_transform(*args, **kwargs):
     global s3_pipeline
     if s3_pipeline is None:
         s3_pipeline = get_s3_pipeline()
     return s3_pipeline.s3_transform(*args, **kwargs)
+
 
 def s3_merge(*args, **kwargs):
     global s3_pipeline
@@ -50,11 +58,13 @@ def s3_merge(*args, **kwargs):
         s3_pipeline = get_s3_pipeline()
     return s3_pipeline.s3_merge(*args, **kwargs)
 
+
 def s3_split(*args, **kwargs):
     global s3_pipeline
     if s3_pipeline is None:
         s3_pipeline = get_s3_pipeline()
     return s3_pipeline.s3_split(*args, **kwargs)
+
 
 def s3_originate(*args, **kwargs):
     global s3_pipeline
@@ -62,18 +72,22 @@ def s3_originate(*args, **kwargs):
         s3_pipeline = get_s3_pipeline()
     return s3_pipeline.s3_originate(*args, **kwargs)
 
+
 def s3_follows(*args, **kwargs):
     global s3_pipeline
     if s3_pipeline is None:
         s3_pipeline = get_s3_pipeline()
     return s3_pipeline.s3_follows(*args, **kwargs)
 
+
 # Expose S3Mapper and configuration function through lazy loading
 def s3_mapper():
     return get_s3_pipeline().s3
 
+
 def configure_s3(*args, **kwargs):
     return get_s3_pipeline().configure_s3(*args, **kwargs)
+
 
 # Update __all__ to include both standard and S3-aware decorators and functions
 __all__ = [
