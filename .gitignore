@@ -59,3 +59,5 @@ _test_commandline.yaml
 # sample workflow
 means.txt
 sample*
+
+.idea
