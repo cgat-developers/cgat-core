@@ -33,7 +33,7 @@ Homepage = "https://github.com/cgat-developers/cgat-core"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["cgatcore", "cgatcore.pipeline"]
+include = ["cgatcore", "cgatcore.pipeline", "cgatcore.remote"]
 
 [project.optional-dependencies]
 testing = ["pytest"]  # include your testing dependencies
