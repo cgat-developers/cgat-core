@@ -185,6 +185,7 @@ from cgatcore.remote.file_handler import (
 # Expose the S3Mapper instance if it's needed elsewhere
 s3_mapper = S3Mapper()
 
+
 # Add S3-related utility functions
 def configure_s3(aws_access_key_id=None, aws_secret_access_key=None, region_name=None):
     """
@@ -199,9 +200,6 @@ def configure_s3(aws_access_key_id=None, aws_secret_access_key=None, region_name
     )
     s3_mapper.s3.S3 = session.resource('s3')
 
-# You can add more S3-related utility functions here as needed
-
-# Add any other pipeline-related imports or functionality here
 
 # Add a docstring for the module
 __doc__ = """
