@@ -41,7 +41,6 @@ try:
     HAS_DRMAA = True
 except (ImportError, RuntimeError, OSError):
     HAS_DRMAA = False
-import platform
 
 # global drmaa session
 GLOBAL_SESSION = None
@@ -967,36 +966,33 @@ class LocalExecutor(Executor):
 
             full_statement, job_path = self.build_job_script(statement)
 
-            time_command = "gtime" if platform.system() == "Darwin" else "time"
-
             # max_vmem is set to max_rss, not available by /usr/bin/time
             full_statement = (
-                f"\\{time_command} --output={job_path}.times "
-                f"-f '"
-                f"exit_status\t%x\n"
-                f"user_t\t%U\n"
-                f"sys_t\t%S\n"
-                f"wall_t\t%e\n"
-                f"shared_data\t%D\n"
-                f"io_input\t%I\n"
-                f"io_output\t%O\n"
-                f"average_memory_total\t%K\n"
-                f"percent_cpu\t%P\n"
-                f"average_rss\t%t\n"
-                f"max_rss\t%M\n"
-                f"max_vmem\t%M\n"
-                f"minor_page_faults\t%R\n"
-                f"swapped\t%W\n"
-                f"context_switches_involuntarily\t%c\n"
-                f"context_switches_voluntarily\t%w\n"
-                f"average_uss\t%p\n"
-                f"signal\t%k\n"
-                f"socket_received\t%r\n"
-                f"socket_sent\t%s\n"
-                f"major_page_fault\t%F\n"
-                f"unshared_data\t%D\n' "
-                f"{job_path}"
-            )
+                "\\time --output=%s.times "
+                "-f '"
+                "exit_status\t%%x\n"
+                "user_t\t%%U\n"
+                "sys_t\t%%S\n"
+                "wall_t\t%%e\n"
+                "shared_data\t%%D\n"
+                "io_input\t%%I\n"
+                "io_output\t%%O\n"
+                "average_memory_total\t%%K\n"
+                "percent_cpu\t%%P\n"
+                "average_rss\t%%t\n"
+                "max_rss\t%%M\n"
+                "max_vmem\t%%M\n"
+                "minor_page_faults\t%%R\n"
+                "swapped\t%%W\n"
+                "context_switches_involuntarily\t%%c\n"
+                "context_switches_voluntarily\t%%w\n"
+                "average_uss\t%%p\n"
+                "signal\t%%k\n"
+                "socket_received\t%%r\tn"
+                "socket_sent\t%%s\n"
+                "major_page_fault\t%%F\n"
+                "unshared_data\t%%D\n' "
+                "%s") % (job_path, job_path)
 
             while 1:
                 start_time = time.time()
