@@ -157,10 +157,13 @@ within a submodule to be exported are all imported to the namespace of
 
 # Import existing pipeline functionality
 from cgatcore.pipeline.control import *
+from cgatcore.pipeline.database import *
 from cgatcore.pipeline.files import *
 from cgatcore.pipeline.cluster import *
-from cgatcore.pipeline.parameters import *
+from cgatcore.pipeline.execution import *
 from cgatcore.pipeline.utils import *
+from cgatcore.pipeline.parameters import *
+
 
 # Import original Ruffus decorators
 from ruffus import (
