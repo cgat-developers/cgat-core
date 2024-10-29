@@ -297,13 +297,13 @@ import subprocess
 import functools
 import gzip
 import warnings
-import pipes
 import optparse
 import argparse
 import textwrap
 import random
 import uuid
 import yaml
+import shlex as pipes  # Use shlex as a replacement for pipes
 # import convenience functions from logging
 import logging
 import logging.config
