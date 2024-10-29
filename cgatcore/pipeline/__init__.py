@@ -203,9 +203,6 @@ def configure_s3(aws_access_key_id=None, aws_secret_access_key=None, region_name
 
 # Add any other pipeline-related imports or functionality here
 
-# Include a version number for the pipeline module
-__version__ = "0.1.0"  # Update this as needed
-
 # Add a docstring for the module
 __doc__ = """
 This module provides pipeline functionality for cgat-core, including support for AWS S3.
