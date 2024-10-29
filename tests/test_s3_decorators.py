@@ -5,6 +5,7 @@ import os
 from cgatcore import pipeline as P
 from ruffus import Pipeline
 
+
 class MockS3Client:
     def __init__(self):
         self.storage = {}
@@ -17,6 +18,7 @@ class MockS3Client:
         content = self.storage.get(f"{bucket}/{key}", f"Mock content for {bucket}/{key}")
         with open(local_path, 'w') as f:
             f.write(content)
+
 
 class TestS3Decorators(unittest.TestCase):
     def setUp(self):
@@ -63,7 +65,6 @@ class TestS3Decorators(unittest.TestCase):
         self.assertIn("my-bucket/merged.txt", self.mock_s3.storage)
         self.assertEqual(self.mock_s3.storage["my-bucket/merged.txt"], "content1\ncontent2\n")
 
-    # Add more tests for s3_split, s3_originate, s3_follows as needed
 
 if __name__ == '__main__':
     unittest.main()
