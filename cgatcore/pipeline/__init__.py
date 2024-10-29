@@ -156,7 +156,6 @@ within a submodule to be exported are all imported to the namespace of
 # cgatcore/pipeline/__init__.py
 
 
-
 # Import existing pipeline functionality
 from cgatcore.pipeline.control import *
 from cgatcore.pipeline.database import *

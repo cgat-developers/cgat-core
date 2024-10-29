@@ -2,6 +2,7 @@
 
 import os
 
+
 class MockS3RemoteObject:
     def __init__(self, *args, **kwargs):
         self.storage = {}

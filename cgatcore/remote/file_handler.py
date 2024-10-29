@@ -5,6 +5,7 @@ import os
 from functools import wraps
 from .aws import S3RemoteObject
 
+
 def s3_path_to_local(s3_path, temp_dir='/tmp'):
     # Function remains the same
     parts = s3_path[5:].split('/', 1)
@@ -12,6 +13,7 @@ def s3_path_to_local(s3_path, temp_dir='/tmp'):
         raise ValueError(f"Invalid S3 path: {s3_path}")
     bucket, key = parts
     return os.path.join(temp_dir, key)
+
 
 class S3Pipeline:
     def __init__(self, name=None, temp_dir='/tmp'):
@@ -167,6 +169,7 @@ class S3Pipeline:
         for task in self.tasks:
             task()
 
+
 def suffix(suffix_string):
     """
     Generates a filter function that appends a suffix to a given file path.
@@ -182,6 +185,7 @@ def suffix(suffix_string):
         return f"{base}{suffix_string}{ext}"
     return filter_func
 
+
 class S3Mapper:
     """
     A mapper class for handling S3 operations.
@@ -193,5 +197,5 @@ class S3Mapper:
         """
         self.s3 = S3RemoteObject()
 
-# Make sure to export all the functions and classes you want to be accessible
+
 __all__ = ['S3Pipeline', 'S3Mapper', 's3_path_to_local', 'suffix']
