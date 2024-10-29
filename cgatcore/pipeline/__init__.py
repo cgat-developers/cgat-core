@@ -33,13 +33,14 @@ from ruffus import (
 
 
 # Lazy-load S3-related classes and functions through the cgatcore instance
-from cgatcore import cgatcore
+from cgatcore import cgatcore  # Import the cgatcore instance
 
 
-# Helper function to access S3Pipeline instance lazily
 def get_s3_pipeline():
     """Instantiate and return the S3Pipeline instance, lazy-loaded to avoid circular imports."""
-    return cgatcore.remote.file_handler.S3Pipeline()
+    # Use get_remote() to access the remote functionality
+    remote = cgatcore.get_remote()  # Now properly calls the method to initialize remote if needed
+    return remote.file_handler.S3Pipeline()
 
 
 # Define S3-aware decorators as properties, accessed only when needed
