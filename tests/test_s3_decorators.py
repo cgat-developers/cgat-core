@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from cgatcore import pipeline as P
+import cgatcore.remote  # Ensure remote is imported
 
 
 class TestS3Decorators(unittest.TestCase):
