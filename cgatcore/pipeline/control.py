@@ -50,7 +50,7 @@ from cgatcore.pipeline.parameters import input_validation, get_params, get_param
 from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
 from cgatcore.pipeline.execution import execute, start_session, \
-    close_session
+    close_session, Executor
 
 
 # redirect os.stat and other OS utilities to cached versions to speed
@@ -1266,6 +1266,10 @@ def run_workflow(args, argv=None, pipeline=None):
     logger.debug("starting run_workflow with action {}".format(
         args.pipeline_action))
 
+    # Instantiate Executor to manage job tracking and cleanup
+    executor = Executor(job_threads=args.multiprocess, work_dir=get_params()["work_dir"])
+    executor.setup_signal_handlers()  # Set up signal handlers for cleanup on interruption
+
     if args.force_run:
         if args.force_run == "all":
             forcedtorun_tasks = ruffus.pipeline_get_task_names()
@@ -1358,20 +1362,33 @@ def run_workflow(args, argv=None, pipeline=None):
 
                     logger.info("current directory is {}".format(os.getcwd()))
 
-                    ruffus.pipeline_run(
-                        args.pipeline_targets,
-                        forcedtorun_tasks=forcedtorun_tasks,
-                        logger=logger,
-                        verbose=args.loglevel,
-                        log_exceptions=args.log_exceptions,
-                        exceptions_terminate_immediately=args.exceptions_terminate_immediately,
-                        checksum_level=args.ruffus_checksums_level,
-                        pipeline=pipeline,
-                        one_second_per_job=False,
-                        **opts
-                    )
+                    # Iterate over tasks and track each job's lifecycle
+                    for task in stream.getvalue().splitlines():
+                        job_info = {"task": task, "status": "running"}
+                        executor.start_job(job_info)  # Track job start
 
-                    close_session()
+                        try:
+
+                            ruffus.pipeline_run(
+                                args.pipeline_targets,
+                                forcedtorun_tasks=forcedtorun_tasks,
+                                logger=logger,
+                                verbose=args.loglevel,
+                                log_exceptions=args.log_exceptions,
+                                exceptions_terminate_immediately=args.exceptions_terminate_immediately,
+                                checksum_level=args.ruffus_checksums_level,
+                                pipeline=pipeline,
+                                one_second_per_job=False,
+                                **opts
+                            )
+                            executor.finish_job(job_info)  # Mark job as finished
+                        except Exception as e:
+                            logger.error(f"Error in job {task}: {e}")
+                            executor.cleanup_all_jobs()
+                            raise
+                        finally:
+                            if not args.without_cluster:
+                                close_session()
 
                 elif args.pipeline_action == "show":
                     ruffus.pipeline_printout(
