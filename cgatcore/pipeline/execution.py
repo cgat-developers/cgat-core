@@ -27,6 +27,7 @@ import time
 import math
 import shutil
 import gevent
+import signal
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
 
