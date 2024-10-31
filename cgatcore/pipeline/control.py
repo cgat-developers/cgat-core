@@ -1267,7 +1267,7 @@ def run_workflow(args, argv=None, pipeline=None):
     # Instantiate Executor to manage job tracking and cleanup
     executor = Executor(job_threads=args.multiprocess, work_dir=get_params()["work_dir"])
     executor.setup_signal_handlers()  # Set up signal handlers for cleanup on interruption
-
+    
     # Determine tasks to force-run if specified
     forcedtorun_tasks = (
         ruffus.pipeline_get_task_names() if args.force_run == "all" else args.pipeline_targets
@@ -1298,10 +1298,11 @@ def run_workflow(args, argv=None, pipeline=None):
         start_session()
         method = getattr(get_caller(), args.pipeline_targets[0])
         method(*args.pipeline_targets[1:])
-
+        
     elif args.pipeline_action in (
         "make", "show", "state", "svg", "plot", "dot", "touch", "regenerate"
     ):
+        
         try:
             with cache_os_functions():
                 if args.pipeline_action == "make":
@@ -1334,6 +1335,7 @@ def run_workflow(args, argv=None, pipeline=None):
                         start_session()
 
                     try:
+                        
                         ruffus.pipeline_run(
                             args.pipeline_targets, forcedtorun_tasks=forcedtorun_tasks,
                             logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
