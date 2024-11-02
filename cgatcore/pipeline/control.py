@@ -869,6 +869,9 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
                             type=str,
                             help="working directory. Will be created if it does not exist")
 
+        parser.add_argument("--cleanup-on-fail", action="store_true", default=True,
+                    help="Enable cleanup of jobs on pipeline failure.")
+
         group = parser.add_argument_group("pipeline logging configuration")
 
         group.add_argument("--pipeline-logfile", dest="pipeline_logfile",
@@ -1254,167 +1257,112 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
 
     return args
 
-
 def run_workflow(args, argv=None, pipeline=None):
-    """Run workflow given options in args.
-
-    argv is kept for backwards compatibility.
-    """
-
     logger = logging.getLogger("cgatcore.pipeline")
     logger.debug(f"Starting run_workflow with action {args.pipeline_action}")
 
     # Instantiate Executor to manage job tracking and cleanup
     executor = Executor(job_threads=args.multiprocess, work_dir=get_params()["work_dir"])
     executor.setup_signal_handlers()  # Set up signal handlers for cleanup on interruption
-    
+
     # Determine tasks to force-run if specified
     forcedtorun_tasks = (
         ruffus.pipeline_get_task_names() if args.force_run == "all" else args.pipeline_targets
     ) if args.force_run else []
 
-    # Create temporary directory if it doesn't exist
-    if not os.path.exists(get_params()["tmpdir"]):
-        logger.warn(f"Local temporary directory {get_params()['tmpdir']} did not exist - created")
-        try:
-            os.makedirs(get_params()["tmpdir"])
-        except OSError:
-            pass
+    # Start workflow execution based on the specified action
+    try:
+        # Ensure the temporary directory exists
+        if not os.path.exists(get_params()["tmpdir"]):
+            logger.warn(f"Local temporary directory {get_params()['tmpdir']} did not exist - created")
+            try:
+                os.makedirs(get_params()["tmpdir"])
+            except OSError:
+                pass
 
-    logger.info(f"Temporary directory is {get_params()['tmpdir']}")
+        logger.info(f"Temporary directory is {get_params()['tmpdir']}")
 
-    # Configure multiprocessing settings
-    run_on_cluster = HAS_DRMAA and not args.without_cluster
-    args.multiprocess = args.multiprocess or (
-        int(math.ceil(multiprocessing.cpu_count() / 2.0)) if not run_on_cluster else 40
-    )
+        # Configure multiprocessing settings
+        run_on_cluster = HAS_DRMAA and not args.without_cluster
+        args.multiprocess = args.multiprocess or (
+            int(math.ceil(multiprocessing.cpu_count() / 2.0)) if not run_on_cluster else 40
+        )
 
-    # Input validation
-    if args.input_validation:
-        input_validation(get_params(), sys.argv[0])
-
-    elif args.pipeline_action == "debug":
-        # Debugging a specific pipeline method
-        start_session()
-        method = getattr(get_caller(), args.pipeline_targets[0])
-        method(*args.pipeline_targets[1:])
-        
-    elif args.pipeline_action in (
-        "make", "show", "state", "svg", "plot", "dot", "touch", "regenerate"
-    ):
-        
-        try:
-            with cache_os_functions():
-                if args.pipeline_action == "make":
-                    # Handling make action
-                    if not args.without_cluster and not HAS_DRMAA and not get_params()['testing']:
-                        E.critical("DRMAA API not found, cannot talk to a cluster.")
-                        E.critical(f"Use --local to run on host: {os.uname()[1]}")
-                        sys.exit(-1)
-
-                    # Generate tasks to be run and log progress
-                    stream = StringIO()
-                    ruffus.pipeline_printout(
-                        stream, args.pipeline_targets, verbose=5, pipeline=pipeline,
-                        checksum_level=args.ruffus_checksums_level
-                    )
-                    logger.addFilter(LoggingFilterProgress(stream.getvalue()))
-
-                    unique_tasks = set(stream.getvalue().splitlines())
-                    for task in unique_tasks:
-                        executor.start_job({"task": task, "status": "running"})
-
-                    # Run the pipeline
-                    opts = {
-                        "multithread": args.multiprocess
-                    } if args.without_cluster else {
-                        "multiprocess": args.multiprocess,
-                        "pool_manager": "gevent"
-                    }
-                    if not args.without_cluster:
-                        start_session()
-
-                    try:
-                        
-                        ruffus.pipeline_run(
-                            args.pipeline_targets, forcedtorun_tasks=forcedtorun_tasks,
-                            logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
-                            exceptions_terminate_immediately=args.exceptions_terminate_immediately,
-                            checksum_level=args.ruffus_checksums_level, pipeline=pipeline,
-                            one_second_per_job=False, **opts
+        # Start pipeline session for 'make' action
+        if args.pipeline_action == "make":
+            start_session()
+            try:
+                # Run pipeline and catch any errors
+                ruffus.pipeline_run(
+                    args.pipeline_targets, forcedtorun_tasks=forcedtorun_tasks,
+                    logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
+                    exceptions_terminate_immediately=args.exceptions_terminate_immediately,
+                    checksum_level=args.ruffus_checksums_level, pipeline=pipeline,
+                    one_second_per_job=False
+                )
+                
+            except ruffus.ruffus_exceptions.RethrownJobError as ex:
+                if not args.debug:
+                    # Summarise errors if debug mode is off
+                    error_summary = f"{len(ex.args)} tasks encountered errors. Summary:"
+                    error_messages = []
+                    for idx, e in enumerate(ex.args):
+                        task, job, error, msg, traceback = e
+                        task = re.sub("__main__.", "", task or 'Unknown task')
+                        job = re.sub(r"\s", "", job or 'Unknown job')
+                        msg = msg if isinstance(msg, str) else str(msg) if msg else "No specific message"
+                        if len(msg.splitlines()) > 1:
+                            msg = ""  # Show only single-line messages
+                        error_messages.append(
+                            f"{idx + 1}: Task={task}, Error={error}, Job={job}, Message={msg}"
                         )
 
-                        for task in unique_tasks:
-                            executor.finish_job({"task": task, "status": "finished"})
+                    E.error(error_summary)
+                    for message in error_messages:
+                        E.error(message)
+                    E.error(f"Full traceback can be found in {args.pipeline_logfile}")
+                    logger.error("Start of all error messages")
+                    logger.error(ex)
+                    logger.error("End of all error messages")
 
-                    except ruffus.ruffus_exceptions.RethrownJobError as ex:
-                        if not args.debug:
-                            error_summary = f"{len(ex.args)} tasks encountered errors. Summary:"
-                            error_messages = []
+                # Execute cleanup if configured
+                if getattr(args, "cleanup_on_fail", True):  # Check if cleanup is enabled on fail
+                    logger.info("Cleaning up all jobs due to pipeline failure.")
+                    executor.cleanup_all_jobs()
+                
+                raise ValueError("Pipeline failed with errors") from ex
+            finally:
+                # Close pipeline session
+                close_session()
 
-                            for idx, e in enumerate(ex.args):
-                                task, job, error, msg, traceback = e
-
-                                if task is None:
-                                    task = 'Unknown task'
-                                    msg = str(msg) if msg else "No specific message"
-                                else:
-                                    task = re.sub("__main__.", "", task)
-                                    job = re.sub(r"\s", "", job)
-
-                                # Display only single-line messages
-                                if len([x for x in msg.split("\n") if x]) > 1:
-                                    msg = ""
-
-                                error_message = (
-                                    f"{idx + 1}: Task={task}, Error={error}, Job={job}, Message={msg}"
-                                )
-                                error_messages.append(error_message)
-
-                            E.error(error_summary)
-                            for message in error_messages:
-                                E.error(message)
-
-                            E.error(f"Full traceback can be found in {args.pipeline_logfile}")
-                            logger.error("Start of all error messages")
-                            logger.error(ex)
-                            logger.error("End of all error messages")
-                            raise ValueError("Pipeline failed with errors") from ex
-                        else:
-                            raise
-
-                    finally:
-                        if not args.without_cluster:
-                            close_session()
-
-                # Actions other than 'make'
-                elif args.pipeline_action == "show":
+        # Handle other pipeline actions (e.g., show, touch)
+        elif args.pipeline_action in (
+            "show", "touch", "regenerate", "svg", "state"
+        ):
+            with cache_os_functions():
+                if args.pipeline_action == "show":
                     ruffus.pipeline_printout(
                         args.stdout, args.pipeline_targets, forcedtorun_tasks=forcedtorun_tasks,
                         verbose=args.loglevel, pipeline=pipeline,
                         checksum_level=args.ruffus_checksums_level
                     )
-
                 elif args.pipeline_action == "touch":
                     ruffus.pipeline_run(
                         args.pipeline_targets, touch_files_only=True,
                         verbose=args.loglevel, pipeline=pipeline,
                         checksum_level=args.ruffus_checksums_level
                     )
-
                 elif args.pipeline_action == "regenerate":
                     ruffus.pipeline_run(
                         args.pipeline_targets, touch_files_only=args.ruffus_checksums_level,
                         pipeline=pipeline, verbose=args.loglevel
                     )
-
                 elif args.pipeline_action == "svg":
                     ruffus.pipeline_printout_graph(
                         args.stdout.buffer, args.pipeline_format, args.pipeline_targets,
                         forcedtorun_tasks=forcedtorun_tasks, pipeline=pipeline,
                         checksum_level=args.ruffus_checksums_level
                     )
-
                 elif args.pipeline_action == "state":
                     ruffus_return_dag(
                         args.stdout, target_tasks=args.pipeline_targets,
@@ -1422,33 +1370,40 @@ def run_workflow(args, argv=None, pipeline=None):
                         pipeline=pipeline, checksum_level=args.ruffus_checksums_level
                     )
 
-        # Catch any other unexpected exceptions
-        except Exception as e:
-            logger.exception("An error occurred during pipeline execution.")
-            raise
+        # Dump pipeline parameters
+        elif args.pipeline_action == "dump":
+            args.stdout.write((json.dumps(get_params())) + "\n")
 
-    elif args.pipeline_action == "dump":
-        args.stdout.write((json.dumps(get_params())) + "\n")
+        # Print configuration settings
+        elif args.pipeline_action == "printconfig":
+            E.info("Printing out pipeline parameters:")
+            for k, v in sorted(get_params().items()):
+                print(k, "=", v)
+            print_config_files()
 
-    elif args.pipeline_action == "printconfig":
-        E.info("Printing out pipeline parameters:")
-        for k, v in sorted(get_params().items()):
-            print(k, "=", v)
-        print_config_files()
+        # Generate default config files
+        elif args.pipeline_action == "config":
+            pipeline_path = os.path.splitext(get_caller().__file__)[0]
+            general_path = os.path.join(os.path.dirname(pipeline_path), "configuration")
+            write_config_files(pipeline_path, general_path)
 
-    elif args.pipeline_action == "config":
-        f = sys._getframe(2)
-        pipeline_path = os.path.splitext(f.f_globals["__file__"])[0]
-        general_path = os.path.join(os.path.dirname(pipeline_path), "configuration")
-        write_config_files(pipeline_path, general_path)
+        # Clone pipeline structure
+        elif args.pipeline_action == "clone":
+            clone_pipeline(args.pipeline_targets[0])
 
-    elif args.pipeline_action == "clone":
-        clone_pipeline(args.pipeline_targets[0])
+        else:
+            raise ValueError(f"Unknown pipeline action {args.pipeline_action}")
 
-    else:
-        raise ValueError(f"Unknown pipeline action {args.pipeline_action}")
+    except Exception as e:
+        logger.exception("An error occurred during pipeline execution.")
+        if getattr(args, "cleanup_on_fail", True):
+            logger.info("Cleaning up all jobs due to pipeline failure.")
+            executor.cleanup_all_jobs()
+        raise e
 
-    E.stop(logger=get_logger())
+    finally:
+        # End of pipeline run, stop logging
+        E.stop(logger=get_logger())
 
 
 def main(argv=None):
