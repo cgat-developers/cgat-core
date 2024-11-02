@@ -870,7 +870,7 @@ def parse_commandline(argv=None, optparse=True, **kwargs):
                             help="working directory. Will be created if it does not exist")
 
         parser.add_argument("--cleanup-on-fail", action="store_true", default=True,
-                    help="Enable cleanup of jobs on pipeline failure.")
+                            help="Enable cleanup of jobs on pipeline failure.")
 
         group = parser.add_argument_group("pipeline logging configuration")
 
@@ -1257,6 +1257,7 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
 
     return args
 
+
 def run_workflow(args, argv=None, pipeline=None):
     logger = logging.getLogger("cgatcore.pipeline")
     logger.debug(f"Starting run_workflow with action {args.pipeline_action}")
@@ -1335,7 +1336,6 @@ def run_workflow(args, argv=None, pipeline=None):
                 # Close pipeline session
                 close_session()
 
-        # Handle other pipeline actions (e.g., show, touch)
         elif args.pipeline_action in (
             "show", "touch", "regenerate", "svg", "state"
         ):
