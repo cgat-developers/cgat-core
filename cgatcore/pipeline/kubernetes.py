@@ -10,6 +10,7 @@ from cgatcore.pipeline.execution import BaseExecutor
 
 logger = logging.getLogger(__name__)
 
+
 class KubernetesExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

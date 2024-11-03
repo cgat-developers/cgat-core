@@ -34,7 +34,11 @@ from cgatcore.pipeline.utils import get_caller_locals, get_caller, get_calling_f
 from cgatcore.pipeline.files import get_temp_filename, get_temp_dir
 from cgatcore.pipeline.parameters import substitute_parameters, get_params
 from cgatcore.pipeline.cluster import get_queue_manager, JobInfo
-from cgatcore.pipeline.kubernetes import KubernetesExecutor
+try:
+    from cgatcore.pipeline.kubernetes import KubernetesExecutor
+except ImportError:
+    KubernetesExecutor = None  # Fallback if Kubernetes is not available
+
 
 # talking to a cluster
 try:
@@ -335,12 +339,11 @@ def get_executor(options=None):
     - Executor instance appropriate for the specified queue manager.
     """
     if options is None:
-        options = get_params()  # Retrieve parameters if not provided
+        options = get_params()
 
     queue_manager = options.get("cluster_queue_manager", None)
 
-    # Determine the correct executor based on the queue manager type
-    if queue_manager == "kubernetes":
+    if queue_manager == "kubernetes" and KubernetesExecutor is not None:
         return KubernetesExecutor(**options)
     elif queue_manager == "sge":
         return SGEExecutor(**options)
@@ -1253,6 +1256,7 @@ def run(statement, **kwargs):
 
     BenchmarkData = collections.namedtuple('BenchmarkData', sorted(benchmark_data[0]))
     return [BenchmarkData(**d) for d in benchmark_data]
+
 
 def submit(module,
            function,
