@@ -239,7 +239,7 @@ def input_validation(PARAMS, pipeline_script=""):
 
     E.info('''checking pipeline configuration''')
 
-    for key, value in sorted(PARAMS.iteritems()):
+    for key, value in sorted(PARAMS.items()):
 
         key = str(key)
         value = str(value)
