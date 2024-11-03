@@ -16,4 +16,5 @@ pytest -v tests/test_pipeline_control.py
 pytest -v tests/test_pipeline_execution.py
 pytest -v tests/test_pipeline_cli.py
 pytest -v tests/test_pipeline_actions.py
+pytest -v tests/test_execution_cleanup.py
 pytest -v tests/test_s3_decorators.py
