@@ -343,6 +343,9 @@ def get_executor(options=None):
     if options is None:
         options = get_params()
 
+    if options.get("testing", False):
+        return LocalExecutor(**options)
+
     queue_manager = options.get("cluster_queue_manager", None)
 
     if queue_manager == "kubernetes" and KubernetesExecutor is not None:
