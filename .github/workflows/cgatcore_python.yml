@@ -26,17 +26,25 @@ jobs:
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('conda/environments/cgat-core.yml') }}
+          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda/environments/cgat-core.yml') }}
+      - name: Set installer URL
+        id: set-installer-url
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh" >> $GITHUB_ENV
+          fi
       - uses: conda-incubator/setup-miniconda@v2
         with:
+          installer-url: ${{ env.installer-url }}
           python-version: ${{ matrix.python-version }}
           channels: conda-forge, bioconda, defaults
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
-          miniforge-variant: Mambaforge
+      - name: Configure Conda Paths
+        run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
       - name: Show conda
         run: |
           conda info
