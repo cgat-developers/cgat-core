@@ -36,6 +36,8 @@ jobs:
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
           miniforge-variant: Miniforge
+      - name: Configure Conda Paths
+        run: echo "${{ secrets.PATH }}:/usr/share/miniconda3/condabin" >> $GITHUB_PATH
       - name: Show conda
         run: |
           conda info
