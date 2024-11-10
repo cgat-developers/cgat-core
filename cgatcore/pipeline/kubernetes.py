@@ -5,8 +5,9 @@ import os
 import time
 import json
 from datetime import datetime
-from kubernetes import client, config, exceptions
-from cgatcore.pipeline.execution import BaseExecutor
+from kubernetes import client, config
+from cgatcore.pipeline.base_executor import BaseExecutor
+from kubernetes.client import exceptions
 
 logger = logging.getLogger(__name__)
 

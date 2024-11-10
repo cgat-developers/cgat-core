@@ -34,6 +34,7 @@ from cgatcore.pipeline.utils import get_caller_locals, get_caller, get_calling_f
 from cgatcore.pipeline.files import get_temp_filename, get_temp_dir
 from cgatcore.pipeline.parameters import substitute_parameters, get_params
 from cgatcore.pipeline.cluster import get_queue_manager, JobInfo
+from cgatcore.pipeline.executors import SGEExecutor, SlurmExecutor, TorqueExecutor, LocalExecutor
 try:
     from cgatcore.pipeline.kubernetes import KubernetesExecutor
 except ImportError:
