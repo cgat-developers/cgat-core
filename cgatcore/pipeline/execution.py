@@ -348,14 +348,23 @@ def get_executor(options=None):
 
     queue_manager = options.get("cluster_queue_manager", None)
 
+    # Check for KubernetesExecutor
     if queue_manager == "kubernetes" and KubernetesExecutor is not None:
         return KubernetesExecutor(**options)
-    elif queue_manager == "sge":
+    
+    # Check for SGEExecutor (Sun Grid Engine)
+    elif queue_manager == "sge" and shutil.which("qsub") is not None:
         return SGEExecutor(**options)
-    elif queue_manager == "slurm":
+    
+    # Check for SlurmExecutor
+    elif queue_manager == "slurm" and shutil.which("sbatch") is not None:
         return SlurmExecutor(**options)
-    elif queue_manager == "torque":
+    
+    # Check for TorqueExecutor
+    elif queue_manager == "torque" and shutil.which("qsub") is not None:
         return TorqueExecutor(**options)
+    
+    # Fallback to LocalExecutor
     else:
         return LocalExecutor(**options)
 
