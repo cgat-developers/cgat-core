@@ -29,7 +29,7 @@ jobs:
           key:
             ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
             hashFiles('conda/environments/cgat-core.yml') }}
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v1
         with:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge, bioconda, defaults
