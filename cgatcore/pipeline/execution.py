@@ -1038,10 +1038,16 @@ class LocalExecutor(Executor):
             data.update(dict([(x[0], _convert(x[0], x[1]))
                               for x in pairs if len(x) == 2]))
 
-            # remove % sign
+            cpu_value = data.get("percent_cpu", "0")
+            # Strip potential '%' symbols, handle non-numeric cases gracefully
+            try:
+                percent_cpu = int(re.sub("%", "", cpu_value)) if cpu_value.replace("%", "").strip().isdigit() else 0
+            except ValueError:
+                percent_cpu = 0  # Default or fallback value, adjust as necessary
+
             data.update(
-                {"percent_cpu": int(re.sub("%", "", data.get("percent_cpu", 0))),
-                 "cpu_t": float(data["user_t"]) + float(data["sys_t"])})
+                {"percent_cpu": percent_cpu,
+                 "cpu_t": float(data.get("user_t", 0)) + float(data.get("sys_t", 0))})
 
         return JobInfo(jobId=process.pid, resourceUsage=data)
 
