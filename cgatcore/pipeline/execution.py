@@ -346,6 +346,10 @@ def get_executor(options=None):
     if options.get("testing", False):
         return LocalExecutor(**options)
 
+    # Check if to_cluster is explicitly set to False
+    if not options.get("to_cluster", True):  # Defaults to True if not specified
+        return LocalExecutor(**options)
+
     queue_manager = options.get("cluster_queue_manager", None)
 
     # Check for KubernetesExecutor
