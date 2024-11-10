@@ -36,7 +36,7 @@ jobs:
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge
       - name: Show conda
         run: |
           conda info
