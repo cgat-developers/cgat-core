@@ -37,7 +37,7 @@ import sys
 import ruffus
 import numpy.random
 import cgatcore.experiment as E
-import cgatcore.pipeline as P
+from cgatcore import pipeline as P
 
 
 def create_files(outfile):
