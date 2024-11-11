@@ -368,7 +368,7 @@ def get_executor(options=None):
     elif queue_manager == "torque" and shutil.which("qsub") is not None:
         return TorqueExecutor(**options)
     
-    # Fallback to LocalExecutor
+    # Fallback to LocalExecutor, not sure if this should raise an error though, feels like it should
     else:
         return LocalExecutor(**options)
 
