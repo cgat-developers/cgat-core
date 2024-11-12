@@ -20,7 +20,7 @@ nav:
     - Execution: pipeline_modules/execution.md
     - Utils: pipeline_modules/utils.md
     - Parameters: pipeline_modules/parameters.md
-  - S3 Integration:
+  - S3 Cloud:
     - S3 Pipeline: s3_integration/s3_pipeline.md
     - S3 Decorators: s3_integration/s3_decorators.md
     - Configuring S3: s3_integration/configuring_s3.md
