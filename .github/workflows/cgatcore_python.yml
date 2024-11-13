@@ -68,7 +68,7 @@ jobs:
 
       - name: Install MkDocs and Dependencies
         run: |
-          pip install mkdocs mkdocs-material
+          pip install mkdocs mkdocs-material mkdocstrings
 
       - name: Build and Deploy MkDocs Site
         run: mkdocs gh-deploy --force --clean
