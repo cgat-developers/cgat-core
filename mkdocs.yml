@@ -41,7 +41,6 @@ nav:
     - Pipeline: function_doc/pipeline.md
     - Core:
       - Experiment: function_doc/core/experiment.md
-      - CSV: function_doc/core/csv.md
       - csv2db: function_doc/core/csv2db.md
       - Database: function_doc/core/database.md
       - IOTools: function_doc/core/iotools.md
