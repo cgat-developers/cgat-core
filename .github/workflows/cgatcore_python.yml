@@ -53,3 +53,24 @@ jobs:
         run: |
           pip install .
           ./all-tests.sh
+          
+  deploy_docs:
+    name: Deploy MkDocs Documentation
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs and Dependencies
+        run: |
+          pip install mkdocs mkdocs-material
+
+      - name: Build and Deploy MkDocs Site
+        run: mkdocs gh-deploy --force --clean
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
