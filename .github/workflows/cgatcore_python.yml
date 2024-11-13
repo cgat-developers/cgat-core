@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: "Ex1 (${matrix.python-version}, ${matrix.os})"
+    name: "Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
 
     strategy:
