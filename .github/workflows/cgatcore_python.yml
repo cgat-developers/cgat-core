@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
+    name: "Ex1 (${matrix.python-version}, ${matrix.os})"
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -25,23 +25,27 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Cache conda
         uses: actions/cache@v3
-        env:
-          # Increase this value to reset cache if conda/environments/cgat-core.yml has not changed
-          CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda/environments/cgat-core.yml') }}
+          key: ${{ runner.os }}-conda-${{ hashFiles('conda/environments/cgat-core.yml') }}
+        env:
+          # Adjust this value if the conda environment changes
+          CACHE_NUMBER: 0
+
       - name: Set installer URL
         id: set-installer-url
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" >> $GITHUB_ENV
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
             echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh" >> $GITHUB_ENV
           fi
-      - uses: conda-incubator/setup-miniconda@v2
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
         with:
           installer-url: ${{ env.installer-url }}
           python-version: ${{ matrix.python-version }}
@@ -49,12 +53,15 @@ jobs:
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
+
       - name: Configure Conda Paths
-        run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
-      - name: Show conda
+        run: echo "$(conda info --base)/condabin" >> $GITHUB_PATH
+
+      - name: Show Conda Information
         run: |
           conda info
           conda list
+
       - name: Test
         run: |
           pip install .
@@ -66,14 +73,17 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - name: Install MkDocs and dependencies
+
+      - name: Install MkDocs and Dependencies
         run: |
           pip install mkdocs mkdocs-material mkdocs-gh-deploy
-      - name: Build and Deploy MkDocs site
+
+      - name: Build and Deploy MkDocs Site
         run: mkdocs gh-deploy --force --clean
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
