@@ -1,6 +1,12 @@
 name: cgatcore
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -53,3 +59,21 @@ jobs:
         run: |
           pip install .
           ./all-tests.sh
+
+  deploy_docs:
+    name: Deploy MkDocs Documentation
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install MkDocs and dependencies
+        run: |
+          pip install mkdocs mkdocs-material mkdocs-gh-deploy
+      - name: Build and Deploy MkDocs site
+        run: mkdocs gh-deploy --force --clean
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
