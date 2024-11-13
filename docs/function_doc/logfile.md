@@ -1,5 +1,5 @@
 # CGATcore Logfile Module
 
-::: cgatcore.Logfile
+::: cgatcore.logfile
     :members:
     :show-inheritance:
