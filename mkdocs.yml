@@ -1,16 +1,25 @@
 site_name: CGAT-core Documentation
 theme: material
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
 nav:
   - Home: index.md
   - Getting Started:
     - Installation: getting_started/installation.md
-    - Cluster Configuration: getting_started/cluster_config.md
+    - Cluster Configuration: getting_started/run_parameters.md
     - Examples: getting_started/examples.md
-    - Tutorial: getting_started/tutorial.md
-  - Building a Workflow:
-    - Writing a Workflow: defining_workflow/writing_workflow.md
     - Run Parameters: defining_workflow/run_parameters.md
-    - Tutorial: defining_workflow/tutorial.md
+  - Building a Workflow:
+      - Workflow Overview: defining_workflow/writing_workflows.md
+      - Writing a Workflow Tutorial: getting_started/tutorial.md
   - Pipeline Modules:
     - Overview: pipeline_modules/overview.md
     - Control: pipeline_modules/control.md
@@ -32,7 +41,6 @@ nav:
     - Pipeline: function_doc/pipeline.md
     - Core:
       - Experiment: function_doc/core/experiment.md
-      - CSV: function_doc/core/csv.md
       - csv2db: function_doc/core/csv2db.md
       - Database: function_doc/core/database.md
       - IOTools: function_doc/core/iotools.md
