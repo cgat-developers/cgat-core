@@ -1,6 +1,6 @@
 # Cluster configuration
 
-Currently, cgatcore supports the following workload managers: SGE, SLURM, Torque, and PBSPro. The default cluster options are set for SunGrid Engine (SGE). If you are using a different workload manager, you need to configure your cluster settings accordingly by creating a `.cgat.yml` file in your home directory.
+Currently, cgatcore supports the following workload managers: SGE, SLURM and Torque. The default cluster options are set for SunGrid Engine (SGE). If you are using a different workload manager, you need to configure your cluster settings accordingly by creating a `.cgat.yml` file in your home directory.
 
 This configuration file allows you to override the default settings. To view the hardcoded parameters for cgatcore, refer to the [parameters.py file](https://github.com/cgat-developers/cgat-core/blob/eb6d29e5fe1439de2318aeb5cdfa730f36ec3af4/cgatcore/pipeline/parameters.py#L67).
 
