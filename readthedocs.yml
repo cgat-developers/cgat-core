@@ -1,2 +1,0 @@
-conda:
-    file: conda/environments/readthedocs.yml
