@@ -16,10 +16,11 @@ nav:
     - Installation: getting_started/installation.md
     - Cluster Configuration: getting_started/run_parameters.md
     - Running a Pipeline: getting_started/examples.md
+    - Running a Pipeline Tutorial: getting_started/tutorial.md
     - Run Parameters: defining_workflow/run_parameters.md
   - Building a Workflow:
       - Workflow Overview: defining_workflow/writing_workflows.md
-      - Writing a Workflow Tutorial: getting_started/tutorial.md
+      - Writing a Workflow Tutorial: defining_workflow/tutorial.md
   - Pipeline Modules:
     - Overview: pipeline_modules/overview.md
     - Control: pipeline_modules/control.md
