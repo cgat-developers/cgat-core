@@ -2,7 +2,7 @@
 
 ![Licence](https://img.shields.io/github/license/cgat-developers/cgat-core.svg)
 ![Conda](https://img.shields.io/conda/v/bioconda/cgatcore.svg)
-[![Documentation Status](https://readthedocs.org/projects/cgat-core/badge/?version=latest)]()
+![Build Status](https://github.com/cgat-developers/cgat-core/actions/workflows/cgatcore_python.yml/badge.svg)
 
 Welcome to the CGAT-core documentation! CGAT-core is a workflow management system designed to support the rapid development of scalable, reproducible data analysis pipelines. It is built upon a flexible and user-friendly set of libraries and functions tailored for large-scale data analysis.
 
