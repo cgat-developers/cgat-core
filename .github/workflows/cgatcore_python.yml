@@ -54,16 +54,17 @@ jobs:
           conda info
           conda list
 
-      - name: Test
-        run: |
-          pip install .
-          ./all-tests.sh
-
       - name: Debug Python Environment
         run: |
           python --version
           pip list
           openssl version
+
+      - name: Test
+        run: |
+          pip install .
+          ./all-tests.sh
+
 
   deploy_docs:
     name: Deploy MkDocs Documentation
