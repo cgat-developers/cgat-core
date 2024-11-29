@@ -53,7 +53,12 @@ jobs:
         run: |
           pip install .
           ./all-tests.sh
-          
+      - name: Debug Python Environment
+        run: |
+        python --version
+        pip list
+        openssl version
+
   deploy_docs:
     name: Deploy MkDocs Documentation
     runs-on: ubuntu-latest
