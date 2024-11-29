@@ -41,11 +41,11 @@ nav:
   - Core Functions:
     - Pipeline: function_doc/pipeline.md
     - Core:
-      - Experiment: function_doc/core/experiment.md
-      - csv2db: function_doc/core/csv2db.md
-      - Database: function_doc/core/database.md
-      - IOTools: function_doc/core/iotools.md
-      - Logfile: function_doc/core/logfile.md
+      - Experiment: function_doc/experiment.md
+      - csv2db: function_doc/csv2db.md
+      - Database: function_doc/database.md
+      - IOTools: function_doc/iotools.md
+      - Logfile: function_doc/logfile.md
   - Project Info:
     - Contributing: project_info/contributing.md
     - How to Contribute: project_info/how_to_contribute.md
