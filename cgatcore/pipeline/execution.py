@@ -856,7 +856,7 @@ class Executor(object):
                             *env_args,
                             image,
                             "/bin/bash", "-c",
-                            f"'{statement}'"  # Wrap statement in quotes for proper execution
+                            f"'{statement}'"
                         ]
                     elif container_runtime == "singularity":
                         container_command = [
@@ -865,7 +865,7 @@ class Executor(object):
                             *env_args,
                             image,
                             "/bin/bash", "-c",
-                            f"'{statement}'"  # Wrap statement in quotes for proper execution
+                            f"'{statement}'"
                         ]
 
                     # Replace the original statement with the containerised version
