@@ -788,15 +788,78 @@ class Executor(object):
             else:
                 self.logger.info(f"Output file not found (already removed or not created): {outfile}")
 
-    def run(self, statement_list):
-        """Run a list of statements and track each job's lifecycle."""
+    def run(self, statement_list, job_memory=None, job_threads=None, image=None, volumes=None, env_vars=None, **kwargs):
+        """
+        Execute a list of statements with optional container support.
+
+        Args:
+            statement_list (list): List of commands to execute.
+            job_memory (str): Memory requirements (e.g., "4G").
+            job_threads (int): Number of threads to use.
+            image (str): Container image to use (e.g., "ubuntu:20.04").
+            volumes (list): List of volume mappings (e.g., ["/data:/data"]).
+            env_vars (dict): Environment variables for the container.
+            **kwargs: Additional arguments passed to the executor.
+
+        Returns:
+            list: Benchmark data collected from executed jobs.
+        """
+        # Validation checks
+        if image:
+            # If image is specified, validate related arguments
+            if not isinstance(image, str) or not image.strip():
+                raise ValueError("A valid container image must be specified when 'image' is provided.")
+
+            if volumes and not isinstance(volumes, list):
+                raise ValueError("Volumes must be a list of volume mappings (e.g., ['/data:/data']).")
+
+            if env_vars and not isinstance(env_vars, dict):
+                raise ValueError("Environment variables must be provided as a dictionary (e.g., {'VAR': 'value'}).")
+
+        else:
+            # If no image is specified, disallow container-specific arguments
+            if volumes:
+                raise ValueError("Volume mappings cannot be provided without specifying a container image.")
+            if env_vars:
+                raise ValueError("Environment variables cannot be provided without specifying a container image.")
+
         benchmark_data = []
         for statement in statement_list:
             job_info = {"statement": statement}
-            self.start_job(job_info)  # Add job to active_jobs
+            self.start_job(job_info)  # Track the job lifecycle
 
             try:
-                # Execute job
+                # Prepare for containerised execution if an image is specified
+                if image:
+                    volume_args = []
+                    if volumes:
+                        for volume in volumes:
+                            volume_args.extend(["-v", volume])
+
+                    env_args = []
+                    if env_vars:
+                        for key, value in env_vars.items():
+                            env_args.extend(["-e", f"{key}={value}"])
+
+                    # Add standard environment variables
+                    if job_memory:
+                        env_args.extend(["-e", f"JOB_MEMORY={job_memory}"])
+                    if job_threads:
+                        env_args.extend(["-e", f"JOB_THREADS={job_threads}"])
+
+                    # Construct the Docker run command
+                    docker_command = [
+                        "docker", "run", "--rm",
+                        *volume_args,
+                        *env_args,
+                        image,
+                        "/bin/bash", "-c",
+                        f"'{statement}'"  # Wrap statement in quotes for proper execution
+                    ]
+                    # Replace the original statement with the containerised version
+                    statement = " ".join(docker_command)
+
+                # Execute the statement (containerised or not)
                 full_statement, job_path = self.build_job_script(statement)
                 process = subprocess.Popen(
                     full_statement, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -809,7 +872,7 @@ class Executor(object):
                         f"stderr: {stderr.decode('utf-8')}\nstatement: {statement}"
                     )
 
-                # Collect benchmark data if job was successful
+                # Collect benchmark data if the job was successful
                 benchmark_data.append(
                     self.collect_benchmark_data([statement], resource_usage=[{"job_id": process.pid}])
                 )
