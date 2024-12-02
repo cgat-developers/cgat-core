@@ -788,7 +788,17 @@ class Executor(object):
             else:
                 self.logger.info(f"Output file not found (already removed or not created): {outfile}")
 
-    def run(self, statement_list, job_memory=None, job_threads=None, container_runtime=None, image=None, volumes=None, env_vars=None, **kwargs):
+    def run(
+        self,
+        statement_list,
+        job_memory=None,
+        job_threads=None,
+        container_runtime=None,
+        image=None,
+        volumes=None,
+        env_vars=None,
+        **kwargs,
+    ):
         """
         Execute a list of statements with optional container support for Docker or Singularity.
 
@@ -798,7 +808,7 @@ class Executor(object):
             job_threads (int): Number of threads to use.
             container_runtime (str): Container runtime to use ("docker" or "singularity").
             image (str): Container image to use (e.g., "ubuntu:20.04" or a Singularity SIF path).
-            volumes (list): List of volume mappings (e.g., ['/data:/data'] for Docker or ['/data:/data'] for Singularity).
+            volumes (list): List of volume mappings (e.g., ['/data:/data'] for Docker or Singularity).
             env_vars (dict): Environment variables for the container.
             **kwargs: Additional arguments passed to the executor.
 
@@ -806,72 +816,57 @@ class Executor(object):
             list: Benchmark data collected from executed jobs.
         """
         # Validation checks
-        if container_runtime:
-            if container_runtime not in ["docker", "singularity"]:
-                raise ValueError("Container runtime must be 'docker' or 'singularity'.")
-            if not image:
-                raise ValueError("An image must be specified when using a container runtime.")
+        if container_runtime and container_runtime not in ["docker", "singularity"]:
+            self.logger.error(f"Invalid container_runtime: {container_runtime}")
+            raise ValueError("Container runtime must be 'docker' or 'singularity'")
 
-        else:
-            # If no container runtime is specified, disallow container-specific arguments
-            if volumes or env_vars or image:
-                raise ValueError("Container-specific arguments (volumes, env_vars, or image) require a container runtime.")
+        if container_runtime and not image:
+            self.logger.error(f"Container runtime specified without an image: {container_runtime}")
+            raise ValueError("An image must be specified when using a container runtime")
 
         benchmark_data = []
+
         for statement in statement_list:
-            job_info = {"statement": statement}
-            self.start_job(job_info)  # Track the job lifecycle
+            job_info = {"statement": statement}  # Preserve the original statement
+            self.start_job(job_info)
 
             try:
-                # Prepare for containerised execution if a container runtime is specified
+                # Prepare for containerised execution
                 if container_runtime:
                     volume_args = []
-                    if volumes:
-                        if container_runtime == "docker":
-                            for volume in volumes:
-                                volume_args.extend(["-v", volume])
-                        elif container_runtime == "singularity":
-                            for volume in volumes:
-                                volume_args.extend(["--bind", volume])
-
                     env_args = []
-                    if env_vars:
-                        for key, value in env_vars.items():
-                            if container_runtime == "docker":
-                                env_args.extend(["-e", f"{key}={value}"])
-                            elif container_runtime == "singularity":
-                                env_args.extend(["--env", f"{key}={value}"])
 
-                    # Add standard environment variables
+                    if volumes:
+                        volume_flag = "-v" if container_runtime == "docker" else "--bind"
+                        volume_args.extend([f"{volume_flag} {v}" for v in volumes])
+
+                    if env_vars:
+                        env_flag = "-e" if container_runtime == "docker" else "--env"
+                        env_args.extend([f"{env_flag} {k}={v}" for k, v in env_vars.items()])
+
                     if job_memory:
-                        env_args.append(f"--env JOB_MEMORY={job_memory}" if container_runtime == "singularity" else "-e JOB_MEMORY={job_memory}")
+                        env_args.append(f"{env_flag} JOB_MEMORY={job_memory}")
                     if job_threads:
-                        env_args.append(f"--env JOB_THREADS={job_threads}" if container_runtime == "singularity" else "-e JOB_THREADS={job_threads}")
+                        env_args.append(f"{env_flag} JOB_THREADS={job_threads}")
 
                     # Construct the container command
-                    if container_runtime == "docker":
-                        container_command = [
-                            "docker", "run", "--rm",
-                            *volume_args,
-                            *env_args,
-                            image,
-                            "/bin/bash", "-c",
-                            f"'{statement}'"
-                        ]
-                    elif container_runtime == "singularity":
-                        container_command = [
-                            "singularity", "exec",
-                            *volume_args,
-                            *env_args,
-                            image,
-                            "/bin/bash", "-c",
-                            f"'{statement}'"
-                        ]
+                    container_command = [
+                        container_runtime,
+                        "run",
+                        "--rm",
+                        *volume_args,
+                        *env_args,
+                        image,
+                        "/bin/bash",
+                        "-c",
+                        statement,
+                    ]
+                    statement = " ".join(container_command)  # Keep for debugging/logging
 
-                    # Replace the original statement with the containerised version
-                    statement = " ".join(container_command)
+                # Debugging: Log the constructed command
+                self.logger.info(f"Executing command: {statement}")
 
-                # Execute the statement (containerised or not)
+                # Build and execute the statement
                 full_statement, job_path = self.build_job_script(statement)
                 process = subprocess.Popen(
                     full_statement, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -881,19 +876,21 @@ class Executor(object):
                 if process.returncode != 0:
                     raise OSError(
                         f"Job failed with return code {process.returncode}.\n"
-                        f"stderr: {stderr.decode('utf-8')}\nstatement: {statement}"
+                        f"stderr: {stderr.decode('utf-8')}\ncommand: {statement}"
                     )
 
-                # Collect benchmark data if the job was successful
+                # Collect benchmark data for successful jobs
                 benchmark_data.append(
-                    self.collect_benchmark_data([statement], resource_usage=[{"job_id": process.pid}])
+                    self.collect_benchmark_data(
+                        [statement], resource_usage=[{"job_id": process.pid}]
+                    )
                 )
-                self.finish_job(job_info)  # Remove job from active_jobs
+                self.finish_job(job_info)
 
             except Exception as e:
                 self.logger.error(f"Job failed: {e}")
                 self.cleanup_failed_job(job_info)
-                continue
+                raise  # Propagate the exception
 
         return benchmark_data
 
