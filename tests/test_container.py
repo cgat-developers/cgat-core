@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from cgatcore.pipeline.execution import P
+import cgatcore.pipeline as P
 
 
 @pytest.mark.parametrize("container_runtime, image, volumes, env_vars, expected_command", [
@@ -90,7 +90,7 @@ def test_missing_required_params(missing_param, expected_exception):
 
 def test_cleanup_on_failure():
     # Test that cleanup is properly handled when a job fails
-    with patch("subprocess.Popen") as mock_popen, patch("executor.P.cleanup_failed_job") as mock_cleanup:
+    with patch("subprocess.Popen") as mock_popen, patch("P.cleanup_failed_job") as mock_cleanup:
         mock_process = MagicMock()
         mock_process.communicate.return_value = (b"", b"Some error occurred")
         mock_process.returncode = 1  # Simulate failure
