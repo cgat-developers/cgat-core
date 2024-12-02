@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from executor import P
+from cgatcore.pipeline.execution import P
 
 
 @pytest.mark.parametrize("container_runtime, image, volumes, env_vars, expected_command", [
