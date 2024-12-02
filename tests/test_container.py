@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from executor import P
 
+
 @pytest.mark.parametrize("container_runtime, image, volumes, env_vars, expected_command", [
     ("docker", "ubuntu:20.04", ["/data:/data"], {"MY_VAR": "value"},
      "docker run --rm -v /data:/data -e MY_VAR=value ubuntu:20.04 /bin/bash -c 'echo Hello from Docker'"),
