@@ -1,0 +1,1757 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../writing_workflows/">
+      
+      
+        <link rel="next" href="../../pipeline_modules/overview/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.47">
+    
+    
+      
+        <title>Writing a Workflow Tutorial - CGAT-core Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#writing-a-workflow-tutorial" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CGAT-core Documentation" class="md-header__button md-logo" aria-label="CGAT-core Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CGAT-core Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Writing a Workflow Tutorial
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CGAT-core Documentation" class="md-nav__button md-logo" aria-label="CGAT-core Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CGAT-core Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/run_parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/examples/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running a Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/tutorial/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running a Pipeline Tutorial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../run_parameters.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Run Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Building a Workflow
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Building a Workflow
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writing_workflows/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workflow Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Writing a Workflow Tutorial
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Writing a Workflow Tutorial
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation-of-cgat-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation of cgat-core
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tutorial-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tutorial start
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tutorial start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting up the pipeline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-test-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the test pipeline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modifying-the-test-pipeline-to-build-your-own-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modifying the test pipeline to build your own workflows
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameterising-the-code-using-the-yml-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameterising the code using the .yml file
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Pipeline Modules
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Pipeline Modules
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/control/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Control
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/database/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/cluster/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/execution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Execution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utils
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Container support
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Container support
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../container/tasks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Individual tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/container/whole_pipeline.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Whole pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    S3 Cloud
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            S3 Cloud
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/s3_pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3 Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/s3_decorators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3 Decorators
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/configuring_s3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuring S3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Working with Remote Files
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Working with Remote Files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/s3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/gc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Google Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/azure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core Functions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Core Functions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            Core
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/experiment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Experiment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/csv2db/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    csv2db
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/database/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/iotools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IOTools
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/logfile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logfile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Project Info
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Project Info
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/how_to_contribute/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Contribute
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/citations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Citations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/license/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation-of-cgat-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation of cgat-core
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tutorial-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tutorial start
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tutorial start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setting up the pipeline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-test-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the test pipeline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modifying-the-test-pipeline-to-build-your-own-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modifying the test pipeline to build your own workflows
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameterising-the-code-using-the-yml-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameterising the code using the .yml file
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="writing-a-workflow-tutorial">Writing a workflow - Tutorial<a class="headerlink" href="#writing-a-workflow-tutorial" title="Permanent link">&para;</a></h1>
+<p>The explicit aim of cgat-core is to allow users to quickly and easily build their own computational pipelines that will speed up your analysis workflow.</p>
+<h2 id="installation-of-cgat-core">Installation of cgat-core<a class="headerlink" href="#installation-of-cgat-core" title="Permanent link">&para;</a></h2>
+<p>In order to begin writing a pipeline, you will need to install the cgat-core code (see installation instructions in the "Getting Started" section).</p>
+<h2 id="tutorial-start">Tutorial start<a class="headerlink" href="#tutorial-start" title="Permanent link">&para;</a></h2>
+<h3 id="setting-up-the-pipeline">Setting up the pipeline<a class="headerlink" href="#setting-up-the-pipeline" title="Permanent link">&para;</a></h3>
+<p><strong>1.</strong> First, navigate to a directory where you want to start building your code:</p>
+<div class="codehilite"><pre><span></span><code>mkdir<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>configuration<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>touch<span class="w"> </span>configuration/pipeline.yml<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>touch<span class="w"> </span>pipeline_test.py<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>touch<span class="w"> </span>ModuleTest.py
+</code></pre></div>
+
+<p>This command will create a directory called <code>test</code> in the current directory with the following layout:</p>
+<div class="codehilite"><pre><span></span><code>|-- configuration
+|   \-- pipeline.yml
+|-- pipeline_test.py
+|-- ModuleTest.py
+</code></pre></div>
+
+<p>The layout has the following components:</p>
+<ul>
+<li><strong>pipeline_test.py</strong>: This is the file that will contain all of the ruffus workflows. The file needs to be named in the format <code>pipeline_&lt;name&gt;.py</code>.</li>
+<li><strong>test/</strong>: Directory containing the configuration <code>.yml</code> file. The directory needs to have the same name as the <code>pipeline_&lt;name&gt;.py</code> file. This folder will contain the <code>pipeline.yml</code> configuration file.</li>
+<li><strong>ModuleTest.py</strong>: This file will contain functions that will be imported into the main ruffus workflow file (<code>pipeline_test.py</code>).</li>
+</ul>
+<p><strong>2.</strong> View the source code within <code>pipeline_test.py</code></p>
+<p>This is where the ruffus tasks will be written. The code begins with a docstring detailing the pipeline functionality. You should use this section to document your pipeline:</p>
+<div class="codehilite"><pre><span></span><code><span class="sd">&#39;&#39;&#39;This pipeline is a test and this is where the documentation goes &#39;&#39;&#39;</span>
+</code></pre></div>
+
+<p>The pipeline then needs a few utility functions to help with executing the pipeline.</p>
+<ul>
+<li><strong>Import statements</strong>: You will need to import ruffus and cgatcore utilities:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">ruffus</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">cgatcore.experiment</span> <span class="k">as</span> <span class="nn">E</span>
+<span class="kn">from</span> <span class="nn">cgatcore</span> <span class="kn">import</span> <span class="n">pipeline</span> <span class="k">as</span> <span class="n">P</span>
+</code></pre></div>
+
+<p>Importing <code>ruffus</code> allows ruffus decorators to be used within the pipeline.
+Importing <code>experiment</code> from <code>cgatcore</code> provides utility functions for argument parsing, logging, and record-keeping within scripts.
+Importing <code>pipeline</code> from <code>cgatcore</code> provides utility functions for interfacing CGAT ruffus pipelines with an HPC cluster, uploading data to a database, and parameterisation.</p>
+<p>You'll also need some Python modules:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Config parser</strong>: This code helps with parsing the <code>pipeline.yml</code> file:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Load options from the config file</span>
+<span class="n">PARAMS</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">([</span>
+    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/pipeline.yml&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="s2">&quot;../pipeline.yml&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pipeline.yml&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Pipeline configuration</strong>: We will add configurable variables to our <code>pipeline.yml</code> file so that we can modify the output of our pipeline. Open <code>pipeline.yml</code> and add the following:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="nt">database</span><span class="p">:</span>
+<span class="w">   </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;csvdb&quot;</span>
+</code></pre></div>
+
+<p>When you run the pipeline, the configuration variables (in this case <code>csvdb</code>) can be accessed in the pipeline by <code>PARAMS["database_name"]</code>.</p>
+<ul>
+<li><strong>Database connection</strong>: This code helps with connecting to an SQLite database:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">connect</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Utility function to connect to the database.</span>
+
+<span class="sd">    Use this method to connect to the pipeline database.</span>
+<span class="sd">    Additional databases can be attached here as well.</span>
+
+<span class="sd">    Returns an sqlite3 database handle.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">dbh</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">PARAMS</span><span class="p">[</span><span class="s2">&quot;database_name&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">dbh</span>
+</code></pre></div>
+
+<ul>
+<li><strong>Commandline parser</strong>: This code allows the pipeline to parse arguments:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">argv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">argv</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="running-the-test-pipeline">Running the test pipeline<a class="headerlink" href="#running-the-test-pipeline" title="Permanent link">&para;</a></h3>
+<p>You now have the bare bones layout of the pipeline, and you need some code to execute. Below is example code that you can copy and paste into your <code>pipeline_test.py</code> file. The code includes two ruffus <code>@transform</code> tasks that parse <code>pipeline.yml</code>. The first function, called <code>countWords</code>, contains a statement that counts the number of words in the file. The statement is then executed using the <code>P.run()</code> function.</p>
+<p>The second ruffus <code>@transform</code> function called <code>loadWordCounts</code> takes as input the output of the function <code>countWords</code> and loads the number of words into an SQLite database using <code>P.load()</code>.</p>
+<p>The third function, <code>full()</code>, is a dummy task that runs the entire pipeline. It has an <code>@follows</code> decorator that takes the <code>loadWordCounts</code> function, completing the pipeline chain.</p>
+<p>The following code should be pasted just before the <strong>Commandline parser</strong> arguments and after the <strong>database connection</strong> code:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ---------------------------------------------------</span>
+<span class="c1"># Specific pipeline tasks</span>
+<span class="nd">@transform</span><span class="p">(</span><span class="s2">&quot;pipeline.yml&quot;</span><span class="p">,</span>
+           <span class="n">regex</span><span class="p">(</span><span class="s2">&quot;(.*)\.(.*)&quot;</span><span class="p">),</span>
+           <span class="sa">r</span><span class="s2">&quot;\1.counts&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">countWords</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Count the number of words in the pipeline configuration files.&#39;&#39;&#39;</span>
+
+    <span class="c1"># The command line statement we want to execute</span>
+    <span class="n">statement</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;awk &#39;BEGIN { printf(&quot;word</span><span class="se">\t</span><span class="s1">freq</span><span class="se">\n</span><span class="s1">&quot;); }</span>
+<span class="s1">    {for (i = 1; i &lt;= NF; i++) freq[$i]++}</span>
+<span class="s1">    END { for (word in freq) printf &quot;</span><span class="si">%s</span><span class="se">\t</span><span class="si">%d</span><span class="se">\n</span><span class="s1">&quot;, word, freq[word] }&#39;</span>
+<span class="s1">    &lt; </span><span class="si">%(infile)s</span><span class="s1"> &gt; </span><span class="si">%(outfile)s</span><span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="c1"># Execute the command in the variable statement.</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+
+<span class="nd">@transform</span><span class="p">(</span><span class="n">countWords</span><span class="p">,</span>
+           <span class="n">suffix</span><span class="p">(</span><span class="s2">&quot;.counts&quot;</span><span class="p">),</span>
+           <span class="s2">&quot;_counts.load&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">loadWordCounts</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Load results of word counting into database.&#39;&#39;&#39;</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="s2">&quot;--add-index=word&quot;</span><span class="p">)</span>
+
+<span class="c1"># ---------------------------------------------------</span>
+<span class="c1"># Generic pipeline tasks</span>
+<span class="nd">@follows</span><span class="p">(</span><span class="n">loadWordCounts</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">full</span><span class="p">():</span>
+    <span class="k">pass</span>
+</code></pre></div>
+
+<p>To run the pipeline, navigate to the working directory and then run the pipeline:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>/location/to/code/pipeline_test.py<span class="w"> </span>config
+python<span class="w"> </span>/location/to/code/pipeline_test.py<span class="w"> </span>show<span class="w"> </span>full<span class="w"> </span>-v<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+
+<p>This will place the <code>pipeline.yml</code> in the folder. Then run:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>/location/to/code/pipeline_test.py<span class="w"> </span>make<span class="w"> </span>full<span class="w"> </span>-v5<span class="w"> </span>--local
+</code></pre></div>
+
+<p>The pipeline will then execute and count the words in the <code>yml</code> file.</p>
+<h3 id="modifying-the-test-pipeline-to-build-your-own-workflows">Modifying the test pipeline to build your own workflows<a class="headerlink" href="#modifying-the-test-pipeline-to-build-your-own-workflows" title="Permanent link">&para;</a></h3>
+<p>The next step is to modify the basic code in the pipeline to fit your particular NGS workflow needs. For example, suppose you want to convert a SAM file into a BAM file, then perform flag stats on that output BAM file. The code and layout that we just wrote can be easily modified to perform this.</p>
+<p>The pipeline will have two steps:
+1. Identify all SAM files and convert them to BAM files.
+2. Take the output of step 1 and perform flag stats on that BAM file.</p>
+<p>The first step would involve writing a function to identify all <code>sam</code> files in a <code>data.dir/</code> directory and convert them to BAM files using <code>samtools view</code>. The second function would then take the output of the first function, perform <code>samtools flagstat</code>, and output the results as a flat <code>.txt</code> file. This would be written as follows:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@transform</span><span class="p">(</span><span class="s2">&quot;data.dir/*.sam&quot;</span><span class="p">,</span>
+           <span class="n">regex</span><span class="p">(</span><span class="s2">&quot;data.dir/(\S+).sam&quot;</span><span class="p">),</span>
+           <span class="sa">r</span><span class="s2">&quot;\1.bam&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">bamConvert</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Convert a SAM file into a BAM file using samtools view.&#39;&#39;&#39;</span>
+
+    <span class="n">statement</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;samtools view -bT /ifs/mirror/genomes/plain/hg19.fasta </span><span class="se">\</span>
+<span class="s1">                   </span><span class="si">%(infile)s</span><span class="s1"> &gt; </span><span class="si">%(outfile)s</span><span class="s1">&#39;&#39;&#39;</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+
+<span class="nd">@transform</span><span class="p">(</span><span class="n">bamConvert</span><span class="p">,</span>
+           <span class="n">suffix</span><span class="p">(</span><span class="s2">&quot;.bam&quot;</span><span class="p">),</span>
+           <span class="s2">&quot;_flagstats.txt&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">bamFlagstats</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Perform flagstats on a BAM file.&#39;&#39;&#39;</span>
+
+    <span class="n">statement</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;samtools flagstat </span><span class="si">%(infile)s</span><span class="s1"> &gt; </span><span class="si">%(outfile)s</span><span class="s1">&#39;&#39;&#39;</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+</code></pre></div>
+
+<p>To run the pipeline:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>/path/to/file/pipeline_test.py<span class="w"> </span>make<span class="w"> </span>full<span class="w"> </span>-v5
+</code></pre></div>
+
+<p>The BAM files and flagstats outputs should be generated.</p>
+<h3 id="parameterising-the-code-using-the-yml-file">Parameterising the code using the <code>.yml</code> file<a class="headerlink" href="#parameterising-the-code-using-the-yml-file" title="Permanent link">&para;</a></h3>
+<p>As a philosophy, we try and avoid any hardcoded parameters, so that any variables can be easily modified by the user without changing the code.</p>
+<p>Looking at the code above, the hardcoded link to the <code>hg19.fasta</code> file can be added as a customisable parameter, allowing users to specify any FASTA file depending on the genome build used. In the <code>pipeline.yml</code>, add:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">genome</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">fasta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ifs/mirror/genomes/plain/hg19.fasta</span>
+</code></pre></div>
+
+<p>In the <code>pipeline_test.py</code> code, the value can be accessed via <code>PARAMS["genome_fasta"]</code>.
+Therefore, the code for parsing BAM files can be modified as follows:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@transform</span><span class="p">(</span><span class="s2">&quot;data.dir/*.sam&quot;</span><span class="p">,</span>
+           <span class="n">regex</span><span class="p">(</span><span class="s2">&quot;data.dir/(\S+).sam&quot;</span><span class="p">),</span>
+           <span class="sa">r</span><span class="s2">&quot;\1.bam&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">bamConvert</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Convert a SAM file into a BAM file using samtools view.&#39;&#39;&#39;</span>
+
+    <span class="n">genome_fasta</span> <span class="o">=</span> <span class="n">PARAMS</span><span class="p">[</span><span class="s2">&quot;genome_fasta&quot;</span><span class="p">]</span>
+
+    <span class="n">statement</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;samtools view -bT </span><span class="si">%(genome_fasta)s</span><span class="s1"> </span><span class="se">\</span>
+<span class="s1">                   </span><span class="si">%(infile)s</span><span class="s1"> &gt; </span><span class="si">%(outfile)s</span><span class="s1">&#39;&#39;&#39;</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+
+<span class="nd">@transform</span><span class="p">(</span><span class="n">bamConvert</span><span class="p">,</span>
+           <span class="n">suffix</span><span class="p">(</span><span class="s2">&quot;.bam&quot;</span><span class="p">),</span>
+           <span class="s2">&quot;_flagstats.txt&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">bamFlagstats</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Perform flagstats on a BAM file.&#39;&#39;&#39;</span>
+
+    <span class="n">statement</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;samtools flagstat </span><span class="si">%(infile)s</span><span class="s1"> &gt; </span><span class="si">%(outfile)s</span><span class="s1">&#39;&#39;&#39;</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Running the code again will generate the same output. However, if you had BAM files that came from a different genome build, the parameter in the <code>yml</code> file can be easily modified, the output files deleted, and the pipeline run again with the new configuration values.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1939 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../utils/">
+      
+      
+        <link rel="next" href="../../container/tasks/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.47">
+    
+    
+      
+        <title>Parameters - CGAT-core Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#parameter-handling-for-cgatcore-pipelines" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CGAT-core Documentation" class="md-header__button md-logo" aria-label="CGAT-core Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CGAT-core Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Parameters
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CGAT-core Documentation" class="md-nav__button md-logo" aria-label="CGAT-core Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CGAT-core Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/run_parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/examples/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running a Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/tutorial/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running a Pipeline Tutorial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../defining_workflow/run_parameters.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Run Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Building a Workflow
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Building a Workflow
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../defining_workflow/writing_workflows/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workflow Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../defining_workflow/tutorial/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing a Workflow Tutorial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Pipeline Modules
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Pipeline Modules
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../control/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Control
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../execution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Execution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utils
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Parameters
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Parameters
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-constants-and-initial-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Global Constants and Initial Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Functions Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_logger-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_logger Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_parameters-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_parameters Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config_to_dictionary-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      config_to_dictionary Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nested_update-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      nested_update Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input_validation-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      input_validation Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#match_parameter-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      match_parameter Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#substitute_parameters-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      substitute_parameters Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#as_list-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      as_list Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_true-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      is_true Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check_parameter-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      check_parameter Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_params-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_params Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_parameters_as_namedtuple-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_parameters_as_namedtuple Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_param_section-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_param_section Function
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Container support
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Container support
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../container/tasks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Individual tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/container/whole_pipeline.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Whole pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    S3 Cloud
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            S3 Cloud
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/s3_pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3 Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/s3_decorators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3 Decorators
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/configuring_s3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuring S3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Working with Remote Files
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Working with Remote Files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/s3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/gc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Google Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/azure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core Functions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Core Functions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            Core
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/experiment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Experiment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/csv2db/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    csv2db
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/database/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/iotools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IOTools
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../function_doc/logfile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logfile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Project Info
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Project Info
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/how_to_contribute/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Contribute
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/citations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Citations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/license/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-constants-and-initial-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Global Constants and Initial Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Functions Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_logger-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_logger Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_parameters-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_parameters Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config_to_dictionary-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      config_to_dictionary Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nested_update-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      nested_update Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input_validation-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      input_validation Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#match_parameter-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      match_parameter Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#substitute_parameters-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      substitute_parameters Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#as_list-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      as_list Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is_true-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      is_true Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check_parameter-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      check_parameter Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_params-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_params Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_parameters_as_namedtuple-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_parameters_as_namedtuple Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_param_section-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_param_section Function
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="parameter-handling-for-cgatcore-pipelines">Parameter handling for cgatcore Pipelines<a class="headerlink" href="#parameter-handling-for-cgatcore-pipelines" title="Permanent link">&para;</a></h1>
+<p>This document provides an overview of the <code>parameters.py</code> module used in cgatcore pipelines to handle configuration and parameter management. It includes functions for loading, validating, and handling parameters, as well as managing global configurations. This module is essential for customising and controlling cgatcore pipelines' behaviour, allowing the user to flexibly specify parameters via configuration files, command-line arguments, or hard-coded defaults.</p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#global-constants-and-initial-setup">Global Constants and Initial Setup</a></li>
+<li><a href="#functions-overview">Functions Overview</a></li>
+<li><a href="#get_logger-function">get_logger Function</a></li>
+<li><a href="#get_parameters-function">get_parameters Function</a></li>
+<li><a href="#config_to_dictionary-function">config_to_dictionary Function</a></li>
+<li><a href="#nested_update-function">nested_update Function</a></li>
+<li><a href="#input_validation-function">input_validation Function</a></li>
+<li><a href="#match_parameter-function">match_parameter Function</a></li>
+<li><a href="#substitute_parameters-function">substitute_parameters Function</a></li>
+<li><a href="#as_list-function">as_list Function</a></li>
+<li><a href="#is_true-function">is_true Function</a></li>
+<li><a href="#check_parameter-function">check_parameter Function</a></li>
+<li><a href="#get_params-function">get_params Function</a></li>
+<li><a href="#get_parameters_as_namedtuple-function">get_parameters_as_namedtuple Function</a></li>
+<li><a href="#get_param_section-function">get_param_section Function</a></li>
+</ul>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The <code>parameters.py</code> module is designed to facilitate the management of configuration values for cgatcore pipelines. The configuration values are read from a variety of sources, including YAML configuration files, hard-coded dictionaries, and user-specific configuration files. The module also provides tools for parameter interpolation, validation, and nested dictionary handling.</p>
+<h3 id="global-constants-and-initial-setup">Global Constants and Initial Setup<a class="headerlink" href="#global-constants-and-initial-setup" title="Permanent link">&para;</a></h3>
+<p>The module begins by defining some constants and setting up paths:
+- <code>SCRIPTS_ROOT_DIR</code> and <code>SCRIPTS_SCRIPTS_DIR</code>: Defines the root directory of scripts used within the pipeline.
+- <code>HAVE_INITIALIZED</code>: A boolean variable used to indicate if the global parameters have been loaded.
+- <code>PARAMS</code>: A global dictionary for parameter interpolation. This dictionary can be switched between <code>defaultdict</code> and standard dictionary behaviour to facilitate handling missing parameters.</p>
+<h3 id="functions-overview">Functions Overview<a class="headerlink" href="#functions-overview" title="Permanent link">&para;</a></h3>
+<h4 id="get_logger-function">get_logger Function<a class="headerlink" href="#get_logger-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logger</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;cgatcore.pipeline&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>This function returns a logger instance for use in the pipeline, allowing consistent logging across the module.</p>
+<h4 id="get_parameters-function">get_parameters Function<a class="headerlink" href="#get_parameters-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_parameters</span><span class="p">(</span><span class="n">filenames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">site_ini</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">only_import</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>The <code>get_parameters</code> function reads one or more configuration files to build the global <code>PARAMS</code> dictionary. It can read from various configuration files (e.g., <code>pipeline.yml</code>, <code>cgat.yml</code>), and merge configurations from user, site-specific, and default sources.</p>
+<ul>
+<li><strong>Arguments</strong>:</li>
+<li><code>filenames (list or str)</code>: A list of filenames for configuration files.</li>
+<li><code>defaults (dict)</code>: A dictionary of default values.</li>
+<li><code>site_ini (bool)</code>: If <code>True</code>, configuration files from <code>/etc/cgat/pipeline.yml</code> are also read.</li>
+<li><code>user (bool)</code>: If <code>True</code>, reads configuration from a user's home directory.</li>
+<li>
+<p><code>only_import (bool)</code>: If set, the parameter dictionary will default to a collection type.</p>
+</li>
+<li>
+<p><strong>Returns</strong>:</p>
+</li>
+<li><code>dict</code>: A global configuration dictionary (<code>PARAMS</code>).</li>
+</ul>
+<h4 id="config_to_dictionary-function">config_to_dictionary Function<a class="headerlink" href="#config_to_dictionary-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">config_to_dictionary</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function converts the contents of a <code>ConfigParser</code> object into a dictionary. Section names are prefixed with an underscore for clarity.</p>
+<ul>
+<li><strong>Returns</strong>:</li>
+<li><code>dict</code>: A dictionary containing all configuration values, with nested sections appropriately handled.</li>
+</ul>
+<h4 id="nested_update-function">nested_update Function<a class="headerlink" href="#nested_update-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">nested_update</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>The <code>nested_update</code> function updates nested dictionaries. If both <code>old[x]</code> and <code>new[x]</code> are dictionaries, they are recursively merged; otherwise, <code>old[x]</code> is updated with <code>new[x]</code>.</p>
+<h4 id="input_validation-function">input_validation Function<a class="headerlink" href="#input_validation-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">input_validation</span><span class="p">(</span><span class="n">PARAMS</span><span class="p">,</span> <span class="n">pipeline_script</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>The <code>input_validation</code> function inspects the <code>PARAMS</code> dictionary to check for problematic values, such as missing or placeholder inputs.</p>
+<ul>
+<li><strong>Validations</strong>:</li>
+<li>Checks for missing parameters (<code>?</code> placeholders).</li>
+<li>Ensures that all required tools are available on the system PATH.</li>
+<li>Verifies input file paths are readable.</li>
+</ul>
+<h4 id="match_parameter-function">match_parameter Function<a class="headerlink" href="#match_parameter-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">match_parameter</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function attempts to find an exact or prefix match in the global <code>PARAMS</code> dictionary for the given parameter. If no match is found, a <code>KeyError</code> is raised.</p>
+<ul>
+<li><strong>Returns</strong>:</li>
+<li><code>str</code>: The full name of the parameter if found.</li>
+</ul>
+<h4 id="substitute_parameters-function">substitute_parameters Function<a class="headerlink" href="#substitute_parameters-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">substitute_parameters</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function returns a dictionary of parameter values for a specific task. It substitutes global parameter values and task-specific configuration values.</p>
+<ul>
+<li><strong>Example</strong>:</li>
+<li>If <code>PARAMS</code> has <code>"sample1.bam.gz_tophat_threads": 6</code> and <code>outfile = "sample1.bam.gz"</code>, it returns <code>{ "tophat_threads": 6 }</code>.</li>
+</ul>
+<h4 id="as_list-function">as_list Function<a class="headerlink" href="#as_list-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">as_list</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function converts a given value to a list. If the value is a comma-separated string, it splits the string into a list.</p>
+<ul>
+<li><strong>Returns</strong>:</li>
+<li><code>list</code>: The input value as a list.</li>
+</ul>
+<h4 id="is_true-function">is_true Function<a class="headerlink" href="#is_true-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">is_true</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function checks if a parameter has a truthy value. Values like <code>0</code>, <code>''</code>, <code>false</code>, and <code>False</code> are considered as <code>False</code>.</p>
+<ul>
+<li><strong>Returns</strong>:</li>
+<li><code>bool</code>: Whether the parameter is truthy or not.</li>
+</ul>
+<h4 id="check_parameter-function">check_parameter Function<a class="headerlink" href="#check_parameter-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">check_parameter</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>The <code>check_parameter</code> function checks if the given parameter is set in the global <code>PARAMS</code> dictionary. If it is not set, a <code>ValueError</code> is raised.</p>
+<h4 id="get_params-function">get_params Function<a class="headerlink" href="#get_params-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_params</span><span class="p">():</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function returns a handle to the global <code>PARAMS</code> dictionary.</p>
+<h4 id="get_parameters_as_namedtuple-function">get_parameters_as_namedtuple Function<a class="headerlink" href="#get_parameters_as_namedtuple-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_parameters_as_namedtuple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>The <code>get_parameters_as_namedtuple</code> function returns the <code>PARAMS</code> dictionary as a namedtuple, allowing for more convenient and attribute-based access to parameters.</p>
+<h4 id="get_param_section-function">get_param_section Function<a class="headerlink" href="#get_param_section-function" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span> <span class="nf">get_param_section</span><span class="p">(</span><span class="n">section</span><span class="p">):</span>
+    <span class="c1"># Function code...</span>
+</code></pre></div>
+
+<p>This function returns all configuration values within a specific section of the <code>PARAMS</code> dictionary. Sections are defined by common prefixes.</p>
+<ul>
+<li><strong>Returns</strong>:</li>
+<li><code>list</code>: A list of tuples containing section-specific parameters.</li>
+</ul>
+<h3 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h3>
+<p>The <code>parameters.py</code> module is designed to facilitate flexible and powerful parameter management for cgatcore pipelines. The functions provided allow for seamless integration of configuration from multiple sources, validation, and management of parameters, while also offering tools for introspection and nested dictionary handling. These utilities help create more robust and maintainable cgatcore pipelines, allowing for greater customisation and scalability.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>

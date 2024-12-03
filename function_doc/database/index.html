@@ -1,0 +1,2727 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../csv2db/">
+      
+      
+        <link rel="next" href="../iotools/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.47">
+    
+    
+      
+        <title>Database - CGAT-core Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cgatcore-database-module" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CGAT-core Documentation" class="md-header__button md-logo" aria-label="CGAT-core Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CGAT-core Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Database
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CGAT-core Documentation" class="md-nav__button md-logo" aria-label="CGAT-core Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CGAT-core Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/run_parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/examples/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running a Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/tutorial/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running a Pipeline Tutorial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../defining_workflow/run_parameters.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Run Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Building a Workflow
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Building a Workflow
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../defining_workflow/writing_workflows/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workflow Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../defining_workflow/tutorial/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing a Workflow Tutorial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Pipeline Modules
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Pipeline Modules
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/control/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Control
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/database/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/cluster/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/execution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Execution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utils
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline_modules/parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Container support
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Container support
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../container/tasks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Individual tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/container/whole_pipeline.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Whole pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    S3 Cloud
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            S3 Cloud
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/s3_pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3 Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/s3_decorators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3 Decorators
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../s3_integration/configuring_s3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuring S3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Working with Remote Files
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Working with Remote Files
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/s3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    S3
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/gc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Google Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../remote/azure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core Functions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Core Functions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pipeline
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Core
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            Core
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Experiment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../csv2db/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    csv2db
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database" class="md-nav__link">
+    <span class="md-ellipsis">
+      database
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database--databasepy-database-utility-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      database.py - database utility functions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="database.py - database utility functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database--reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reference
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.apsw_connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      apsw_connect
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="apsw_connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.apsw_connect--arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.apsw_connect--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      connect
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.connect--arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.connect--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.db_execute" class="md-nav__link">
+    <span class="md-ellipsis">
+      db_execute
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.execute" class="md-nav__link">
+    <span class="md-ellipsis">
+      execute
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.executewait" class="md-nav__link">
+    <span class="md-ellipsis">
+      executewait
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="executewait">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.executewait--arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.executewait--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.fetch_DataFrame" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch_DataFrame
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.fetch_with_names" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch_with_names
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.getColumnNames" class="md-nav__link">
+    <span class="md-ellipsis">
+      getColumnNames
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.getTables" class="md-nav__link">
+    <span class="md-ellipsis">
+      getTables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.toTSV" class="md-nav__link">
+    <span class="md-ellipsis">
+      toTSV
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.write_DataFrame" class="md-nav__link">
+    <span class="md-ellipsis">
+      write_DataFrame
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iotools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IOTools
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logfile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logfile
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Project Info
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Project Info
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/how_to_contribute/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How to Contribute
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/citations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Citations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project_info/license/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database" class="md-nav__link">
+    <span class="md-ellipsis">
+      database
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database--databasepy-database-utility-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      database.py - database utility functions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="database.py - database utility functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database--reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reference
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.apsw_connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      apsw_connect
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="apsw_connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.apsw_connect--arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.apsw_connect--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      connect
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.connect--arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.connect--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.db_execute" class="md-nav__link">
+    <span class="md-ellipsis">
+      db_execute
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.execute" class="md-nav__link">
+    <span class="md-ellipsis">
+      execute
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.executewait" class="md-nav__link">
+    <span class="md-ellipsis">
+      executewait
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="executewait">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.executewait--arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cgatcore.database.executewait--returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Returns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.fetch_DataFrame" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch_DataFrame
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.fetch_with_names" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch_with_names
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.getColumnNames" class="md-nav__link">
+    <span class="md-ellipsis">
+      getColumnNames
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.getTables" class="md-nav__link">
+    <span class="md-ellipsis">
+      getTables
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.toTSV" class="md-nav__link">
+    <span class="md-ellipsis">
+      toTSV
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cgatcore.database.write_DataFrame" class="md-nav__link">
+    <span class="md-ellipsis">
+      write_DataFrame
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="cgatcore-database-module">CGATcore Database Module<a class="headerlink" href="#cgatcore-database-module" title="Permanent link">&para;</a></h1>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="cgatcore.database"></a>
+    <div class="doc doc-contents first">
+
+        <h2 id="cgatcore.database--databasepy-database-utility-functions">database.py - database utility functions<a class="headerlink" href="#cgatcore.database--databasepy-database-utility-functions" title="Permanent link">&para;</a></h2>
+<p>This module contains convenience functions to work with a relational
+database.</p>
+<h3 id="cgatcore.database--reference">Reference<a class="headerlink" href="#cgatcore.database--reference" title="Permanent link">&para;</a></h3>
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.apsw_connect" class="doc doc-heading">
+            <code class=" language-python"><span class="n">apsw_connect</span><span class="p">(</span><span class="n">dbname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">modname</span><span class="o">=</span><span class="s1">&#39;tsv&#39;</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.apsw_connect" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>attempt to connect to apsw database.</p>
+<p>This method will attempt to establish a
+connection to a database .</p>
+<h4 id="cgatcore.database.apsw_connect--arguments">Arguments<a class="headerlink" href="#cgatcore.database.apsw_connect--arguments" title="Permanent link">&para;</a></h4>
+<p>modname: string
+    A module name to register with sqlite
+dbname: string
+    A database name to connect to</p>
+<h4 id="cgatcore.database.apsw_connect--returns">Returns<a class="headerlink" href="#cgatcore.database.apsw_connect--returns" title="Permanent link">&para;</a></h4>
+<p>con : object
+    A connection to a database.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">apsw_connect</span><span class="p">(</span><span class="n">dbname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">modname</span><span class="o">=</span><span class="s2">&quot;tsv&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    attempt to connect to apsw database.</span>
+
+<span class="sd">    This method will attempt to establish a</span>
+<span class="sd">    connection to a database .</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    modname: string</span>
+<span class="sd">        A module name to register with sqlite</span>
+<span class="sd">    dbname: string</span>
+<span class="sd">        A database name to connect to</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    con : object</span>
+<span class="sd">        A connection to a database.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">connection</span> <span class="o">=</span> <span class="n">apsw</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">dbname</span><span class="p">)</span>
+
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="n">connection</span><span class="o">.</span><span class="n">createmodule</span><span class="p">(</span><span class="n">modname</span><span class="p">,</span> <span class="n">_VirtualTable</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">cursor</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.connect" class="doc doc-heading">
+            <code class=" language-python"><span class="n">connect</span><span class="p">(</span><span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.connect" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>attempt to connect to database.</p>
+<p>If <code>dbhandle</code> is an existing connection to a database,
+it will be returned unchanged. Otherwise, this method
+will attempt to establish a connection.</p>
+<h4 id="cgatcore.database.connect--arguments">Arguments<a class="headerlink" href="#cgatcore.database.connect--arguments" title="Permanent link">&para;</a></h4>
+<p>url: string
+    A database url
+dbhandle : object or string
+    A database handle or a connection string.</p>
+<h4 id="cgatcore.database.connect--returns">Returns<a class="headerlink" href="#cgatcore.database.connect--returns" title="Permanent link">&para;</a></h4>
+<p>dbhandle : object
+    A DB-API2 conforming database handle</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;attempt to connect to database.</span>
+
+<span class="sd">    If `dbhandle` is an existing connection to a database,</span>
+<span class="sd">    it will be returned unchanged. Otherwise, this method</span>
+<span class="sd">    will attempt to establish a connection.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    url: string</span>
+<span class="sd">        A database url</span>
+<span class="sd">    dbhandle : object or string</span>
+<span class="sd">        A database handle or a connection string.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dbhandle : object</span>
+<span class="sd">        A DB-API2 conforming database handle</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">is_sqlite3</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;sqlite&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_sqlite3</span><span class="p">:</span>
+            <span class="n">connect_args</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;check_same_thread&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">connect_args</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
+            <span class="n">url</span><span class="p">,</span>
+            <span class="n">connect_args</span><span class="o">=</span><span class="n">connect_args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">engine</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">sqlite3</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;If an sqlite database location is passed&quot;</span>
+                <span class="s2">&quot; directly the sqlite3 module must be installed&quot;</span><span class="p">)</span>
+
+        <span class="n">dbhandle</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">)</span>
+
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">attach</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attach</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">attach</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attach</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">attach_statement</span> <span class="ow">in</span> <span class="n">attach</span><span class="p">:</span>
+                <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">attach_statement</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dbhandle</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.db_execute" class="doc doc-heading">
+            <code class=" language-python"><span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">statements</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.db_execute" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>excute a statement or statements against a cursor</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">statements</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;excute a statement or statements against a cursor&#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">statements</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">statements</span> <span class="o">=</span> <span class="p">[</span><span class="n">statements</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">statement</span> <span class="ow">in</span> <span class="n">statements</span><span class="p">:</span>
+        <span class="n">cc</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.execute" class="doc doc-heading">
+            <code class=" language-python"><span class="n">execute</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.execute" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Execute a statement or a  list of statements (sequentially)</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Execute a statement or a  list of statements (sequentially)&#39;&#39;&#39;</span>
+
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">attach</span><span class="p">:</span>
+        <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">attach</span><span class="p">)</span>
+
+    <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">queries</span><span class="p">)</span>
+    <span class="n">cc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.executewait" class="doc doc-heading">
+            <code class=" language-python"><span class="n">executewait</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">statement</span><span class="p">,</span> <span class="n">regex_error</span><span class="o">=</span><span class="s1">&#39;locked&#39;</span><span class="p">,</span> <span class="n">retries</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.executewait" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>repeatedly execute an SQL statement until it succeeds.</p>
+<h4 id="cgatcore.database.executewait--arguments">Arguments<a class="headerlink" href="#cgatcore.database.executewait--arguments" title="Permanent link">&para;</a></h4>
+<p>dbhandle : object
+    A DB-API conform database handle.
+statement : string
+    SQL statement to execute.
+error : string
+    Exception to catch and examine for error messages.
+regex_error : string
+    Any error message matching <code>regex_error</code> will be ignored,
+    otherwise the procedure exists.
+retries : int
+    Number of retries. If set to negative number, retry indefinitely.
+    If set to 0, there will be only one attempt.
+wait : int
+    Number of seconds to way between retries.</p>
+<h4 id="cgatcore.database.executewait--returns">Returns<a class="headerlink" href="#cgatcore.database.executewait--returns" title="Permanent link">&para;</a></h4>
+<p>A cursor object</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">executewait</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">statement</span><span class="p">,</span> <span class="n">regex_error</span><span class="o">=</span><span class="s2">&quot;locked&quot;</span><span class="p">,</span>
+                <span class="n">retries</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;repeatedly execute an SQL statement until it succeeds.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    dbhandle : object</span>
+<span class="sd">        A DB-API conform database handle.</span>
+<span class="sd">    statement : string</span>
+<span class="sd">        SQL statement to execute.</span>
+<span class="sd">    error : string</span>
+<span class="sd">        Exception to catch and examine for error messages.</span>
+<span class="sd">    regex_error : string</span>
+<span class="sd">        Any error message matching `regex_error` will be ignored,</span>
+<span class="sd">        otherwise the procedure exists.</span>
+<span class="sd">    retries : int</span>
+<span class="sd">        Number of retries. If set to negative number, retry indefinitely.</span>
+<span class="sd">        If set to 0, there will be only one attempt.</span>
+<span class="sd">    wait : int</span>
+<span class="sd">        Number of seconds to way between retries.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A cursor object</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">begin</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+                <span class="n">cc</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sqlalchemy</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">statement</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">msg</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">retries</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;locked&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">msg</span><span class="p">)):</span>
+                <span class="k">raise</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+            <span class="n">retries</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="k">break</span>
+    <span class="k">return</span> <span class="n">cc</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.fetch" class="doc doc-heading">
+            <code class=" language-python"><span class="n">fetch</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.fetch" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Fetch all query results and return</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Fetch all query results and return&#39;&#39;&#39;</span>
+
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">attach</span><span class="p">:</span>
+        <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">attach</span><span class="p">)</span>
+
+    <span class="n">sqlresult</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="n">cc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">sqlresult</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.fetch_DataFrame" class="doc doc-heading">
+            <code class=" language-python"><span class="n">fetch_DataFrame</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.fetch_DataFrame" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Fetch query results and returns them as a pandas dataframe</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">fetch_DataFrame</span><span class="p">(</span><span class="n">query</span><span class="p">,</span>
+                    <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Fetch query results and returns them as a pandas dataframe&#39;&#39;&#39;</span>
+
+    <span class="n">dbhandle</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="n">attach</span><span class="p">)</span>
+
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">sqlresult</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="n">cc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c1"># see http://pandas.pydata.org/pandas-docs/dev/generated/</span>
+    <span class="c1"># pandas.DataFrame.from_records.html#pandas.DataFrame.from_records</span>
+    <span class="c1"># this method is design to handle sql_records with proper type</span>
+    <span class="c1"># conversion</span>
+
+    <span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cc</span><span class="o">.</span><span class="n">description</span><span class="p">]</span>
+    <span class="n">pandas_DataFrame</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
+        <span class="n">sqlresult</span><span class="p">,</span>
+        <span class="n">columns</span><span class="o">=</span><span class="n">field_names</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pandas_DataFrame</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.fetch_with_names" class="doc doc-heading">
+            <code class=" language-python"><span class="n">fetch_with_names</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.fetch_with_names" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Fetch query results and returns them as an array of row arrays, in
+which the first entry is an array of the field names</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">fetch_with_names</span><span class="p">(</span><span class="n">query</span><span class="p">,</span>
+                     <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">attach</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Fetch query results and returns them as an array of row arrays, in</span>
+<span class="sd">       which the first entry is an array of the field names</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">dbhandle</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">attach</span><span class="o">=</span><span class="n">attach</span><span class="p">)</span>
+
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">sqlresult</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># http://stackoverflow.com/questions/4147707/</span>
+    <span class="c1"># python-mysqldb-sqlite-result-as-dictionary</span>
+    <span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cc</span><span class="o">.</span><span class="n">description</span><span class="p">]</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">sqlresult</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">record</span><span class="p">]</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+    <span class="n">cc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">data</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.getColumnNames" class="doc doc-heading">
+            <code class=" language-python"><span class="n">getColumnNames</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">table</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.getColumnNames" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>return column names of a table from a database.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">getColumnNames</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;return column names of a table from a database.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">executewait</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="s2">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s2"> LIMIT 1&quot;</span> <span class="o">%</span> <span class="n">table</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cc</span><span class="o">.</span><span class="n">description</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.getTables" class="doc doc-heading">
+            <code class=" language-python"><span class="n">getTables</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.getTables" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>get list of tables in an sqlite database</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">getTables</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;get list of tables in an sqlite database&quot;&quot;&quot;</span>
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">executewait</span><span class="p">(</span>
+        <span class="n">dbhandle</span><span class="p">,</span> <span class="s2">&quot;&quot;&quot;select name from sqlite_master where type=&#39;table&#39;&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cc</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.toTSV" class="doc doc-heading">
+            <code class=" language-python"><span class="n">toTSV</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">statement</span><span class="p">,</span> <span class="n">remove_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.toTSV" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>execute statement and save as tsv file
+to disk.</p>
+<p>If <em>remove_none</em> is true, empty/NULL values will be output as
+empty values.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">toTSV</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">statement</span><span class="p">,</span> <span class="n">remove_none</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;execute statement and save as tsv file</span>
+<span class="sd">    to disk.</span>
+
+<span class="sd">    If *remove_none* is true, empty/NULL values will be output as</span>
+<span class="sd">    empty values.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cc</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cc</span><span class="o">.</span><span class="n">description</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_str</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">remove_none</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">_str</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">str</span>
+
+    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="p">[</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cc</span><span class="p">]))</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="cgatcore.database.write_DataFrame" class="doc doc-heading">
+            <code class=" language-python"><span class="n">write_DataFrame</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">tablename</span><span class="p">,</span> <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">if_exists</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">)</span></code>
+
+<a href="#cgatcore.database.write_DataFrame" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>write a pandas dataframe to an sqlite db, index on given columns
+index columns given as a string or list eg. "gene_id" or
+["gene_id", "start"]</p>
+
+            <details class="quote">
+              <summary>Source code in <code>cgatcore/database.py</code></summary>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">write_DataFrame</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span>
+                    <span class="n">tablename</span><span class="p">,</span>
+                    <span class="n">dbhandle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">if_exists</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;write a pandas dataframe to an sqlite db, index on given columns</span>
+<span class="sd">       index columns given as a string or list eg. &quot;gene_id&quot; or</span>
+<span class="sd">       [&quot;gene_id&quot;, &quot;start&quot;]</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">dbhandle</span> <span class="o">=</span> <span class="n">connect</span><span class="p">(</span><span class="n">dbhandle</span><span class="p">)</span>
+
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">to_sql</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span>
+                     <span class="n">con</span><span class="o">=</span><span class="n">dbhandle</span><span class="p">,</span>
+                     <span class="n">flavor</span><span class="o">=</span><span class="s1">&#39;sqlite&#39;</span><span class="p">,</span>
+                     <span class="n">if_exists</span><span class="o">=</span><span class="n">if_exists</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">indexStat</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+        <span class="n">istat</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;create index </span><span class="si">%(tablename)s</span><span class="s1">_</span><span class="si">%(column)s</span><span class="s1"> &#39;</span>
+                 <span class="s1">&#39;on </span><span class="si">%(tablename)s</span><span class="s1">(</span><span class="si">%(column)s</span><span class="s1">)&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="nb">locals</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">istat</span>
+
+    <span class="k">if</span> <span class="n">index</span><span class="p">:</span>
+
+        <span class="n">cc</span> <span class="o">=</span> <span class="n">dbhandle</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">istat</span> <span class="o">=</span> <span class="n">indexStat</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">istat</span><span class="p">)</span>
+            <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">istat</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">index</span><span class="p">:</span>
+                <span class="n">istat</span> <span class="o">=</span> <span class="n">indexStat</span><span class="p">(</span><span class="n">tablename</span><span class="p">,</span> <span class="n">column</span><span class="p">)</span>
+                <span class="n">db_execute</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">istat</span><span class="p">)</span>
+
+        <span class="n">cc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
