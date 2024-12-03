@@ -119,6 +119,60 @@ def _pickle_args(args, kwargs):
     return (submit_args, args_file)
 
 
+class ContainerConfig:
+    """Container configuration for pipeline execution."""
+    
+    def __init__(self, image=None, volumes=None, env_vars=None, runtime="docker"):
+        """
+        Args:
+            image (str): Container image (e.g., "ubuntu:20.04").
+            volumes (list): Volume mappings (e.g., ['/data:/data']).
+            env_vars (dict): Environment variables for the container.
+            runtime (str): Container runtime ("docker" or "singularity").
+        """
+        self.image = image
+        self.volumes = volumes or []
+        self.env_vars = env_vars or {}
+        self.runtime = runtime.lower()  # Normalise to lowercase
+
+        if self.runtime not in ["docker", "singularity"]:
+            raise ValueError("Unsupported container runtime: {}".format(self.runtime))
+
+    def get_container_command(self, statement):
+        """Convert a statement to run inside a container."""
+        if not self.image:
+            return statement
+
+        if self.runtime == "docker":
+            return self._get_docker_command(statement)
+        elif self.runtime == "singularity":
+            return self._get_singularity_command(statement)
+        else:
+            raise ValueError("Unsupported container runtime: {}".format(self.runtime))
+
+    def _get_docker_command(self, statement):
+        """Generate a Docker command."""
+        volume_args = [f"-v {volume}" for volume in self.volumes]
+        env_args = [f"-e {key}={value}" for key, value in self.env_vars.items()]
+        
+        return " ".join([
+            "docker", "run", "--rm",
+            *volume_args, *env_args, self.image,
+            "/bin/bash", "-c", f"'{statement}'"
+        ])
+
+    def _get_singularity_command(self, statement):
+        """Generate a Singularity command."""
+        volume_args = [f"--bind {volume}" for volume in self.volumes]
+        env_args = [f"--env {key}={value}" for key, value in self.env_vars.items()]
+        
+        return " ".join([
+            "singularity", "exec",
+            *volume_args, *env_args, self.image,
+            "bash", "-c", f"'{statement}'"
+        ])
+
+
 def start_session():
     """start and initialize the global DRMAA session."""
     global GLOBAL_SESSION
@@ -739,6 +793,13 @@ class Executor(object):
 
         return benchmark_data
 
+    def set_container_config(self, image, volumes=None, env_vars=None, runtime="docker"):
+        """Set container configuration for all tasks executed by this executor."""
+
+        if not image:
+            raise ValueError("An image must be specified for the container configuration.")
+        self.container_config = ContainerConfig(image=image, volumes=volumes, env_vars=env_vars, runtime=runtime)
+        
     def start_job(self, job_info):
         """Add a job to active_jobs list when it starts."""
         self.active_jobs.append(job_info)
@@ -789,31 +850,28 @@ class Executor(object):
                 self.logger.info(f"Output file not found (already removed or not created): {outfile}")
 
     def run(
-        self,
-        statement_list,
-        job_memory=None,
-        job_threads=None,
-        container_runtime=None,
-        image=None,
-        volumes=None,
-        env_vars=None,
-        **kwargs,
-    ):
+            self,
+            statement_list,
+            job_memory=None,
+            job_threads=None,
+            container_runtime=None,
+            image=None,
+            volumes=None,
+            env_vars=None,
+            **kwargs,):
+        
         """
-        Execute a list of statements with optional container support for Docker or Singularity.
+        Execute a list of statements with optional container support.
 
-        Args:
-            statement_list (list): List of commands to execute.
-            job_memory (str): Memory requirements (e.g., "4G").
-            job_threads (int): Number of threads to use.
-            container_runtime (str): Container runtime to use ("docker" or "singularity").
-            image (str): Container image to use (e.g., "ubuntu:20.04" or a Singularity SIF path).
-            volumes (list): List of volume mappings (e.g., ['/data:/data'] for Docker or Singularity).
-            env_vars (dict): Environment variables for the container.
-            **kwargs: Additional arguments passed to the executor.
-
-        Returns:
-            list: Benchmark data collected from executed jobs.
+            Args:
+                statement_list (list): List of commands to execute.
+                job_memory (str): Memory requirements (e.g., "4G").
+                job_threads (int): Number of threads to use.
+                container_runtime (str): Container runtime ("docker" or "singularity").
+                image (str): Container image to use.
+                volumes (list): Volume mappings (e.g., ['/data:/data']).
+                env_vars (dict): Environment variables for the container.
+                **kwargs: Additional arguments.
         """
         # Validation checks
         if container_runtime and container_runtime not in ["docker", "singularity"]:
@@ -827,41 +885,22 @@ class Executor(object):
         benchmark_data = []
 
         for statement in statement_list:
-            job_info = {"statement": statement}  # Preserve the original statement
+            job_info = {"statement": statement}
             self.start_job(job_info)
 
             try:
-                # Prepare for containerised execution
+                # Prepare containerized execution
                 if container_runtime:
-                    volume_args = []
-                    env_args = []
+                    self.set_container_config(image=image, volumes=volumes, env_vars=env_vars, runtime=container_runtime)
+                    statement = self.container_config.get_container_command(statement)
 
-                    if volumes:
-                        volume_flag = "-v" if container_runtime == "docker" else "--bind"
-                        volume_args.extend([f"{volume_flag} {v}" for v in volumes])
-
-                    if env_vars:
-                        env_flag = "-e" if container_runtime == "docker" else "--env"
-                        env_args.extend([f"{env_flag} {k}={v}" for k, v in env_vars.items()])
-
-                    if job_memory:
-                        env_args.append(f"{env_flag} JOB_MEMORY={job_memory}")
-                    if job_threads:
-                        env_args.append(f"{env_flag} JOB_THREADS={job_threads}")
-
-                    # Construct the container command
-                    container_command = [
-                        container_runtime,
-                        "run",
-                        "--rm",
-                        *volume_args,
-                        *env_args,
-                        image,
-                        "/bin/bash",
-                        "-c",
-                        statement,
-                    ]
-                    statement = " ".join(container_command)  # Keep for debugging/logging
+                # Add memory and thread environment variables
+                if job_memory:
+                    env_vars = env_vars or {}
+                    env_vars["JOB_MEMORY"] = job_memory
+                if job_threads:
+                    env_vars = env_vars or {}
+                    env_vars["JOB_THREADS"] = job_threads
 
                 # Debugging: Log the constructed command
                 self.logger.info(f"Executing command: {statement}")
@@ -882,7 +921,7 @@ class Executor(object):
                 # Collect benchmark data for successful jobs
                 benchmark_data.append(
                     self.collect_benchmark_data(
-                        [statement], resource_usage=[{"job_id": process.pid}]
+                        statement, resource_usage={"job_id": process.pid}
                     )
                 )
                 self.finish_job(job_info)
@@ -890,7 +929,8 @@ class Executor(object):
             except Exception as e:
                 self.logger.error(f"Job failed: {e}")
                 self.cleanup_failed_job(job_info)
-                raise  # Propagate the exception
+                if not self.ignore_errors:
+                    raise
 
         return benchmark_data
 
