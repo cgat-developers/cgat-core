@@ -32,6 +32,7 @@ nav:
     - Parameters: pipeline_modules/parameters.md
   - Container support:
     - Individual tasks: container/tasks.md
+    - Whole pipeline: docs/container/whole_pipeline.md
   - S3 Cloud:
     - S3 Pipeline: s3_integration/s3_pipeline.md
     - S3 Decorators: s3_integration/s3_decorators.md
