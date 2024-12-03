@@ -1,0 +1,57 @@
+site_name: CGAT-core Documentation
+theme: material
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting_started/installation.md
+    - Cluster Configuration: getting_started/run_parameters.md
+    - Running a Pipeline: getting_started/examples.md
+    - Running a Pipeline Tutorial: getting_started/tutorial.md
+    - Run Parameters: defining_workflow/run_parameters.md
+  - Building a Workflow:
+      - Workflow Overview: defining_workflow/writing_workflows.md
+      - Writing a Workflow Tutorial: defining_workflow/tutorial.md
+  - Pipeline Modules:
+    - Overview: pipeline_modules/overview.md
+    - Control: pipeline_modules/control.md
+    - Database: pipeline_modules/database.md
+    - Files: pipeline_modules/files.md
+    - Cluster: pipeline_modules/cluster.md
+    - Execution: pipeline_modules/execution.md
+    - Utils: pipeline_modules/utils.md
+    - Parameters: pipeline_modules/parameters.md
+  - Container support:
+    - Individual tasks: container/tasks.md
+    - Whole pipeline: docs/container/whole_pipeline.md
+  - S3 Cloud:
+    - S3 Pipeline: s3_integration/s3_pipeline.md
+    - S3 Decorators: s3_integration/s3_decorators.md
+    - Configuring S3: s3_integration/configuring_s3.md
+  - Working with Remote Files:
+    - S3: remote/s3.md
+    - Google Cloud: remote/gc.md
+    - Azure: remote/azure.md
+  - Core Functions:
+    - Pipeline: function_doc/pipeline.md
+    - Core:
+      - Experiment: function_doc/experiment.md
+      - csv2db: function_doc/csv2db.md
+      - Database: function_doc/database.md
+      - IOTools: function_doc/iotools.md
+      - Logfile: function_doc/logfile.md
+  - Project Info:
+    - Contributing: project_info/contributing.md
+    - How to Contribute: project_info/how_to_contribute.md
+    - Citations: project_info/citations.md
+    - FAQ: project_info/faq.md
+    - License: project_info/license.md

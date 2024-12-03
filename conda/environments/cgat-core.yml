@@ -36,3 +36,4 @@ dependencies:
 - paramiko
 - pytest
 - pytest-pep8
+- pyopenssl>=23.2.0

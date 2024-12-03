@@ -19,14 +19,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Cache conda
         uses: actions/cache@v3
         env:
-          # Increase this value to reset cache if conda/environments/cgat-core.yml has not changed
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda/environments/cgat-core.yml') }}
+
       - name: Set installer URL
         id: set-installer-url
         run: |
@@ -35,6 +36,7 @@ jobs:
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh" >> $GITHUB_ENV
           fi
+
       - uses: conda-incubator/setup-miniconda@v2
         with:
           installer-url: ${{ env.installer-url }}
@@ -43,13 +45,45 @@ jobs:
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
+
       - name: Configure Conda Paths
         run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
+
       - name: Show conda
         run: |
           conda info
           conda list
+
+      - name: Debug Python Environment
+        run: |
+          python --version
+          pip list
+          openssl version
+
       - name: Test
         run: |
           pip install .
           ./all-tests.sh
+
+
+  deploy_docs:
+    name: Deploy MkDocs Documentation
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install MkDocs and Dependencies
+        run: |
+          pip install mkdocs mkdocs-material mkdocstrings[python]
+
+      - name: Build and Deploy MkDocs Site
+        run: mkdocs gh-deploy --force --clean
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
