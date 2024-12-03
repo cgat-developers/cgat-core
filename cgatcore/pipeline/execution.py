@@ -119,6 +119,60 @@ def _pickle_args(args, kwargs):
     return (submit_args, args_file)
 
 
+class ContainerConfig:
+    """Container configuration for pipeline execution."""
+    
+    def __init__(self, image=None, volumes=None, env_vars=None, runtime="docker"):
+        """
+        Args:
+            image (str): Container image (e.g., "ubuntu:20.04").
+            volumes (list): Volume mappings (e.g., ['/data:/data']).
+            env_vars (dict): Environment variables for the container.
+            runtime (str): Container runtime ("docker" or "singularity").
+        """
+        self.image = image
+        self.volumes = volumes or []
+        self.env_vars = env_vars or {}
+        self.runtime = runtime.lower()  # Normalise to lowercase
+
+        if self.runtime not in ["docker", "singularity"]:
+            raise ValueError("Unsupported container runtime: {}".format(self.runtime))
+
+    def get_container_command(self, statement):
+        """Convert a statement to run inside a container."""
+        if not self.image:
+            return statement
+
+        if self.runtime == "docker":
+            return self._get_docker_command(statement)
+        elif self.runtime == "singularity":
+            return self._get_singularity_command(statement)
+        else:
+            raise ValueError("Unsupported container runtime: {}".format(self.runtime))
+
+    def _get_docker_command(self, statement):
+        """Generate a Docker command."""
+        volume_args = [f"-v {volume}" for volume in self.volumes]
+        env_args = [f"-e {key}={value}" for key, value in self.env_vars.items()]
+        
+        return " ".join([
+            "docker", "run", "--rm",
+            *volume_args, *env_args, self.image,
+            "/bin/bash", "-c", f"'{statement}'"
+        ])
+
+    def _get_singularity_command(self, statement):
+        """Generate a Singularity command."""
+        volume_args = [f"--bind {volume}" for volume in self.volumes]
+        env_args = [f"--env {key}={value}" for key, value in self.env_vars.items()]
+        
+        return " ".join([
+            "singularity", "exec",
+            *volume_args, *env_args, self.image,
+            "bash", "-c", f"'{statement}'"
+        ])
+
+
 def start_session():
     """start and initialize the global DRMAA session."""
     global GLOBAL_SESSION
@@ -739,6 +793,13 @@ class Executor(object):
 
         return benchmark_data
 
+    def set_container_config(self, image, volumes=None, env_vars=None, runtime="docker"):
+        """Set container configuration for all tasks executed by this executor."""
+
+        if not image:
+            raise ValueError("An image must be specified for the container configuration.")
+        self.container_config = ContainerConfig(image=image, volumes=volumes, env_vars=env_vars, runtime=runtime)
+        
     def start_job(self, job_info):
         """Add a job to active_jobs list when it starts."""
         self.active_jobs.append(job_info)
@@ -788,15 +849,63 @@ class Executor(object):
             else:
                 self.logger.info(f"Output file not found (already removed or not created): {outfile}")
 
-    def run(self, statement_list):
-        """Run a list of statements and track each job's lifecycle."""
+    def run(
+            self,
+            statement_list,
+            job_memory=None,
+            job_threads=None,
+            container_runtime=None,
+            image=None,
+            volumes=None,
+            env_vars=None,
+            **kwargs,):
+        
+        """
+        Execute a list of statements with optional container support.
+
+            Args:
+                statement_list (list): List of commands to execute.
+                job_memory (str): Memory requirements (e.g., "4G").
+                job_threads (int): Number of threads to use.
+                container_runtime (str): Container runtime ("docker" or "singularity").
+                image (str): Container image to use.
+                volumes (list): Volume mappings (e.g., ['/data:/data']).
+                env_vars (dict): Environment variables for the container.
+                **kwargs: Additional arguments.
+        """
+        # Validation checks
+        if container_runtime and container_runtime not in ["docker", "singularity"]:
+            self.logger.error(f"Invalid container_runtime: {container_runtime}")
+            raise ValueError("Container runtime must be 'docker' or 'singularity'")
+
+        if container_runtime and not image:
+            self.logger.error(f"Container runtime specified without an image: {container_runtime}")
+            raise ValueError("An image must be specified when using a container runtime")
+
         benchmark_data = []
+
         for statement in statement_list:
             job_info = {"statement": statement}
-            self.start_job(job_info)  # Add job to active_jobs
+            self.start_job(job_info)
 
             try:
-                # Execute job
+                # Prepare containerized execution
+                if container_runtime:
+                    self.set_container_config(image=image, volumes=volumes, env_vars=env_vars, runtime=container_runtime)
+                    statement = self.container_config.get_container_command(statement)
+
+                # Add memory and thread environment variables
+                if job_memory:
+                    env_vars = env_vars or {}
+                    env_vars["JOB_MEMORY"] = job_memory
+                if job_threads:
+                    env_vars = env_vars or {}
+                    env_vars["JOB_THREADS"] = job_threads
+
+                # Debugging: Log the constructed command
+                self.logger.info(f"Executing command: {statement}")
+
+                # Build and execute the statement
                 full_statement, job_path = self.build_job_script(statement)
                 process = subprocess.Popen(
                     full_statement, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -806,19 +915,22 @@ class Executor(object):
                 if process.returncode != 0:
                     raise OSError(
                         f"Job failed with return code {process.returncode}.\n"
-                        f"stderr: {stderr.decode('utf-8')}\nstatement: {statement}"
+                        f"stderr: {stderr.decode('utf-8')}\ncommand: {statement}"
                     )
 
-                # Collect benchmark data if job was successful
+                # Collect benchmark data for successful jobs
                 benchmark_data.append(
-                    self.collect_benchmark_data([statement], resource_usage=[{"job_id": process.pid}])
+                    self.collect_benchmark_data(
+                        statement, resource_usage={"job_id": process.pid}
+                    )
                 )
-                self.finish_job(job_info)  # Remove job from active_jobs
+                self.finish_job(job_info)
 
             except Exception as e:
                 self.logger.error(f"Job failed: {e}")
                 self.cleanup_failed_job(job_info)
-                continue
+                if not self.ignore_errors:
+                    raise
 
         return benchmark_data
 
