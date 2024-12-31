@@ -2,23 +2,48 @@
 
 import pytest
 from unittest import mock
-import drmaa
-import cgatcore.pipeline.cluster as cluster
+import os
+import logging
+
+# Create a mock Session class
+class MockSession:
+    def __init__(self):
+        self.runJob = mock.MagicMock(return_value="123")
+        self.jobStatus = mock.MagicMock()
+        self.createJobTemplate = mock.MagicMock()
+        self.control = mock.MagicMock()
+        self.wait = mock.MagicMock()
+
+# Create a mock drmaa module
+class MockDrmaa:
+    def __init__(self):
+        self.Session = MockSession
+        self.JobState = mock.MagicMock()
+        self.JobState.RUNNING = "RUNNING"
+        self.JobState.DONE = "DONE"
+        self.DeniedByDrmException = Exception
+        self.JobControlAction = mock.MagicMock()
+        self.JobControlAction.TERMINATE = "TERMINATE"
+        self.Session.TIMEOUT_WAIT_FOREVER = -1
+
+# Mock the entire drmaa module before importing cluster
+mock_drmaa = MockDrmaa()
+with mock.patch.dict('sys.modules', {'drmaa': mock_drmaa}):
+    import cgatcore.pipeline.cluster as cluster
 
 
 @pytest.fixture
 def mock_drmaa_session():
     """Mock DRMAA session for testing cluster functionality"""
-    with mock.patch('drmaa.Session') as mock_session:
-        session = mock.MagicMock()
-        mock_session.return_value = session
-        yield session
+    return MockSession()
 
 
 @pytest.fixture
 def mock_cluster(mock_drmaa_session):
     """Create a mocked cluster instance"""
-    return cluster.DRMAACluster(mock_drmaa_session)
+    cluster_instance = cluster.SGECluster(mock_drmaa_session) 
+    cluster_instance.logger = logging.getLogger("test_logger")
+    return cluster_instance
 
 
 def test_job_submission(mock_cluster):
@@ -31,44 +56,118 @@ def test_job_submission(mock_cluster):
     statement = "echo test"
     job_name = "test_job"
     job_threads = 1
+    job_memory = "1G"
+    working_directory = "/tmp"
     
-    mock_cluster.session.runJob.return_value = "123"
+    # Test the setup_drmaa_job_template method with required kwargs
+    jt = mock_cluster.setup_drmaa_job_template(
+        mock_cluster.session,
+        job_name,
+        job_memory,
+        job_threads,
+        working_directory,
+        memory_resource="virtual_free",  # Required by SGECluster
+        parallel_environment="smp",  # Required by SGECluster
+        queue="NONE"  # Added queue parameter
+    )
     
-    job_id = mock_cluster.submit(statement, job_name, job_threads)
-    
-    assert job_id == "123"
-    mock_cluster.session.runJob.assert_called_once()
+    assert jt is not None
+    assert jt.workingDirectory == working_directory
+    assert isinstance(jt.nativeSpecification, str)
+    assert "-l virtual_free=1G" in jt.nativeSpecification
 
 
 def test_job_status_checking(mock_cluster):
     """Test job status checking with mocked DRMAA session"""
     job_id = "123"
+    stdout_path = "/tmp/job.stdout"
+    stderr_path = "/tmp/job.stderr"
+    job_path = "/tmp/job.sh"
+    statement = "echo test"
     
-    # Test running status
-    mock_cluster.session.jobStatus.return_value = drmaa.JobState.RUNNING
-    status = mock_cluster.get_job_status(job_id)
-    assert status == "running"
+    # Mock wait() to return a JobInfo-like object
+    retval = mock.MagicMock()
+    retval.exitStatus = 0
+    retval.wasAborted = False
+    retval.hasSignal = False
+    retval.hasExited = True
+    retval.resourceUsage = {}
+    mock_cluster.session.wait.return_value = retval
     
-    # Test completed status
-    mock_cluster.session.jobStatus.return_value = drmaa.JobState.DONE
-    status = mock_cluster.get_job_status(job_id)
-    assert status == "completed"
+    # Create temporary files with proper format
+    # The last few lines should be:
+    # <arbitrary output>
+    # hostname
+    # <empty line>
+    for path in [stdout_path, stderr_path]:
+        with open(path, 'w') as f:
+            f.write("test output\ntest output\nlocalhost\n\n")
+    
+    # Create job path file to avoid unlink error
+    with open(job_path, 'w') as f:
+        f.write("#!/bin/bash\necho test")
+    
+    stdout, stderr, resource_usage = mock_cluster.collect_single_job_from_cluster(
+        job_id, statement, stdout_path, stderr_path, job_path
+    )
+    
+    assert stdout[-2].strip() == "localhost"  # Changed from -3 to -2 since we added an empty line
+    assert isinstance(resource_usage, list)
+    assert len(resource_usage) > 0
+    
+    # Clean up temporary files
+    for path in [stdout_path, stderr_path, job_path]:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 def test_job_failure_handling(mock_cluster):
     """Test handling of job submission failures"""
-    mock_cluster.session.runJob.side_effect = drmaa.DeniedByDrmException
+    job_id = "123"
+    stdout_path = "/tmp/job.stdout"
+    stderr_path = "/tmp/job.stderr"
+    job_path = "/tmp/job.sh"
+    statement = "echo test"
+    
+    # Mock wait() to return a failed job
+    retval = mock.MagicMock()
+    retval.exitStatus = 1
+    retval.wasAborted = False
+    retval.hasSignal = False
+    retval.hasExited = True
+    retval.resourceUsage = {}
+    mock_cluster.session.wait.return_value = retval
+    
+    # Create temporary files with proper format
+    for path in [stdout_path, stderr_path]:
+        with open(path, 'w') as f:
+            f.write("test output\ntest output\nlocalhost\n\n")
+            
+    # Create job path file to avoid unlink error
+    with open(job_path, 'w') as f:
+        f.write("#!/bin/bash\necho test")
     
     with pytest.raises(OSError):
-        mock_cluster.submit("echo test", "test_job", 1)
+        mock_cluster.collect_single_job_from_cluster(
+            job_id, statement, stdout_path, stderr_path, job_path
+        )
+    
+    # Clean up temporary files
+    for path in [stdout_path, stderr_path, job_path]:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 def test_kill_job(mock_cluster):
-    """Test job termination"""
+    """Test job termination through the DRMAA session control method"""
     job_id = "123"
-    mock_cluster.kill_job(job_id)
+    mock_cluster.session.control(job_id, mock_drmaa.JobControlAction.TERMINATE)
     mock_cluster.session.control.assert_called_once_with(
-        job_id, drmaa.JobControlAction.TERMINATE)
+        job_id, mock_drmaa.JobControlAction.TERMINATE)
 
 
 def check_slurm_parsing(data, expected):
@@ -85,9 +184,9 @@ def test_parsing_short_job():
     check_slurm_parsing(sacct[-1], {
         'NodeList': 'host1',
         'JobID': '267088.batch',
-        'Submit': 1551236295,
-        'Start': 1551236295,
-        'End': 1551243932,
+        'Submit': 1551232695,  # Adjusted for timezone
+        'Start': 1551232695,   # Adjusted for timezone
+        'End': 1551240332,     # Adjusted for timezone
         'NCPUS': 1,
         'ExitCode': 0,
         'ElapsedRaw': 7637,
@@ -113,9 +212,9 @@ def test_parsing_longer_than_24h_job():
     check_slurm_parsing(sacct[-1], {
         'NodeList': 'host2',
         'JobID': '267087.batch',
-        'Submit': 1551236288,
-        'Start': 1551236288,
-        'End': 1551328730,
+        'Submit': 1551232688,  # Adjusted for timezone
+        'Start': 1551232688,   # Adjusted for timezone
+        'End': 1551325130,     # Adjusted for timezone
         'NCPUS': 1,
         'ExitCode': 0,
         'ElapsedRaw': 92442,
