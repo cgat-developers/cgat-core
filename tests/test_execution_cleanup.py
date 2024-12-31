@@ -83,21 +83,22 @@ class TestExecutionCleanup(unittest.TestCase):
         """Test cleanup of all jobs."""
         # Create some test files
         test_files = ["test1.out", "test2.out", "test3.out"]
-        for f in test_files:
-            with open(os.path.join(self.test_dir, f), "w") as outf:
+        file_paths = [os.path.join(self.test_dir, f) for f in test_files]
+        for path in file_paths:
+            with open(path, "w") as outf:
                 outf.write("test")
 
-        # Mock job info
+        # Mock job info with absolute paths
         job_info = {
-            "output_files": test_files
+            "output_files": file_paths
         }
 
         # Call cleanup
         self.executor.cleanup_failed_job(job_info)
 
         # Check files were removed
-        for f in test_files:
-            self.assertFalse(os.path.exists(os.path.join(self.test_dir, f)))
+        for path in file_paths:
+            self.assertFalse(os.path.exists(path))
 
     def test_cleanup_failed_job_single_file(self):
         """Test cleanup of a failed job with a single output file."""
@@ -107,7 +108,7 @@ class TestExecutionCleanup(unittest.TestCase):
         with open(file_path, "w") as outf:
             outf.write("test")
 
-        job_info = {"output_files": [test_file]}
+        job_info = {"output_files": [file_path]}
         self.executor.cleanup_failed_job(job_info)
         
         self.assertFalse(os.path.exists(file_path))
@@ -121,7 +122,7 @@ class TestExecutionCleanup(unittest.TestCase):
             with open(path, "w") as outf:
                 outf.write("test")
 
-        job_info = {"output_files": test_files}
+        job_info = {"output_files": file_paths}
         self.executor.cleanup_failed_job(job_info)
         
         for path in file_paths:
@@ -129,7 +130,8 @@ class TestExecutionCleanup(unittest.TestCase):
 
     def test_cleanup_failed_job_nonexistent_file(self):
         """Test cleanup with a nonexistent file."""
-        job_info = {"output_files": ["nonexistent.out"]}
+        nonexistent_path = os.path.join(self.test_dir, "nonexistent.out")
+        job_info = {"output_files": [nonexistent_path]}
         # Should not raise an exception
         self.executor.cleanup_failed_job(job_info)
 
@@ -153,7 +155,7 @@ class TestExecutionCleanup(unittest.TestCase):
         )
 
         # Create a job that should be cleaned up
-        job_info = {"output_files": ["test.out"]}
+        job_info = {"output_files": [test_file]}
         self.executor.start_job(job_info)
 
         # Verify the error is raised and cleanup is called
@@ -166,7 +168,7 @@ class TestExecutionCleanup(unittest.TestCase):
         job_info = {
             "task_name": "test_task",
             "job_id": 1,
-            "output_files": ["test.out"]
+            "output_files": [os.path.join(self.test_dir, "test.out")]
         }
         
         self.executor.start_job(job_info)
@@ -177,7 +179,7 @@ class TestExecutionCleanup(unittest.TestCase):
         job_info = {
             "task_name": "test_task",
             "job_id": 1,
-            "output_files": ["test.out"]
+            "output_files": [os.path.join(self.test_dir, "test.out")]
         }
         
         # First add the job to active_jobs
