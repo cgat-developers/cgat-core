@@ -242,9 +242,9 @@ def test_parsing_short_job():
     check_slurm_parsing(sacct[-1], {
         'NodeList': 'host1',
         'JobID': '267088.batch',
-        'Submit': 1551232695,  # Adjusted for timezone
-        'Start': 1551232695,   # Adjusted for timezone
-        'End': 1551240332,     # Adjusted for timezone
+        'Submit': 1551232695,  # 2019-02-27T02:58:15 UTC
+        'Start': 1551232695,   # 2019-02-27T02:58:15 UTC
+        'End': 1551240332,     # 2019-02-27T05:05:32 UTC
         'NCPUS': 1,
         'ExitCode': 0,
         'ElapsedRaw': 7637,
@@ -270,9 +270,9 @@ def test_parsing_longer_than_24h_job():
     check_slurm_parsing(sacct[-1], {
         'NodeList': 'host2',
         'JobID': '267087.batch',
-        'Submit': 1551232688,  # Adjusted for timezone
-        'Start': 1551232688,   # Adjusted for timezone
-        'End': 1551325130,     # Adjusted for timezone
+        'Submit': 1551232688,  # 2019-02-27T02:58:08 UTC
+        'Start': 1551232688,   # 2019-02-27T02:58:08 UTC
+        'End': 1551325130,     # 2019-02-28T04:38:50 UTC
         'NCPUS': 1,
         'ExitCode': 0,
         'ElapsedRaw': 92442,
