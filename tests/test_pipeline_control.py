@@ -61,7 +61,7 @@ def check_files(work_dir, present=None, absent=None):
 
 def test_basic_configuration_produces_expected_files(work_dir, expected_output_files):
     retval, stdout, stderr = run_command(
-        f"python {ROOT}/template_pipeline.py make all", work_dir)
+        f"python {ROOT}/template_pipeline.py make all --local", work_dir)
 
     check_files(
         work_dir,
@@ -72,7 +72,7 @@ def test_basic_configuration_produces_expected_files(work_dir, expected_output_f
 
 def test_shell_log_is_created_in_workdir(work_dir, expected_output_files):
     retval, stdout, stderr = run_command(
-        f"python {ROOT}/template_pipeline.py make all --shell-logfile=shell.log", work_dir)
+        f"python {ROOT}/template_pipeline.py make all --local --shell-logfile=shell.log", work_dir)
 
     check_files(
         work_dir,
@@ -84,7 +84,7 @@ def test_shell_log_is_created_at_absolute_path(work_dir, expected_output_files):
     shell_file = os.path.join(work_dir, "test_shell", "shell.log")
 
     retval, stdout, stderr = run_command(
-        f"python {ROOT}/template_pipeline.py make all --shell-logfile={shell_file}", work_dir)
+        f"python {ROOT}/template_pipeline.py make all --local --shell-logfile={shell_file}", work_dir)
 
     check_files(
         work_dir,
@@ -134,7 +134,7 @@ loggers:
 """)
 
     retval, stdout, stderr = run_command(
-        f"python {ROOT}/template_pipeline.py make all --log-config-filename={log_config}", work_dir)
+        f"python {ROOT}/template_pipeline.py make all --local --log-config-filename={log_config}", work_dir)
 
     check_files(
         work_dir,

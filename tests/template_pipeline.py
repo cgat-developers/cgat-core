@@ -82,7 +82,8 @@ def main(argv=None):
                             "min_value": 0.0,
                             "num_samples": 1000,
                             "mu": 0.0,
-                            "sigma": 1.0})
+                            "sigma": 1.0,
+                            "to_cluster": not args.without_cluster})  # Set to_cluster based on without_cluster
 
     pipeline = ruffus.Pipeline("template_pipeline")
 
