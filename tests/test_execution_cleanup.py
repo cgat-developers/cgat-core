@@ -165,11 +165,12 @@ class TestExecutionCleanup(unittest.TestCase):
 
         # Mock executor's run method to fail while preserving job_info
         original_run = self.executor.run
+
         def mock_run(statement_list, *args, **kwargs):
             try:
                 # Force a failure
                 raise OSError("Mock job failure")
-            except:
+            except OSError:
                 # Get the current job from active_jobs
                 if self.executor.active_jobs:
                     current_job = self.executor.active_jobs[-1]
