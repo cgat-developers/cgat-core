@@ -242,9 +242,9 @@ def test_parsing_short_job():
     check_slurm_parsing(sacct[-1], {
         'NodeList': 'host1',
         'JobID': '267088.batch',
-        'Submit': 1551232695,  # 2019-02-27T02:58:15 UTC
-        'Start': 1551232695,   # 2019-02-27T02:58:15 UTC
-        'End': 1551240332,     # 2019-02-27T05:05:32 UTC
+        'Submit': 1551236295,  # 2019-02-27T02:58:15 CET/CEST
+        'Start': 1551236295,   # 2019-02-27T02:58:15 CET/CEST
+        'End': 1551243932,     # 2019-02-27T05:05:32 CET/CEST
         'NCPUS': 1,
         'ExitCode': 0,
         'ElapsedRaw': 7637,
@@ -270,9 +270,9 @@ def test_parsing_longer_than_24h_job():
     check_slurm_parsing(sacct[-1], {
         'NodeList': 'host2',
         'JobID': '267087.batch',
-        'Submit': 1551232688,  # 2019-02-27T02:58:08 UTC
-        'Start': 1551232688,   # 2019-02-27T02:58:08 UTC
-        'End': 1551325130,     # 2019-02-28T04:38:50 UTC
+        'Submit': 1551236288,  # 2019-02-27T02:58:08 CET/CEST
+        'Start': 1551236288,   # 2019-02-27T02:58:08 CET/CEST
+        'End': 1551328730,     # 2019-02-28T04:38:50 CET/CEST
         'NCPUS': 1,
         'ExitCode': 0,
         'ElapsedRaw': 92442,
