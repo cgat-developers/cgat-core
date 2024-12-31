@@ -93,7 +93,7 @@ class TestExecutionCleanup(unittest.TestCase):
         }
 
         # Call cleanup
-        self.executor.cleanup([job_info])
+        self.executor.cleanup_failed_job(job_info)
 
         # Check files were removed
         for f in test_files:
@@ -108,7 +108,7 @@ class TestExecutionCleanup(unittest.TestCase):
             outf.write("test")
 
         job_info = {"output_files": [test_file]}
-        self.executor.cleanup([job_info])
+        self.executor.cleanup_failed_job(job_info)
         
         self.assertFalse(os.path.exists(file_path))
 
@@ -122,7 +122,7 @@ class TestExecutionCleanup(unittest.TestCase):
                 outf.write("test")
 
         job_info = {"output_files": test_files}
-        self.executor.cleanup([job_info])
+        self.executor.cleanup_failed_job(job_info)
         
         for path in file_paths:
             self.assertFalse(os.path.exists(path))
@@ -131,21 +131,35 @@ class TestExecutionCleanup(unittest.TestCase):
         """Test cleanup with a nonexistent file."""
         job_info = {"output_files": ["nonexistent.out"]}
         # Should not raise an exception
-        self.executor.cleanup([job_info])
+        self.executor.cleanup_failed_job(job_info)
 
     def test_cleanup_failed_job_no_outfiles(self):
         """Test cleanup with no output files."""
         job_info = {"output_files": []}
         # Should not raise an exception
-        self.executor.cleanup([job_info])
+        self.executor.cleanup_failed_job(job_info)
 
     def test_error_handling_calls_cleanup(self):
         """Test that error handling properly calls cleanup."""
-        mock_pipeline = MagicMock()
-        mock_pipeline.run.side_effect = RethrownJobError([("target_task", "job1", "error1", "msg1", "traceback1")])
+        # Create a test file that should be cleaned up
+        test_file = os.path.join(self.test_dir, "test.out")
+        with open(test_file, "w") as f:
+            f.write("test content")
 
+        # Mock pipeline with error
+        mock_pipeline = MagicMock()
+        mock_pipeline.run.side_effect = RethrownJobError(
+            [("target_task", "job1", Exception("test error"), "error message", "traceback")]
+        )
+
+        # Create a job that should be cleaned up
+        job_info = {"output_files": ["test.out"]}
+        self.executor.start_job(job_info)
+
+        # Verify the error is raised and cleanup is called
         with self.assertRaises(RethrownJobError):
             self.executor.run(mock_pipeline, make_jobs=True)
+            self.assertFalse(os.path.exists(test_file))
 
     def test_start_job(self):
         """Test starting a job."""
@@ -156,7 +170,7 @@ class TestExecutionCleanup(unittest.TestCase):
         }
         
         self.executor.start_job(job_info)
-        # Add assertions based on what start_job should do
+        self.assertIn(job_info, self.executor.active_jobs)
 
     def test_finish_job(self):
         """Test finishing a job."""
