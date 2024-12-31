@@ -440,8 +440,8 @@ def join_statements(statements, infile, outfile=None):
 
 
 def will_run_on_cluster(options):
-    wants_cluster = options.get("to_cluster", True) and \
-        not options.get("without_cluster", False)
+    wants_cluster = (options.get("to_cluster", True) and
+                     not options.get("without_cluster", False))
     
     if wants_cluster and not HAS_DRMAA:
         raise ValueError("Cluster execution requested (to_cluster=True) but DRMAA library is not available. "
