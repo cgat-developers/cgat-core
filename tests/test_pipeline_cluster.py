@@ -5,7 +5,9 @@ from unittest import mock
 import os
 import logging
 
+
 # Create a mock Session class
+
 class MockSession:
     def __init__(self):
         self.runJob = mock.MagicMock(return_value="123")
@@ -14,17 +16,29 @@ class MockSession:
         self.control = mock.MagicMock()
         self.wait = mock.MagicMock()
 
+
 # Create a mock drmaa module
+
 class MockDrmaa:
     def __init__(self):
         self.Session = MockSession
         self.JobState = mock.MagicMock()
         self.JobState.RUNNING = "RUNNING"
         self.JobState.DONE = "DONE"
+        self.JobState.FAILED = "FAILED"
+        self.JobState.QUEUED = "QUEUED"
+        self.JobState.SUSPENDED = "SUSPENDED"
+        self.JobState.UNDETERMINED = "UNDETERMINED"
         self.DeniedByDrmException = Exception
         self.JobControlAction = mock.MagicMock()
         self.JobControlAction.TERMINATE = "TERMINATE"
+        self.JobControlAction.SUSPEND = "SUSPEND"
+        self.JobControlAction.RESUME = "RESUME"
+        self.JobControlAction.HOLD = "HOLD"
+        self.JobControlAction.RELEASE = "RELEASE"
         self.Session.TIMEOUT_WAIT_FOREVER = -1
+        self.Session.TIMEOUT_NO_WAIT = 0
+
 
 # Mock the entire drmaa module before importing cluster
 mock_drmaa = MockDrmaa()
@@ -39,18 +53,26 @@ def mock_drmaa_session():
 
 
 @pytest.fixture
-def mock_cluster(mock_drmaa_session):
-    """Create a mocked cluster instance"""
-    cluster_instance = cluster.SGECluster(mock_drmaa_session) 
+def mock_sge_cluster(mock_drmaa_session):
+    """Create a mocked SGE cluster instance"""
+    cluster_instance = cluster.SGECluster(mock_drmaa_session)
     cluster_instance.logger = logging.getLogger("test_logger")
     return cluster_instance
 
 
-def test_job_submission(mock_cluster):
-    """Test job submission with mocked DRMAA session"""
+@pytest.fixture
+def mock_slurm_cluster(mock_drmaa_session):
+    """Create a mocked SLURM cluster instance"""
+    cluster_instance = cluster.SlurmCluster(mock_drmaa_session)
+    cluster_instance.logger = logging.getLogger("test_logger")
+    return cluster_instance
+
+
+def test_sge_job_submission(mock_sge_cluster):
+    """Test job submission with mocked SGE DRMAA session"""
     # Setup mock job template
     job_template = mock.MagicMock()
-    mock_cluster.session.createJobTemplate.return_value = job_template
+    mock_sge_cluster.session.createJobTemplate.return_value = job_template
     
     # Test submitting a job
     statement = "echo test"
@@ -60,15 +82,15 @@ def test_job_submission(mock_cluster):
     working_directory = "/tmp"
     
     # Test the setup_drmaa_job_template method with required kwargs
-    jt = mock_cluster.setup_drmaa_job_template(
-        mock_cluster.session,
+    jt = mock_sge_cluster.setup_drmaa_job_template(
+        mock_sge_cluster.session,
         job_name,
         job_memory,
         job_threads,
         working_directory,
         memory_resource="virtual_free",  # Required by SGECluster
         parallel_environment="smp",  # Required by SGECluster
-        queue="NONE"  # Added queue parameter
+        queue="NONE"  # Required by SGECluster
     )
     
     assert jt is not None
@@ -77,7 +99,43 @@ def test_job_submission(mock_cluster):
     assert "-l virtual_free=1G" in jt.nativeSpecification
 
 
-def test_job_status_checking(mock_cluster):
+def test_slurm_job_submission(mock_slurm_cluster):
+    """Test job submission with mocked SLURM DRMAA session"""
+    # Setup mock job template
+    job_template = mock.MagicMock()
+    mock_slurm_cluster.session.createJobTemplate.return_value = job_template
+    
+    # Test submitting a job
+    statement = "echo test"
+    job_name = "test_job"
+    job_threads = 1
+    job_memory = "1G"
+    working_directory = "/tmp"
+    
+    # Test the setup_drmaa_job_template method with SLURM-specific kwargs
+    jt = mock_slurm_cluster.setup_drmaa_job_template(
+        mock_slurm_cluster.session,
+        job_name,
+        job_memory,
+        job_threads,
+        working_directory,
+        queue="main",  # SLURM partition
+        memory_resource="mem",  # SLURM uses mem as memory resource
+    )
+    
+    assert jt is not None
+    assert jt.workingDirectory == working_directory
+    assert isinstance(jt.nativeSpecification, str)
+    
+    # Check SLURM-specific options
+    native_spec = jt.nativeSpecification
+    assert "-J test_job" in native_spec  # Job name
+    assert "--cpus-per-task=1" in native_spec  # Number of threads
+    assert "--mem-per-cpu=1000" in native_spec  # Memory per CPU in MB
+    assert "--partition=main" in native_spec  # SLURM partition
+
+
+def test_job_status_checking(mock_sge_cluster):
     """Test job status checking with mocked DRMAA session"""
     job_id = "123"
     stdout_path = "/tmp/job.stdout"
@@ -92,7 +150,7 @@ def test_job_status_checking(mock_cluster):
     retval.hasSignal = False
     retval.hasExited = True
     retval.resourceUsage = {}
-    mock_cluster.session.wait.return_value = retval
+    mock_sge_cluster.session.wait.return_value = retval
     
     # Create temporary files with proper format
     # The last few lines should be:
@@ -107,7 +165,7 @@ def test_job_status_checking(mock_cluster):
     with open(job_path, 'w') as f:
         f.write("#!/bin/bash\necho test")
     
-    stdout, stderr, resource_usage = mock_cluster.collect_single_job_from_cluster(
+    stdout, stderr, resource_usage = mock_sge_cluster.collect_single_job_from_cluster(
         job_id, statement, stdout_path, stderr_path, job_path
     )
     
@@ -123,7 +181,7 @@ def test_job_status_checking(mock_cluster):
             pass
 
 
-def test_job_failure_handling(mock_cluster):
+def test_job_failure_handling(mock_sge_cluster):
     """Test handling of job submission failures"""
     job_id = "123"
     stdout_path = "/tmp/job.stdout"
@@ -138,7 +196,7 @@ def test_job_failure_handling(mock_cluster):
     retval.hasSignal = False
     retval.hasExited = True
     retval.resourceUsage = {}
-    mock_cluster.session.wait.return_value = retval
+    mock_sge_cluster.session.wait.return_value = retval
     
     # Create temporary files with proper format
     for path in [stdout_path, stderr_path]:
@@ -150,7 +208,7 @@ def test_job_failure_handling(mock_cluster):
         f.write("#!/bin/bash\necho test")
     
     with pytest.raises(OSError):
-        mock_cluster.collect_single_job_from_cluster(
+        mock_sge_cluster.collect_single_job_from_cluster(
             job_id, statement, stdout_path, stderr_path, job_path
         )
     
@@ -162,11 +220,11 @@ def test_job_failure_handling(mock_cluster):
             pass
 
 
-def test_kill_job(mock_cluster):
+def test_kill_job(mock_sge_cluster):
     """Test job termination through the DRMAA session control method"""
     job_id = "123"
-    mock_cluster.session.control(job_id, mock_drmaa.JobControlAction.TERMINATE)
-    mock_cluster.session.control.assert_called_once_with(
+    mock_sge_cluster.session.control(job_id, mock_drmaa.JobControlAction.TERMINATE)
+    mock_sge_cluster.session.control.assert_called_once_with(
         job_id, mock_drmaa.JobControlAction.TERMINATE)
 
 
