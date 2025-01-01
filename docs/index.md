@@ -4,7 +4,73 @@
 ![Conda](https://img.shields.io/conda/v/bioconda/cgatcore.svg)
 ![Build Status](https://github.com/cgat-developers/cgat-core/actions/workflows/cgatcore_python.yml/badge.svg)
 
-Welcome to the CGAT-core documentation! CGAT-core is a workflow management system designed to support the rapid development of scalable, reproducible data analysis pipelines. It is built upon a flexible and user-friendly set of libraries and functions tailored for large-scale data analysis.
+Welcome to the CGAT-core documentation! CGAT-core is a powerful Python framework for building and executing computational pipelines, with robust support for cluster environments and cloud integration.
+
+## Key Features
+
+- **Pipeline Management**: Build and execute complex computational workflows using Ruffus
+- **Cluster Integration**: Support for multiple cluster platforms (SLURM, SGE, PBS/Torque)
+- **Cloud Support**: Native integration with AWS S3, Google Cloud, and Azure
+- **Resource Management**: Intelligent handling of compute resources and job distribution
+- **Container Support**: Execute pipeline tasks in containers for reproducibility
+
+## Getting Started
+
+1. [Installation Guide](getting_started/installation.md)
+   - System requirements
+   - Installation methods
+   - Verification steps
+
+2. [Tutorial](getting_started/tutorial.md)
+   - Basic pipeline concepts
+   - Running your first pipeline
+   - Troubleshooting tips
+
+3. [Examples](getting_started/examples.md)
+   - Common use cases
+   - Pipeline patterns
+   - Best practices
+
+## Core Components
+
+### Pipeline Development
+
+- [Writing Workflows](defining_workflow/writing_workflows.md): Create custom pipeline workflows
+- [Run Parameters](getting_started/run_parameters.md): Configure pipeline execution
+- [Pipeline Modules](pipeline_modules/overview.md): Core pipeline components
+
+### Execution Environments
+
+- [Cluster Configuration](pipeline_modules/cluster.md): Set up cluster execution
+- [Container Support](container/whole_pipeline.md): Run pipelines in containers
+- [Cloud Integration](s3_integration/configuring_s3.md): Work with cloud storage
+
+### Advanced Features
+
+- [Parameter Management](pipeline_modules/parameters.md): Handle pipeline parameters
+- [Execution Control](pipeline_modules/execution.md): Manage task execution
+- [Database Integration](pipeline_modules/database.md): Work with databases
+
+## Project Information
+
+- [How to Contribute](project_info/how_to_contribute.md)
+- [Citations](project_info/citations.md)
+- [License](project_info/license.md)
+- [FAQ](project_info/faq.md)
+
+## Additional Resources
+
+- [API Documentation](function_doc/pipeline.md)
+- [GitHub Repository](https://github.com/cgat-developers/cgat-core)
+- [Issue Tracker](https://github.com/cgat-developers/cgat-core/issues)
+
+## Need Help?
+
+If you need help or have questions:
+
+1. Check our [FAQ](project_info/faq.md)
+2. Search existing [GitHub Issues](https://github.com/cgat-developers/cgat-core/issues)
+3. Create a new issue if your problem isn't already addressed
 
 ## Overview
 

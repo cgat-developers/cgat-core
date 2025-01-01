@@ -228,4 +228,416 @@ When running the pipeline, make sure to specify `--no-cluster` as a command line
 - **Logs**: Check the log files generated during the pipeline run for detailed error messages.
 - **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-developers.github.io/cgat-core/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
 
+## CGAT-core Examples
 
+This guide provides practical examples of CGAT-core pipelines for various use cases, from basic file processing to complex genomics workflows.
+
+## Quick Start Examples
+
+### Hello World Pipeline
+
+```python
+"""hello_world.py - Simple CGAT pipeline example
+
+This pipeline demonstrates the basic structure of a CGAT pipeline:
+1. Task definition
+2. Pipeline flow
+3. Command execution
+"""
+
+from ruffus import *
+from cgatcore import pipeline as P
+import sys
+
+# ------------------------------------------------------------------------
+# Tasks
+# ------------------------------------------------------------------------
+@originate("hello.txt")
+def create_file(outfile):
+    """Create a simple text file."""
+    statement = """echo "Hello, CGAT!" > %(outfile)s"""
+    P.run(statement)
+
+@transform(create_file, suffix(".txt"), ".upper.txt")
+def convert_to_upper(infile, outfile):
+    """Convert text to uppercase."""
+    statement = """cat %(infile)s | tr '[:lower:]' '[:upper:]' > %(outfile)s"""
+    P.run(statement)
+
+# ------------------------------------------------------------------------
+# Pipeline Running
+# ------------------------------------------------------------------------
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))
+```
+
+### Configuration Example
+
+```yaml
+# pipeline.yml
+pipeline:
+    name: hello_world
+    author: Your Name
+
+# Cluster configuration
+cluster:
+    queue_manager: slurm
+    queue: main
+    memory_resource: mem
+    memory_default: 1G
+```
+
+## Real-World Examples
+
+### 1. Genomics Pipeline
+
+This example demonstrates a typical RNA-seq analysis pipeline:
+
+```python
+"""rnaseq_pipeline.py - RNA-seq analysis pipeline
+
+Features:
+- FastQ quality control
+- Read alignment
+- Expression quantification
+- Differential expression analysis
+"""
+
+from ruffus import *
+from cgatcore import pipeline as P
+import logging as L
+import sys
+import os
+
+# ------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------
+P.get_parameters([
+    "%s/pipeline.yml" % os.path.splitext(__file__)[0],
+    "pipeline.yml"])
+
+# ------------------------------------------------------------------------
+# Tasks
+# ------------------------------------------------------------------------
+@transform("*.fastq.gz", suffix(".fastq.gz"), ".fastqc.done")
+def run_fastqc(infile, outfile):
+    """Quality control of sequencing reads."""
+    job_threads = 1
+    job_memory = "2G"
+    
+    statement = """
+    fastqc --outdir=fastqc %(infile)s &&
+    touch %(outfile)s
+    """
+    P.run(statement)
+
+@transform("*.fastq.gz", suffix(".fastq.gz"), ".bam")
+def align_reads(infile, outfile):
+    """Align reads to reference genome."""
+    job_threads = 8
+    job_memory = "32G"
+    
+    statement = """
+    STAR 
+        --runThreadN %(job_threads)s
+        --genomeDir %(genome_dir)s
+        --readFilesIn %(infile)s
+        --readFilesCommand zcat
+        --outFileNamePrefix %(outfile)s
+        --outSAMtype BAM SortedByCoordinate
+    """
+    P.run(statement)
+
+@transform(align_reads, suffix(".bam"), ".counts.tsv")
+def count_features(infile, outfile):
+    """Count reads in genomic features."""
+    job_threads = 4
+    job_memory = "8G"
+    
+    statement = """
+    featureCounts
+        -T %(job_threads)s
+        -a %(annotations)s
+        -o %(outfile)s
+        %(infile)s
+    """
+    P.run(statement)
+
+@merge(count_features, "deseq2_results")
+def run_deseq2(infiles, outfile):
+    """Differential expression analysis."""
+    job_memory = "16G"
+    
+    statement = """
+    Rscript scripts/run_deseq2.R
+        --counts=%(infiles)s
+        --design=%(design_file)s
+        --outdir=%(outfile)s
+    """
+    P.run(statement)
+
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))
+```
+
+### 2. Data Processing Pipeline
+
+Example of a data processing pipeline with S3 integration:
+
+```python
+"""data_pipeline.py - Data processing with S3 integration
+
+Features:
+- S3 input/output
+- Parallel processing
+- Error handling
+- Resource management
+"""
+
+from ruffus import *
+from cgatcore import pipeline as P
+import logging as L
+import sys
+import os
+
+# ------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------
+P.get_parameters([
+    "%s/pipeline.yml" % os.path.splitext(__file__)[0],
+    "pipeline.yml"])
+
+# Configure S3
+P.configure_s3()
+
+# ------------------------------------------------------------------------
+# Tasks
+# ------------------------------------------------------------------------
+@P.s3_transform("s3://bucket/data/*.csv", 
+                suffix(".csv"), 
+                ".processed.csv")
+def process_data(infile, outfile):
+    """Process CSV files from S3."""
+    job_memory = "4G"
+    
+    statement = """
+    python scripts/process_data.py
+        --input=%(infile)s
+        --output=%(outfile)s
+        --config=%(processing_config)s
+    """
+    try:
+        P.run(statement)
+    except P.PipelineError as e:
+        L.error("Processing failed: %s" % e)
+        # Cleanup temporary files
+        cleanup_temp_files()
+        raise
+    finally:
+        # Always clean up
+        P.cleanup_tmpdir()
+
+@P.s3_merge(process_data, 
+           "s3://bucket/results/report.html")
+def create_report(infiles, outfile):
+    """Generate analysis report."""
+    job_memory = "8G"
+    
+    statement = """
+    python scripts/create_report.py
+        --input=%(infiles)s
+        --output=%(outfile)s
+        --template=%(report_template)s
+    """
+    P.run(statement)
+
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))
+```
+
+### 3. Image Processing Pipeline
+
+Example of an image processing pipeline:
+
+```python
+"""image_pipeline.py - Image processing pipeline
+
+Features:
+- Batch image processing
+- Feature extraction
+- Analysis reporting
+"""
+
+from ruffus import *
+from cgatcore import pipeline as P
+import sys
+import os
+
+# ------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------
+P.get_parameters([
+    "%s/pipeline.yml" % os.path.splitext(__file__)[0],
+    "pipeline.yml"])
+
+# ------------------------------------------------------------------------
+# Tasks
+# ------------------------------------------------------------------------
+@transform("*.png", suffix(".png"), ".processed.png")
+def preprocess_images(infile, outfile):
+    """Image preprocessing."""
+    statement = """
+    python scripts/preprocess.py
+        --input=%(infile)s
+        --output=%(outfile)s
+        --params=%(preprocessing_params)s
+    """
+    P.run(statement)
+
+@transform(preprocess_images, 
+          suffix(".processed.png"), 
+          ".features.json")
+def extract_features(infile, outfile):
+    """Feature extraction."""
+    statement = """
+    python scripts/extract_features.py
+        --input=%(infile)s
+        --output=%(outfile)s
+        --model=%(feature_model)s
+    """
+    P.run(statement)
+
+@merge(extract_features, "analysis_report.html")
+def analyze_results(infiles, outfile):
+    """Generate analysis report."""
+    statement = """
+    python scripts/analyze.py
+        --input=%(infiles)s
+        --output=%(outfile)s
+        --config=%(analysis_config)s
+    """
+    P.run(statement)
+
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))
+```
+
+## Best Practices
+
+### 1. Resource Management
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    """Example of proper resource management."""
+    # Calculate memory based on input size
+    infile_size = os.path.getsize(infile)
+    job_memory = "%dG" % max(4, infile_size // (1024**3) + 2)
+    
+    # Set threads based on system
+    job_threads = min(4, os.cpu_count())
+    
+    # Use temporary directory
+    tmpdir = P.get_temp_dir()
+    
+    statement = """
+    samtools sort 
+        -@ %(job_threads)s 
+        -m %(job_memory)s 
+        -T %(tmpdir)s/sort 
+        %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+### 2. Error Handling
+
+```python
+@transform("*.txt", suffix(".txt"), ".processed")
+def robust_processing(infile, outfile):
+    """Example of proper error handling."""
+    try:
+        statement = """
+        process_data %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+    except P.PipelineError as e:
+        L.error("Processing failed: %s" % e)
+        # Cleanup temporary files
+        cleanup_temp_files()
+        raise
+    finally:
+        # Always clean up
+        P.cleanup_tmpdir()
+```
+
+### 3. Configuration Management
+
+```yaml
+# pipeline.yml - Example configuration
+
+# Pipeline metadata
+pipeline:
+    name: example_pipeline
+    version: 1.0.0
+    author: Your Name
+
+# Input/Output
+io:
+    input_dir: /path/to/input
+    output_dir: /path/to/output
+    temp_dir: /tmp/pipeline
+
+# Processing parameters
+processing:
+    threads: 4
+    memory: 8G
+    chunk_size: 1000
+
+# Cluster configuration
+cluster:
+    queue_manager: slurm
+    queue: main
+    memory_resource: mem
+    parallel_environment: smp
+    max_jobs: 100
+
+# S3 configuration (if needed)
+s3:
+    bucket: my-pipeline-bucket
+    region: us-west-2
+    transfer:
+        multipart_threshold: 8388608
+        max_concurrency: 10
+```
+
+## Running the Examples
+
+1. **Setup Configuration**
+   ```bash
+   # Copy and edit pipeline configuration
+   cp pipeline.yml.example pipeline.yml
+   ```
+
+2. **Run Pipeline**
+   ```bash
+   # Show pipeline tasks
+   python pipeline.py show full
+
+   # Run specific task
+   python pipeline.py make task_name
+
+   # Run entire pipeline
+   python pipeline.py make full
+   ```
+
+3. **Cluster Execution**
+   ```bash
+   # Run on cluster
+   python pipeline.py make full --cluster-queue=main
+   ```
+
+For more information, see:
+- [Pipeline Overview](../pipeline_modules/overview.md)
+- [Cluster Configuration](../pipeline_modules/cluster.md)
+- [S3 Integration](../s3_integration/configuring_s3.md)

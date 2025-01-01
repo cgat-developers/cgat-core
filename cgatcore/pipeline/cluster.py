@@ -1,15 +1,54 @@
-'''cluster.py - cluster utility functions for ruffus pipelines
-==============================================================
+"""
+cluster.py - Cluster job management for CGAT pipelines
+====================================================
 
-This module abstracts the DRMAA native specification and provides
-convenience functions for running Drmaa jobs.
+This module provides functionality for submitting and managing jobs on various
+cluster platforms (SLURM, SGE, PBS/Torque). It handles:
 
-Currently SGE, SLURM, Torque and PBSPro are supported.
+1. Job Submission
+   - Resource allocation (memory, CPU cores)
+   - Queue selection and prioritization
+   - Job dependencies and scheduling
 
-Reference
----------
+2. Platform Support
+   - SLURM Workload Manager
+   - Sun Grid Engine (SGE)
+   - PBS/Torque
+   - Local execution (multiprocessing)
 
-'''
+3. Resource Management
+   - Memory limits and monitoring
+   - CPU allocation
+   - Job runtime constraints
+   - Temporary directory handling
+
+Configuration
+------------
+Cluster settings can be configured in `.cgat.yml`:
+
+.. code-block:: yaml
+
+    cluster:
+        queue_manager: slurm
+        queue: main
+        memory_resource: mem
+        memory_default: 4G
+        parallel_environment: dedicated
+
+Available Parameters
+------------------
+- cluster_queue: Cluster queue to use (default: all.q)
+- cluster_priority: Job priority (-10 to 10, default: -10)
+- cluster_num_jobs: Maximum concurrent jobs (default: 100)
+- cluster_memory_resource: Memory resource identifier
+- cluster_memory_default: Default job memory (default: 4G)
+- cluster_memory_ulimit: Enable memory limits via ulimit
+- cluster_parallel_environment: Parallel environment name
+- cluster_queue_manager: Queue management system
+- cluster_tmpdir: Temporary directory location
+
+For detailed documentation, see: https://cgat-core.readthedocs.io/
+"""
 
 import re
 import math
@@ -484,7 +523,6 @@ class TorqueCluster(DRMAACluster):
             spec.append("-q {}".format(kwargs["queue"]))
 
         spec.append(kwargs.get("options", ""))
-
         return spec
 
     def update_template(self, jt):
