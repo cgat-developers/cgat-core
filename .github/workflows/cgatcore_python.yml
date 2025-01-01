@@ -60,23 +60,6 @@ jobs:
           pip list
           openssl version
 
-      - name: Install coverage
-        run: |
-          pip install coverage
-
-      - name: Run tests with coverage
-        run: |
-          coverage run -m pytest
-
-      - name: Generate coverage report
-        run: |
-          coverage report
-          coverage xml
-
-      - name: Upload coverage to CodeCov
-        run: |
-          bash <(curl -s https://codecov.io/bash) -f coverage.xml
-
       - name: Test
         run: |
           pip install .
