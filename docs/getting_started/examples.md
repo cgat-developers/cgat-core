@@ -228,13 +228,13 @@ When running the pipeline, make sure to specify `--no-cluster` as a command line
 - **Logs**: Check the log files generated during the pipeline run for detailed error messages.
 - **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-developers.github.io/cgat-core/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
 
-## CGAT-core Examples
+## CGAT-core Examples {#cgat-core-examples}
 
 This guide provides practical examples of CGAT-core pipelines for various use cases, from basic file processing to complex genomics workflows.
 
-## Quick Start Examples
+## Quick Start Examples {#quick-start-examples}
 
-### Hello World Pipeline
+### Hello World Pipeline {#hello-world-pipeline}
 
 ```python
 """hello_world.py - Simple CGAT pipeline example
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     sys.exit(P.main(sys.argv))
 ```
 
-### Configuration Example
+### Configuration Example {#configuration-example}
 
 ```yaml
 # pipeline.yml
@@ -287,9 +287,9 @@ cluster:
     memory_default: 1G
 ```
 
-## Real-World Examples
+## Real-World Examples {#real-world-examples}
 
-### 1. Genomics Pipeline
+### 1. Genomics Pipeline {#genomics-pipeline}
 
 This example demonstrates a typical RNA-seq analysis pipeline:
 
@@ -380,7 +380,7 @@ if __name__ == "__main__":
     sys.exit(P.main(sys.argv))
 ```
 
-### 2. Data Processing Pipeline
+### 2. Data Processing Pipeline {#data-processing-pipeline}
 
 Example of a data processing pipeline with S3 integration:
 
@@ -455,7 +455,7 @@ if __name__ == "__main__":
     sys.exit(P.main(sys.argv))
 ```
 
-### 3. Image Processing Pipeline
+### 3. Image Processing Pipeline {#image-processing-pipeline}
 
 Example of an image processing pipeline:
 
@@ -522,9 +522,9 @@ if __name__ == "__main__":
     sys.exit(P.main(sys.argv))
 ```
 
-## Best Practices
+## Best Practices {#best-practices}
 
-### 1. Resource Management
+### 1. Resource Management {#resource-management}
 
 ```python
 @transform("*.bam", suffix(".bam"), ".sorted.bam")
@@ -550,7 +550,7 @@ def sort_bam(infile, outfile):
     P.run(statement)
 ```
 
-### 2. Error Handling
+### 2. Error Handling {#error-handling}
 
 ```python
 @transform("*.txt", suffix(".txt"), ".processed")
@@ -571,7 +571,7 @@ def robust_processing(infile, outfile):
         P.cleanup_tmpdir()
 ```
 
-### 3. Configuration Management
+### 3. Configuration Management {#configuration-management}
 
 ```yaml
 # pipeline.yml - Example configuration
@@ -611,7 +611,7 @@ s3:
         max_concurrency: 10
 ```
 
-## Running the Examples
+## Running the Examples {#running-the-examples}
 
 1. **Setup Configuration**
    ```bash

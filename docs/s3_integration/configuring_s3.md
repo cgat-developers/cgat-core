@@ -213,7 +213,6 @@ logging.getLogger('botocore').setLevel(logging.DEBUG)
    - Use bucket policies
    - Enable access logging
 
-For more information, see:
+For more examples of using S3 in your pipelines, see the [S3 Pipeline Examples](s3_pipeline.md#examples) section.
 - [AWS S3 Documentation](https://docs.aws.amazon.com/s3/)
 - [Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
-- [CGAT Pipeline Examples](examples.md)

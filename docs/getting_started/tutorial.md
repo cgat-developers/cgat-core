@@ -8,9 +8,9 @@ The aim of this pipeline is to perform pseudoalignment using `kallisto`. The pip
 
 The `cgat-showcase` pipeline highlights some of the functionality of `cgat-core`. Additionally, more advanced workflows for next-generation sequencing analysis are available in the [cgat-flow repository](https://github.com/cgat-developers/cgat-flow).
 
-## Tutorial start
+## Tutorial start {#tutorial-start}
 
-### Step 1: Download the tutorial data
+### Step 1: Download the tutorial data {#download-data}
 
 Create a new directory, navigate to it, and download the test data:
 
@@ -21,7 +21,7 @@ wget https://www.cgat.org/downloads/public/showcase/showcase_test_data.tar.gz
 tar -zxvf showcase_test_data.tar.gz
 ```
 
-### Step 2: Generate a configuration YAML file
+### Step 2: Generate a configuration YAML file {#generate-config}
 
 Navigate to the test data directory and generate a configuration file for the pipeline:
 
@@ -38,7 +38,7 @@ python /path/to/file/pipeline_transdiffexpres.py config
 
 This will generate a `pipeline.yml` file containing configuration parameters that can be used to modify the pipeline output. For this tutorial, you do not need to modify the parameters to run the pipeline. In the [Modify Config](#modify-config) section below, you will find details on how to adjust the config file to change the pipeline's output.
 
-### Step 3: Run the pipeline
+### Step 3: Run the pipeline {#run-pipeline}
 
 To run the pipeline, execute the following command in the directory containing the `pipeline.yml` file:
 
@@ -56,17 +56,17 @@ cgatshowcase --help
 
 This will start the pipeline execution. Monitor the output for any errors or warnings.
 
-### Step 4: Review Results
+### Step 4: Review Results {#review-results}
 
 Once the pipeline completes, review the output files generated in the `showcase_test_data` directory. These files contain the results of the pseudoalignment.
 
-### Troubleshooting
+### Troubleshooting {#troubleshooting}
 
 - **Common Issues**: If you encounter errors during execution, ensure that all dependencies are installed and paths are correctly set.
 - **Logs**: Check the log files generated during the pipeline run for detailed error messages.
 - **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-core.readthedocs.io/en/latest/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
 
-### Step 5: Generate a report
+### Step 5: Generate a report {#generate-report}
 
 The final step is to generate a report to display the output of the pipeline. We recommend using `MultiQC` for generating reports from commonly used bioinformatics tools (such as mappers and pseudoaligners) and `Rmarkdown` for generating custom reports.
 
@@ -78,9 +78,9 @@ cgatshowcase transdiffexprs make build_report -v 5 --no-cluster
 
 This will generate a `MultiQC` report in the folder `MultiQC_report.dir/` and an `Rmarkdown` report in `R_report.dir/`.
 
-## Core Concepts
+## Core Concepts {#core-concepts}
 
-### Pipeline Structure
+### Pipeline Structure {#pipeline-structure}
 
 A CGAT pipeline typically consists of:
 1. **Tasks**: Individual processing steps
@@ -88,7 +88,7 @@ A CGAT pipeline typically consists of:
 3. **Configuration**: Pipeline settings
 4. **Execution**: Running the pipeline
 
-### Task Types
+### Task Types {#task-types}
 
 1. **@transform**: One-to-one file transformation
 ```python
@@ -111,7 +111,7 @@ def split_file(infile, outfiles):
     pass
 ```
 
-### Resource Management
+### Resource Management {#resource-management}
 
 Control resource allocation:
 ```python
@@ -126,7 +126,7 @@ def sort_bam(infile, outfile):
     P.run(statement)
 ```
 
-### Error Handling
+### Error Handling {#error-handling}
 
 Implement robust error handling:
 ```python
@@ -137,9 +137,9 @@ except P.PipelineError as e:
     raise
 ```
 
-## Advanced Topics
+## Advanced Topics {#advanced-topics}
 
-### 1. Pipeline Parameters
+### 1. Pipeline Parameters {#pipeline-parameters}
 
 Access configuration parameters:
 ```python
@@ -150,7 +150,7 @@ threads = PARAMS.get("threads", 1)
 input_dir = PARAMS["input_dir"]
 ```
 
-### 2. Logging
+### 2. Logging {#logging}
 
 Use the logging system:
 ```python
@@ -164,7 +164,7 @@ L.warning("Low memory condition")
 L.error("Task failed: %s" % e)
 ```
 
-### 3. Temporary Files
+### 3. Temporary Files {#temporary-files}
 
 Manage temporary files:
 ```python
@@ -180,29 +180,252 @@ def sort_bam(infile, outfile):
     P.run(statement)
 ```
 
-## Best Practices
+## Best Practices {#best-practices}
 
-1. **Code Organization**
-   - Use clear task names
-   - Group related tasks
-   - Document pipeline steps
+### Code Organization {#code-organization}
 
-2. **Resource Management**
-   - Set appropriate memory/CPU requirements
-   - Use temporary directories
-   - Clean up intermediate files
+#### 1. Task Structure
+- Use meaningful task names
+- Group related tasks together
+- Keep tasks focused and single-purpose
+- Document task dependencies clearly
 
-3. **Error Handling**
-   - Implement proper error checking
-   - Use informative error messages
-   - Clean up on failure
+#### 2. File Management
+- Use consistent file naming patterns
+- Organize output directories logically
+- Clean up temporary files
+- Handle file paths safely
 
-4. **Documentation**
-   - Add docstrings to tasks
-   - Document configuration options
-   - Include usage examples
+#### 3. Documentation
+- Add docstrings to all tasks
+- Document configuration parameters
+- Include usage examples
+- Maintain a clear README
 
-## Next Steps
+### Resource Management {#resource-management-best-practices}
+
+#### 1. Memory Usage
+- Set appropriate memory limits
+- Scale memory with input size
+- Monitor memory consumption
+- Handle memory errors gracefully
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    """Sort BAM file with memory scaling."""
+    # Scale memory based on input size
+    infile_size = os.path.getsize(infile)
+    job_memory = "%dG" % max(4, infile_size // (1024**3) + 2)
+    
+    statement = """
+    samtools sort -m %(job_memory)s %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+#### 2. CPU Allocation
+- Set appropriate thread counts
+- Consider cluster limitations
+- Scale threads with task needs
+- Monitor CPU usage
+
+```python
+@transform("*.fa", suffix(".fa"), ".indexed")
+def index_genome(infile, outfile):
+    """Index genome with appropriate thread count."""
+    # Set threads based on system
+    job_threads = min(4, os.cpu_count())
+    
+    statement = """
+    bwa index -t %(job_threads)s %(infile)s
+    """
+    P.run(statement)
+```
+
+#### 3. Temporary Files
+- Use proper temporary directories
+- Clean up after task completion
+- Handle cleanup in error cases
+- Monitor disk usage
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_with_temp(infile, outfile):
+    """Sort using managed temporary directory."""
+    tmpdir = P.get_temp_dir()
+    try:
+        statement = """
+        samtools sort -T %(tmpdir)s/sort %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+    finally:
+        P.cleanup_tmpdir()
+```
+
+### Error Handling {#error-handling-best-practices}
+
+#### 1. Task Failures
+- Implement proper error checking
+- Log informative error messages
+- Clean up on failure
+- Provide recovery options
+
+```python
+@transform("*.txt", suffix(".txt"), ".processed")
+def process_with_errors(infile, outfile):
+    """Process files with error handling."""
+    try:
+        statement = """
+        process_data %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+    except P.PipelineError as e:
+        L.error("Processing failed: %s" % e)
+        # Cleanup and handle error
+        cleanup_and_notify()
+        raise
+```
+
+#### 2. Input Validation
+- Check input file existence
+- Validate input formats
+- Verify parameter values
+- Handle missing data
+
+```python
+@transform("*.bam", suffix(".bam"), ".stats")
+def calculate_stats(infile, outfile):
+    """Calculate statistics with input validation."""
+    # Check input file
+    if not os.path.exists(infile):
+        raise ValueError("Input file not found: %s" % infile)
+    
+    # Verify file format
+    if not P.is_valid_bam(infile):
+        raise ValueError("Invalid BAM file: %s" % infile)
+    
+    statement = """
+    samtools stats %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+#### 3. Logging
+- Use appropriate log levels
+- Include relevant context
+- Log progress and milestones
+- Maintain log rotation
+
+```python
+@transform("*.data", suffix(".data"), ".processed")
+def process_with_logging(infile, outfile):
+    """Process with comprehensive logging."""
+    L.info("Starting processing of %s" % infile)
+    
+    try:
+        statement = """
+        process_data %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+        L.info("Successfully processed %s" % infile)
+    except Exception as e:
+        L.error("Failed to process %s: %s" % (infile, e))
+        raise
+```
+
+### Pipeline Configuration {#pipeline-configuration}
+
+#### 1. Parameter Management
+- Use configuration files
+- Set sensible defaults
+- Document parameters
+- Validate parameter values
+
+```yaml
+# pipeline.yml
+pipeline:
+    name: example_pipeline
+    version: 1.0.0
+
+# Resource configuration
+cluster:
+    memory_default: 4G
+    threads_default: 1
+    queue: main
+
+# Processing parameters
+params:
+    min_quality: 20
+    max_threads: 4
+    chunk_size: 1000
+```
+
+#### 2. Environment Setup
+- Use virtual environments
+- Document dependencies
+- Version control configuration
+- Handle platform differences
+
+```bash
+# Create virtual environment
+python -m venv pipeline-env
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export PIPELINE_CONFIG=/path/to/pipeline.yml
+```
+
+#### 3. Testing
+- Write unit tests
+- Test with sample data
+- Verify outputs
+- Monitor performance
+
+```python
+def test_pipeline():
+    """Test pipeline with sample data."""
+    # Run pipeline
+    statement = """
+    python pipeline.py make all --local
+    """
+    P.run(statement)
+    
+    # Verify outputs
+    assert os.path.exists("expected_output.txt")
+    assert check_output_validity("expected_output.txt")
+```
+
+### Troubleshooting {#troubleshooting-best-practices}
+
+If you encounter issues:
+
+1. **Check Logs**
+   - Review pipeline logs
+   - Check cluster logs
+   - Examine error messages
+   - Monitor resource usage
+
+2. **Common Issues**
+   - Memory allocation errors
+   - File permission problems
+   - Cluster queue issues
+   - Software version conflicts
+
+3. **Getting Help**
+   - Check documentation
+   - Search issue tracker
+   - Ask on forums
+   - Contact support team
+
+For more detailed information, see:
+- [Pipeline Overview](../pipeline_modules/overview.md)
+- [Cluster Configuration](../pipeline_modules/cluster.md)
+- [Error Handling](../pipeline_modules/execution.md)
+
+## Next Steps {#next-steps}
 
 - Review the [Examples](examples.md) section
 - Learn about [Cluster Configuration](../pipeline_modules/cluster.md)
@@ -210,6 +433,6 @@ def sort_bam(infile, outfile):
 
 For more advanced topics, see the [Pipeline Modules](../pipeline_modules/overview.md) documentation.
 
-## Conclusion
+## Conclusion {#conclusion}
 
 This completes the tutorial for running the `transdiffexprs` pipeline for `cgat-showcase`. We hope you find it as useful as we do for writing workflows in Python.
