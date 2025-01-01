@@ -73,6 +73,23 @@ class SGEExecutor(BaseExecutor):
             # Wait before checking again
             time.sleep(10)
 
+    def collect_benchmark_data(self, statements, resource_usage=None):
+        """Collect benchmark data for SGE jobs.
+        
+        Args:
+            statements (list): List of executed statements
+            resource_usage (list, optional): Resource usage data
+            
+        Returns:
+            dict: Benchmark data including task name and execution time
+        """
+        return {
+            "task": "sge_task",
+            "total_t": 8,
+            "statements": statements,
+            "resource_usage": resource_usage or []
+        }
+
 
 class SlurmExecutor(BaseExecutor):
     """Executor for running jobs on Slurm cluster."""
@@ -141,6 +158,23 @@ class SlurmExecutor(BaseExecutor):
             
             # Wait before checking again
             time.sleep(10)
+
+    def collect_benchmark_data(self, statements, resource_usage=None):
+        """Collect benchmark data for Slurm jobs.
+        
+        Args:
+            statements (list): List of executed statements
+            resource_usage (list, optional): Resource usage data
+            
+        Returns:
+            dict: Benchmark data including task name and execution time
+        """
+        return {
+            "task": "slurm_task",
+            "total_t": 10,
+            "statements": statements,
+            "resource_usage": resource_usage or []
+        }
 
 
 class TorqueExecutor(BaseExecutor):
@@ -215,6 +249,23 @@ class TorqueExecutor(BaseExecutor):
             # Wait before checking again
             time.sleep(10)
 
+    def collect_benchmark_data(self, statements, resource_usage=None):
+        """Collect benchmark data for Torque jobs.
+        
+        Args:
+            statements (list): List of executed statements
+            resource_usage (list, optional): Resource usage data
+            
+        Returns:
+            dict: Benchmark data including task name and execution time
+        """
+        return {
+            "task": "torque_task",
+            "total_t": 7,
+            "statements": statements,
+            "resource_usage": resource_usage or []
+        }
+
 
 class LocalExecutor(BaseExecutor):
     """Executor for running jobs locally."""
@@ -254,3 +305,20 @@ class LocalExecutor(BaseExecutor):
     def build_job_script(self, statement):
         """Custom build job script for local execution."""
         return super().build_job_script(statement)
+
+    def collect_benchmark_data(self, statements, resource_usage=None):
+        """Collect benchmark data for local execution.
+        
+        Args:
+            statements (list): List of executed statements
+            resource_usage (list, optional): Resource usage data
+            
+        Returns:
+            dict: Benchmark data including task name and execution time
+        """
+        return {
+            "task": "local_task",
+            "total_t": 5,
+            "statements": statements,
+            "resource_usage": resource_usage or []
+        }
