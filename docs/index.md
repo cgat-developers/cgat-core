@@ -8,61 +8,87 @@ Welcome to the CGAT-core documentation! CGAT-core is a powerful Python framework
 
 ## Key Features
 
-- **Pipeline Management**: Build and execute complex computational workflows using Ruffus
-- **Cluster Integration**: Support for multiple cluster platforms (SLURM, SGE, PBS/Torque)
-- **Cloud Support**: Native integration with AWS S3, Google Cloud, and Azure
+- **Pipeline Management**: Build and execute complex computational pipelines
+- **Cluster Support**: Seamless integration with various cluster environments (SLURM, SGE, PBS)
+- **Cloud Integration**: Native support for AWS S3 and other cloud services
 - **Resource Management**: Intelligent handling of compute resources and job distribution
 - **Container Support**: Execute pipeline tasks in containers for reproducibility
 
 ## Getting Started
 
-1. [Installation Guide](getting_started/installation.md)
-   - System requirements
-   - Installation methods
-   - Verification steps
+### Installation Guide
+- [System Requirements](getting_started/installation.md#system-requirements)
+- [Installation Methods](getting_started/installation.md#installation-methods)
+- [Verification Steps](getting_started/installation.md#verification-steps)
 
-2. [Tutorial](getting_started/tutorial.md)
-   - Basic pipeline concepts
-   - Running your first pipeline
-   - Troubleshooting tips
+### Tutorial
+- [Basic Pipeline Concepts](getting_started/tutorial.md#basic-concepts)
+- [Running Your First Pipeline](getting_started/tutorial.md#first-pipeline)
+- [Troubleshooting Tips](getting_started/tutorial.md#troubleshooting)
 
-3. [Examples](getting_started/examples.md)
-   - Common use cases
-   - Pipeline patterns
-   - Best practices
+### Examples
+- [Common Use Cases](getting_started/examples.md#common-use-cases)
+- [Pipeline Patterns](getting_started/examples.md#pipeline-patterns)
+- [Best Practices](getting_started/examples.md#best-practices)
 
 ## Core Components
 
 ### Pipeline Development
+#### Writing Workflows
+- [Create Custom Pipeline Workflows](defining_workflow/writing_workflows.md)
 
-- [Writing Workflows](defining_workflow/writing_workflows.md): Create custom pipeline workflows
-- [Run Parameters](getting_started/run_parameters.md): Configure pipeline execution
-- [Pipeline Modules](pipeline_modules/overview.md): Core pipeline components
+#### Run Parameters
+- [Configure Pipeline Execution](getting_started/run_parameters.md)
+
+#### Pipeline Modules
+- [Core Pipeline Components](pipeline_modules/overview.md)
 
 ### Execution Environments
 
-- [Cluster Configuration](pipeline_modules/cluster.md): Set up cluster execution
-- [Container Support](container/whole_pipeline.md): Run pipelines in containers
-- [Cloud Integration](s3_integration/configuring_s3.md): Work with cloud storage
+#### Cluster Configuration
+- [Set up Cluster Execution](pipeline_modules/cluster.md)
+
+#### Container Support
+- [Run Pipelines in Containers](container/whole_pipeline.md)
+
+#### Cloud Integration
+- [Work with Cloud Storage](s3_integration/configuring_s3.md)
 
 ### Advanced Features
 
-- [Parameter Management](pipeline_modules/parameters.md): Handle pipeline parameters
-- [Execution Control](pipeline_modules/execution.md): Manage task execution
-- [Database Integration](pipeline_modules/database.md): Work with databases
+#### Parameter Management
+- [Handle Pipeline Parameters](pipeline_modules/parameters.md)
+
+#### Execution Control
+- [Manage Task Execution](pipeline_modules/execution.md)
+
+#### Database Integration
+- [Work with Databases](pipeline_modules/database.md)
 
 ## Project Information
 
-- [How to Contribute](project_info/how_to_contribute.md)
-- [Citations](project_info/citations.md)
-- [License](project_info/license.md)
-- [FAQ](project_info/faq.md)
+### How to Contribute
+- [Contributing Guidelines](project_info/how_to_contribute.md)
+
+### Citations
+- [Citation Information](project_info/citations.md)
+
+### License
+- [License Information](project_info/license.md)
+
+### FAQ
+- [Frequently Asked Questions](project_info/faq.md)
 
 ## Additional Resources
 
-- [API Documentation](function_doc/pipeline.md)
-- [GitHub Repository](https://github.com/cgat-developers/cgat-core)
-- [Issue Tracker](https://github.com/cgat-developers/cgat-core/issues)
+### API Documentation
+- [API Reference](function_doc/pipeline.md)
+
+### GitHub Repository
+- [CGAT-core GitHub Repository](https://github.com/cgat-developers/cgat-core)
+
+### Issue Tracker
+- [CGAT-core Issue Tracker](https://github.com/cgat-developers/cgat-core/issues)
 
 ## Need Help?
 

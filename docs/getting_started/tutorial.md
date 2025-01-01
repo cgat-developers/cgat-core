@@ -182,25 +182,248 @@ def sort_bam(infile, outfile):
 
 ## Best Practices
 
-1. **Code Organization**
-   - Use clear task names
-   - Group related tasks
-   - Document pipeline steps
+### Code Organization
 
-2. **Resource Management**
-   - Set appropriate memory/CPU requirements
-   - Use temporary directories
-   - Clean up intermediate files
+#### 1. Task Structure
+- Use meaningful task names
+- Group related tasks together
+- Keep tasks focused and single-purpose
+- Document task dependencies clearly
 
-3. **Error Handling**
-   - Implement proper error checking
-   - Use informative error messages
-   - Clean up on failure
+#### 2. File Management
+- Use consistent file naming patterns
+- Organize output directories logically
+- Clean up temporary files
+- Handle file paths safely
 
-4. **Documentation**
-   - Add docstrings to tasks
-   - Document configuration options
-   - Include usage examples
+#### 3. Documentation
+- Add docstrings to all tasks
+- Document configuration parameters
+- Include usage examples
+- Maintain a clear README
+
+### Resource Management
+
+#### 1. Memory Usage
+- Set appropriate memory limits
+- Scale memory with input size
+- Monitor memory consumption
+- Handle memory errors gracefully
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    """Sort BAM file with memory scaling."""
+    # Scale memory based on input size
+    infile_size = os.path.getsize(infile)
+    job_memory = "%dG" % max(4, infile_size // (1024**3) + 2)
+    
+    statement = """
+    samtools sort -m %(job_memory)s %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+#### 2. CPU Allocation
+- Set appropriate thread counts
+- Consider cluster limitations
+- Scale threads with task needs
+- Monitor CPU usage
+
+```python
+@transform("*.fa", suffix(".fa"), ".indexed")
+def index_genome(infile, outfile):
+    """Index genome with appropriate thread count."""
+    # Set threads based on system
+    job_threads = min(4, os.cpu_count())
+    
+    statement = """
+    bwa index -t %(job_threads)s %(infile)s
+    """
+    P.run(statement)
+```
+
+#### 3. Temporary Files
+- Use proper temporary directories
+- Clean up after task completion
+- Handle cleanup in error cases
+- Monitor disk usage
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_with_temp(infile, outfile):
+    """Sort using managed temporary directory."""
+    tmpdir = P.get_temp_dir()
+    try:
+        statement = """
+        samtools sort -T %(tmpdir)s/sort %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+    finally:
+        P.cleanup_tmpdir()
+```
+
+### Error Handling
+
+#### 1. Task Failures
+- Implement proper error checking
+- Log informative error messages
+- Clean up on failure
+- Provide recovery options
+
+```python
+@transform("*.txt", suffix(".txt"), ".processed")
+def process_with_errors(infile, outfile):
+    """Process files with error handling."""
+    try:
+        statement = """
+        process_data %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+    except P.PipelineError as e:
+        L.error("Processing failed: %s" % e)
+        # Cleanup and handle error
+        cleanup_and_notify()
+        raise
+```
+
+#### 2. Input Validation
+- Check input file existence
+- Validate input formats
+- Verify parameter values
+- Handle missing data
+
+```python
+@transform("*.bam", suffix(".bam"), ".stats")
+def calculate_stats(infile, outfile):
+    """Calculate statistics with input validation."""
+    # Check input file
+    if not os.path.exists(infile):
+        raise ValueError("Input file not found: %s" % infile)
+    
+    # Verify file format
+    if not P.is_valid_bam(infile):
+        raise ValueError("Invalid BAM file: %s" % infile)
+    
+    statement = """
+    samtools stats %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+#### 3. Logging
+- Use appropriate log levels
+- Include relevant context
+- Log progress and milestones
+- Maintain log rotation
+
+```python
+@transform("*.data", suffix(".data"), ".processed")
+def process_with_logging(infile, outfile):
+    """Process with comprehensive logging."""
+    L.info("Starting processing of %s" % infile)
+    
+    try:
+        statement = """
+        process_data %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+        L.info("Successfully processed %s" % infile)
+    except Exception as e:
+        L.error("Failed to process %s: %s" % (infile, e))
+        raise
+```
+
+### Pipeline Configuration
+
+#### 1. Parameter Management
+- Use configuration files
+- Set sensible defaults
+- Document parameters
+- Validate parameter values
+
+```yaml
+# pipeline.yml
+pipeline:
+    name: example_pipeline
+    version: 1.0.0
+
+# Resource configuration
+cluster:
+    memory_default: 4G
+    threads_default: 1
+    queue: main
+
+# Processing parameters
+params:
+    min_quality: 20
+    max_threads: 4
+    chunk_size: 1000
+```
+
+#### 2. Environment Setup
+- Use virtual environments
+- Document dependencies
+- Version control configuration
+- Handle platform differences
+
+```bash
+# Create virtual environment
+python -m venv pipeline-env
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export PIPELINE_CONFIG=/path/to/pipeline.yml
+```
+
+#### 3. Testing
+- Write unit tests
+- Test with sample data
+- Verify outputs
+- Monitor performance
+
+```python
+def test_pipeline():
+    """Test pipeline with sample data."""
+    # Run pipeline
+    statement = """
+    python pipeline.py make all --local
+    """
+    P.run(statement)
+    
+    # Verify outputs
+    assert os.path.exists("expected_output.txt")
+    assert check_output_validity("expected_output.txt")
+```
+
+### Troubleshooting
+
+If you encounter issues:
+
+1. **Check Logs**
+   - Review pipeline logs
+   - Check cluster logs
+   - Examine error messages
+   - Monitor resource usage
+
+2. **Common Issues**
+   - Memory allocation errors
+   - File permission problems
+   - Cluster queue issues
+   - Software version conflicts
+
+3. **Getting Help**
+   - Check documentation
+   - Search issue tracker
+   - Ask on forums
+   - Contact support team
+
+For more detailed information, see:
+- [Pipeline Overview](../pipeline_modules/overview.md)
+- [Cluster Configuration](../pipeline_modules/cluster.md)
+- [Error Handling](../pipeline_modules/execution.md)
 
 ## Next Steps
 
