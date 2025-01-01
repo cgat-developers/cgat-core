@@ -64,6 +64,45 @@ def test_kubernetes_executor_runs_correctly(kubernetes_run_patch):
         assert benchmark_data[0]["task"] == "kubernetes_task"
 
 
+@patch('subprocess.run')
+def test_slurm_job_monitoring(mock_subprocess_run):
+    # Setup mock responses for job submission and status checks
+    mock_subprocess_run.side_effect = [
+        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
+        Mock(returncode=0, stdout="RUNNING\n", stderr=""),  # First status check
+        Mock(returncode=0, stdout="COMPLETED\n", stderr="")  # Second status check
+    ]
+    
+    executor = SlurmExecutor()
+    benchmark_data = executor.run(["echo 'test'"])
+    
+    # Verify job submission and monitoring calls
+    calls = mock_subprocess_run.call_args_list
+    assert len(calls) == 3
+    
+    # Check job submission
+    submit_call = calls[0]
+    assert "sbatch" in submit_call.args[0]
+    
+    # Check monitoring calls
+    monitor_calls = calls[1:]
+    for call in monitor_calls:
+        assert "sacct -j 12345" in call.args[0]
+
+
+@patch('subprocess.run')
+def test_slurm_job_monitoring_failure(mock_subprocess_run):
+    # Setup mock responses for job submission and failed status
+    mock_subprocess_run.side_effect = [
+        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
+        Mock(returncode=0, stdout="FAILED\n", stderr="")  # Status shows failure
+    ]
+    
+    executor = SlurmExecutor()
+    with pytest.raises(RuntimeError, match="Job 12345 failed with status: FAILED"):
+        executor.run(["echo 'test'"])
+
+
 @pytest.mark.parametrize(
     "executor_class, command, expected_task",
     [
