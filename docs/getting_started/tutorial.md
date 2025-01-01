@@ -40,7 +40,7 @@ This will generate a `pipeline.yml` file containing configuration parameters tha
 
 ### Step 3: Run the pipeline
 
-Run the pipeline using the following command:
+To run the pipeline, execute the following command in the directory containing the `pipeline.yml` file:
 
 ```bash
 cgatshowcase transdiffexpres make full -v5 --no-cluster
@@ -54,7 +54,19 @@ The `--no-cluster` flag will run the pipeline locally if you do not have access 
 cgatshowcase --help
 ```
 
-### Step 4: Generate a report
+This will start the pipeline execution. Monitor the output for any errors or warnings.
+
+### Step 4: Review Results
+
+Once the pipeline completes, review the output files generated in the `showcase_test_data` directory. These files contain the results of the pseudoalignment.
+
+### Troubleshooting
+
+- **Common Issues**: If you encounter errors during execution, ensure that all dependencies are installed and paths are correctly set.
+- **Logs**: Check the log files generated during the pipeline run for detailed error messages.
+- **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-core.readthedocs.io/en/latest/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
+
+### Step 5: Generate a report
 
 The final step is to generate a report to display the output of the pipeline. We recommend using `MultiQC` for generating reports from commonly used bioinformatics tools (such as mappers and pseudoaligners) and `Rmarkdown` for generating custom reports.
 
@@ -66,7 +78,138 @@ cgatshowcase transdiffexprs make build_report -v 5 --no-cluster
 
 This will generate a `MultiQC` report in the folder `MultiQC_report.dir/` and an `Rmarkdown` report in `R_report.dir/`.
 
+## Core Concepts
+
+### Pipeline Structure
+
+A CGAT pipeline typically consists of:
+1. **Tasks**: Individual processing steps
+2. **Dependencies**: Relationships between tasks
+3. **Configuration**: Pipeline settings
+4. **Execution**: Running the pipeline
+
+### Task Types
+
+1. **@transform**: One-to-one file transformation
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    pass
+```
+
+2. **@merge**: Many-to-one operation
+```python
+@merge("*.counts", "final_counts.txt")
+def merge_counts(infiles, outfile):
+    pass
+```
+
+3. **@split**: One-to-many operation
+```python
+@split("input.txt", "chunk_*.txt")
+def split_file(infile, outfiles):
+    pass
+```
+
+### Resource Management
+
+Control resource allocation:
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    job_memory = "8G"
+    job_threads = 4
+    statement = """
+    samtools sort -@ %(job_threads)s -m %(job_memory)s 
+    %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+### Error Handling
+
+Implement robust error handling:
+```python
+try:
+    P.run(statement)
+except P.PipelineError as e:
+    L.error("Task failed: %s" % e)
+    raise
+```
+
+## Advanced Topics
+
+### 1. Pipeline Parameters
+
+Access configuration parameters:
+```python
+# Get parameter with default
+threads = PARAMS.get("threads", 1)
+
+# Required parameter
+input_dir = PARAMS["input_dir"]
+```
+
+### 2. Logging
+
+Use the logging system:
+```python
+# Log information
+L.info("Processing %s" % infile)
+
+# Log warnings
+L.warning("Low memory condition")
+
+# Log errors
+L.error("Task failed: %s" % e)
+```
+
+### 3. Temporary Files
+
+Manage temporary files:
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    # Get temp directory
+    tmpdir = P.get_temp_dir()
+    
+    statement = """
+    samtools sort -T %(tmpdir)s/sort 
+    %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+## Best Practices
+
+1. **Code Organization**
+   - Use clear task names
+   - Group related tasks
+   - Document pipeline steps
+
+2. **Resource Management**
+   - Set appropriate memory/CPU requirements
+   - Use temporary directories
+   - Clean up intermediate files
+
+3. **Error Handling**
+   - Implement proper error checking
+   - Use informative error messages
+   - Clean up on failure
+
+4. **Documentation**
+   - Add docstrings to tasks
+   - Document configuration options
+   - Include usage examples
+
+## Next Steps
+
+- Review the [Examples](examples.md) section
+- Learn about [Cluster Configuration](../pipeline_modules/cluster.md)
+- Explore [Cloud Integration](../s3_integration/configuring_s3.md)
+
+For more advanced topics, see the [Pipeline Modules](../pipeline_modules/overview.md) documentation.
+
 ## Conclusion
 
 This completes the tutorial for running the `transdiffexprs` pipeline for `cgat-showcase`. We hope you find it as useful as we do for writing workflows in Python.
-

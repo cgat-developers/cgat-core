@@ -154,6 +154,283 @@ def get_queue_manager(queue_manager, *args, **kwargs):
         raise ValueError("Queue manager {} not supported".format(queue_manager))
 ```
 
+## Cluster Configuration
+
+CGAT-core provides robust support for executing pipelines on various cluster platforms, including SLURM, SGE, and PBS/Torque.
+
+### Supported Platforms
+
+1. **SLURM Workload Manager**
+   - Modern, scalable cluster manager
+   - Extensive resource control
+   - Fair-share scheduling
+
+2. **Sun Grid Engine (SGE)**
+   - Traditional cluster system
+   - Wide deployment base
+   - Flexible job control
+
+3. **PBS/Torque**
+   - Professional batch system
+   - Advanced scheduling
+   - Resource management
+
+### Configuration
+
+#### Basic Setup
+
+Create `.cgat.yml` in your home directory:
+
+```yaml
+cluster:
+    # Queue manager type (slurm, sge, pbspro, torque)
+    queue_manager: slurm
+    
+    # Default queue
+    queue: main
+    
+    # Memory resource identifier
+    memory_resource: mem
+    
+    # Default memory per job
+    memory_default: 4G
+    
+    # Parallel environment
+    parallel_environment: dedicated
+    
+    # Maximum concurrent jobs
+    max_jobs: 100
+    
+    # Job priority
+    priority: 0
+```
+
+#### Platform-Specific Configuration
+
+##### SLURM Configuration
+```yaml
+cluster:
+    queue_manager: slurm
+    options: --time=00:10:00 --cpus-per-task=8 --mem=1G
+    queue: main
+    memory_resource: mem
+    parallel_environment: dedicated
+```
+
+##### SGE Configuration
+```yaml
+cluster:
+    queue_manager: sge
+    options: -l h_rt=00:10:00
+    queue: all.q
+    memory_resource: h_vmem
+    parallel_environment: smp
+```
+
+##### PBS/Torque Configuration
+```yaml
+cluster:
+    queue_manager: torque
+    options: -l walltime=00:10:00 -l nodes=1:ppn=8
+    queue: batch
+    memory_resource: mem
+    parallel_environment: dedicated
+```
+
+## Resource Management
+
+### Memory Allocation
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_bam(infile, outfile):
+    """Sort BAM file with specific memory requirements."""
+    job_memory = "8G"
+    job_threads = 4
+    
+    statement = """
+    samtools sort 
+        -@ %(job_threads)s 
+        -m %(job_memory)s 
+        %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+### CPU Allocation
+
+```python
+@transform("*.fa", suffix(".fa"), ".indexed")
+def index_genome(infile, outfile):
+    """Index genome using multiple cores."""
+    job_threads = 8
+    
+    statement = """
+    bwa index 
+        -t %(job_threads)s 
+        %(infile)s
+    """
+    P.run(statement)
+```
+
+### Temporary Directory
+
+```python
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def sort_with_temp(infile, outfile):
+    """Sort using specific temporary directory."""
+    tmpdir = P.get_temp_dir()
+    
+    statement = """
+    samtools sort 
+        -T %(tmpdir)s/sort 
+        %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+## Advanced Configuration
+
+### Job Dependencies
+
+```python
+@follows(previous_task)
+@transform("*.txt", suffix(".txt"), ".processed")
+def dependent_task(infile, outfile):
+    """Task that depends on previous_task completion."""
+    P.run("process_file %(infile)s > %(outfile)s")
+```
+
+### Resource Scaling
+
+```python
+@transform("*.bam", suffix(".bam"), ".stats")
+def calculate_stats(infile, outfile):
+    """Scale resources based on input size."""
+    infile_size = os.path.getsize(infile)
+    job_memory = "%dG" % max(4, infile_size // (1024**3) + 2)
+    job_threads = min(4, os.cpu_count())
+    
+    statement = """
+    samtools stats 
+        -@ %(job_threads)s 
+        %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+### Queue Selection
+
+```python
+@transform("*.big", suffix(".big"), ".processed")
+def process_big_file(infile, outfile):
+    """Use specific queue for large jobs."""
+    job_queue = "bigmem"
+    job_memory = "64G"
+    
+    statement = """
+    process_large_file %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+## Best Practices
+
+### 1. Resource Specification
+
+- Always specify memory requirements
+- Set appropriate number of threads
+- Use queue-specific options wisely
+- Consider input file sizes
+
+### 2. Error Handling
+
+```python
+try:
+    P.run(statement)
+except P.PipelineError as e:
+    L.error("Cluster job failed: %s" % e)
+    # Cleanup and resubmit if needed
+    cleanup_and_resubmit()
+```
+
+### 3. Performance Optimization
+
+- Group small tasks
+- Use appropriate chunk sizes
+- Monitor resource usage
+- Clean up temporary files
+
+### 4. Monitoring
+
+```python
+# Log resource usage
+@transform("*.bam", suffix(".bam"), ".sorted.bam")
+def monitored_sort(infile, outfile):
+    """Monitor resource usage during sort."""
+    job_memory = "8G"
+    job_threads = 4
+    
+    statement = """
+    { time samtools sort %(infile)s > %(outfile)s ; } 2> %(outfile)s.metrics
+    """
+    P.run(statement)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Job Failures**
+   - Check error logs
+   - Verify resource requirements
+   - Monitor cluster status
+
+2. **Resource Exhaustion**
+   - Adjust memory limits
+   - Check disk space
+   - Monitor CPU usage
+
+3. **Queue Issues**
+   - Verify queue availability
+   - Check user limits
+   - Monitor queue status
+
+### Debugging Tips
+
+1. **Enable Detailed Logging**
+   ```python
+   import logging
+   logging.basicConfig(level=logging.DEBUG)
+   ```
+
+2. **Test Jobs Locally**
+   ```bash
+   python pipeline.py make task --local
+   ```
+
+3. **Monitor Resource Usage**
+   ```bash
+   python pipeline.py make task --cluster-queue=main --debug
+   ```
+
+## Security Considerations
+
+1. **Access Control**
+   - Use appropriate permissions
+   - Implement job quotas
+   - Monitor user activity
+
+2. **Data Protection**
+   - Secure temporary files
+   - Clean up job artifacts
+   - Protect sensitive data
+
+For more information, see:
+- [SLURM Documentation](https://slurm.schedmd.com/)
+- [SGE Documentation](http://gridscheduler.sourceforge.net/)
+- [PBS Documentation](https://www.pbsworks.com/)
+
 ## Notes
 
 - This module provides a unified interface for running cluster jobs across different cluster managers, allowing the user to switch between cluster types without rewriting job submission scripts.

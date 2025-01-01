@@ -12,6 +12,35 @@ The preferred method of installation is using Conda. If you do not have Conda in
 conda install -c conda-forge -c bioconda cgatcore
 ```
 
+### Prerequisites
+
+Before installing `cgatcore`, ensure that you have the following prerequisites:
+
+- **Operating System**: Linux or macOS
+- **Python**: Version 3.6 or higher
+- **Conda**: Recommended for dependency management
+
+### Troubleshooting
+
+- **Conda Issues**: If you encounter issues with Conda, ensure that the Bioconda and Conda-Forge channels are added and prioritized correctly.
+- **Pip Dependencies**: When using pip, manually install any missing dependencies listed in the error messages.
+- **Script Errors**: If the installation script fails, check the script's output for error messages and ensure all prerequisites are met.
+
+### Verification
+
+After installation, verify the installation by running:
+
+```bash
+python
+```
+
+```python
+import cgatcore
+print(cgatcore.__version__)
+```
+
+This should display the installed version of `cgatcore`.
+
 ## Pip installation
 
 We recommend installation through Conda because it manages dependencies automatically. However, `cgatcore` is generally lightweight and can also be installed using the `pip` package manager. Note that you may need to manually install other dependencies as needed:
@@ -87,4 +116,3 @@ export DRMAA_LIBRARY_PATH=/usr/lib/libdrmaa.so.1.0
 ```
 
 [Conda documentation](https://conda.io)
-

@@ -1,90 +1,219 @@
-# Configuring S3 for Pipeline Execution
+# Configuring AWS S3 Integration
 
-To integrate AWS S3 into your CGAT pipeline, you need to configure S3 access to facilitate file handling for reading and writing data. This document explains how to set up S3 configuration for the CGAT pipelines.
+CGAT-core provides native support for working with AWS S3 storage, allowing pipelines to read from and write to S3 buckets seamlessly.
 
-## Overview
+## Prerequisites
 
-`configure_s3()` is a utility function provided by the CGATcore pipeline tools to handle authentication and access to AWS S3. This function allows you to provide credentials, specify regions, and set up other configurations that enable seamless integration of S3 into your workflow.
+1. **AWS Account Setup**
+   - Active AWS account
+   - IAM user with S3 access
+   - Access key and secret key
 
-### Basic Configuration
-
-To get started, you will need to import and use the `configure_s3()` function. Here is a basic example:
-
-```python
-from cgatcore.pipeline import configure_s3
-
-configure_s3(aws_access_key_id="YOUR_AWS_ACCESS_KEY", aws_secret_access_key="YOUR_AWS_SECRET_KEY")
-```
-
-### Configurable Parameters
-
-- **`aws_access_key_id`**: Your AWS access key, used to authenticate and identify the user.
-- **`aws_secret_access_key`**: Your secret key, corresponding to your access key.
-- **`region_name`** (optional): AWS region where your S3 bucket is located. Defaults to the region set in your environment, if available.
-- **`profile_name`** (optional): Name of the AWS profile to use if you have multiple profiles configured locally.
-
-### Using AWS Profiles
-
-If you have multiple AWS profiles configured locally, you can use the `profile_name` parameter to select the appropriate one without hardcoding the access keys in your code:
-
-```python
-configure_s3(profile_name="my-profile")
-```
-
-### Configuring Endpoints
-
-To use custom endpoints, such as when working with MinIO or an AWS-compatible service:
-
-```python
-configure_s3(
-    aws_access_key_id="YOUR_AWS_ACCESS_KEY",
-    aws_secret_access_key="YOUR_AWS_SECRET_KEY",
-    endpoint_url="https://custom-endpoint.com"
-)
-```
-
-### Security Recommendations
-
-1. **Environment Variables**: Use environment variables to set credentials securely rather than hardcoding them in your scripts. This avoids potential exposure of credentials:
-   
+2. **Required Packages**
    ```bash
-   export AWS_ACCESS_KEY_ID=YOUR_AWS_ACCESS_KEY
-   export AWS_SECRET_ACCESS_KEY=YOUR_AWS_SECRET_KEY
+   pip install boto3
+   pip install cgatcore[s3]
    ```
 
-2. **AWS IAM Roles**: If you are running the pipeline on AWS infrastructure (such as EC2 instances), it's recommended to use IAM roles. These roles provide temporary security credentials that are automatically rotated by AWS.
+## Configuration
 
-### Example Pipeline Integration
+### 1. AWS Credentials
 
-After configuring S3, you can seamlessly use the S3-aware methods within your pipeline. Below is an example:
+Configure AWS credentials using one of these methods:
 
-```python
-from cgatcore.pipeline import get_s3_pipeline
-
-# Configure S3 access
-configure_s3(profile_name="my-profile")
-
-# Instantiate the S3 pipeline
-s3_pipeline = get_s3_pipeline()
-
-# Use S3-aware methods in the pipeline
-@s3_pipeline.s3_transform("s3://my-bucket/input.txt", suffix(".txt"), ".processed")
-def process_s3_file(infile, outfile):
-    # Processing logic
-    with open(infile, 'r') as fin:
-        data = fin.read()
-        processed_data = data.upper()
-    with open(outfile, 'w') as fout:
-        fout.write(processed_data)
+#### a. Environment Variables
+```bash
+export AWS_ACCESS_KEY_ID='your_access_key'
+export AWS_SECRET_ACCESS_KEY='your_secret_key'
+export AWS_DEFAULT_REGION='your_region'
 ```
 
-### Summary
+#### b. AWS Credentials File
+Create `~/.aws/credentials`:
+```ini
+[default]
+aws_access_key_id = your_access_key
+aws_secret_access_key = your_secret_key
+region = your_region
+```
 
-- Use the `configure_s3()` function to set up AWS credentials and S3 access.
-- Options are available to use IAM roles, profiles, or custom endpoints.
-- Use the S3-aware decorators to integrate S3 files seamlessly in your pipeline.
+#### c. Pipeline Configuration
+In `pipeline.yml`:
+```yaml
+s3:
+    access_key: your_access_key
+    secret_key: your_secret_key
+    region: your_region
+    bucket: your_default_bucket
+```
 
-## Additional Resources
+### 2. S3 Pipeline Configuration
 
-- [AWS IAM Roles Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html)
-- [AWS CLI Configuration and Credential Files](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+Configure S3-specific settings in `pipeline.yml`:
+```yaml
+s3:
+    # Default bucket for pipeline
+    bucket: my-pipeline-bucket
+    
+    # Temporary directory for downloaded files
+    local_tmpdir: /tmp/s3_cache
+    
+    # File transfer settings
+    transfer:
+        multipart_threshold: 8388608  # 8MB
+        max_concurrency: 10
+        multipart_chunksize: 8388608  # 8MB
+    
+    # Retry configuration
+    retry:
+        max_attempts: 5
+        mode: standard
+```
+
+## Usage Examples
+
+### 1. Basic S3 Operations
+
+#### Reading from S3
+```python
+from cgatcore import pipeline as P
+
+@P.s3_transform("s3://bucket/input.txt", suffix(".txt"), ".processed")
+def process_s3_file(infile, outfile):
+    """Process a file from S3."""
+    statement = """
+    cat %(infile)s | process_data > %(outfile)s
+    """
+    P.run(statement)
+```
+
+#### Writing to S3
+```python
+@P.s3_transform("input.txt", suffix(".txt"), 
+                "s3://bucket/output.processed")
+def write_to_s3(infile, outfile):
+    """Write results to S3."""
+    statement = """
+    process_data %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+### 2. Advanced Operations
+
+#### Working with Multiple Files
+```python
+@P.s3_merge(["s3://bucket/*.txt"], "s3://bucket/merged.txt")
+def merge_s3_files(infiles, outfile):
+    """Merge multiple S3 files."""
+    statement = """
+    cat %(infiles)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+#### Conditional S3 Usage
+```python
+@P.transform("*.txt", suffix(".txt"), 
+             P.s3_path_if("use_s3", ".processed"))
+def conditional_s3(infile, outfile):
+    """Use S3 based on configuration."""
+    statement = """
+    process_data %(infile)s > %(outfile)s
+    """
+    P.run(statement)
+```
+
+## Best Practices
+
+### 1. Performance Optimization
+
+- **Batch Operations**: Group small files for transfers
+- **Multipart Uploads**: Configure for large files
+- **Concurrent Transfers**: Set appropriate concurrency
+- **Local Caching**: Use temporary directory efficiently
+
+```yaml
+s3:
+    transfer:
+        multipart_threshold: 100_000_000  # 100MB
+        max_concurrency: 20
+        multipart_chunksize: 10_000_000  # 10MB
+    local_tmpdir: /fast/local/disk/s3_cache
+```
+
+### 2. Cost Management
+
+- **Data Transfer**: Minimize cross-region transfers
+- **Storage Classes**: Use appropriate storage tiers
+- **Cleanup**: Remove temporary files
+- **Lifecycle Rules**: Configure bucket lifecycle
+
+### 3. Error Handling
+
+```python
+@P.s3_transform("s3://bucket/input.txt", suffix(".txt"), ".processed")
+def robust_s3_processing(infile, outfile):
+    """Handle S3 operations with proper error checking."""
+    try:
+        statement = """
+        process_data %(infile)s > %(outfile)s
+        """
+        P.run(statement)
+    except P.S3Error as e:
+        L.error("S3 operation failed: %s" % e)
+        raise
+    finally:
+        # Clean up local temporary files
+        P.cleanup_tmpdir()
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Access Denied**
+   - Check AWS credentials
+   - Verify IAM permissions
+   - Ensure bucket policy allows access
+
+2. **Transfer Failures**
+   - Check network connectivity
+   - Verify file permissions
+   - Monitor transfer logs
+
+3. **Performance Issues**
+   - Adjust multipart settings
+   - Check network bandwidth
+   - Monitor memory usage
+
+### Debugging
+
+Enable detailed S3 logging:
+```python
+import logging
+logging.getLogger('boto3').setLevel(logging.DEBUG)
+logging.getLogger('botocore').setLevel(logging.DEBUG)
+```
+
+## Security Considerations
+
+1. **Credentials Management**
+   - Use IAM roles when possible
+   - Rotate access keys regularly
+   - Never commit credentials
+
+2. **Data Protection**
+   - Enable bucket encryption
+   - Use HTTPS endpoints
+   - Configure appropriate bucket policies
+
+3. **Access Control**
+   - Implement least privilege
+   - Use bucket policies
+   - Enable access logging
+
+For more information, see:
+- [AWS S3 Documentation](https://docs.aws.amazon.com/s3/)
+- [Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+- [CGAT Pipeline Examples](examples.md)

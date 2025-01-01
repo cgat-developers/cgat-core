@@ -1,15 +1,62 @@
-"""execution.py - Job control for ruffus pipelines
-=========================================================
+"""
+execution.py - Task execution for CGAT pipelines
+==============================================
 
-Session
--------
+This module handles the execution of pipeline tasks, providing support for:
 
-This module manages a DRMAA session. :func:`start_session`
-starts a session and :func:`close_session` closes it.
+1. Job Execution
+   - Local execution via subprocess
+   - Cluster job submission
+   - Python function execution
+   - Container-based execution
 
-Reference
----------
+2. Resource Management
+   - Memory monitoring and limits
+   - CPU allocation
+   - Runtime constraints
+   - Working directory management
 
+3. Error Handling
+   - Job failure detection
+   - Retry mechanisms
+   - Error logging and reporting
+   - Clean-up procedures
+
+4. Execution Modes
+   - Synchronous (blocking) execution
+   - Asynchronous job submission
+   - Parallel task execution
+   - Dependency-aware scheduling
+
+Usage Examples
+-------------
+1. Submit a command to the cluster:
+
+.. code-block:: python
+
+    statement = "samtools sort input.bam -o output.bam"
+    job_options = "-l mem_free=4G"
+    job_threads = 4
+
+    execution.run(statement,
+                 job_options=job_options,
+                 job_threads=job_threads)
+
+2. Execute a Python function:
+
+.. code-block:: python
+
+    def process_data(infile, outfile):
+        # Processing logic here
+        pass
+
+    execution.submit(module="my_module",
+                    function="process_data",
+                    infiles="input.txt",
+                    outfiles="output.txt",
+                    job_memory="4G")
+
+For detailed documentation, see: https://cgat-core.readthedocs.io/
 """
 
 import collections

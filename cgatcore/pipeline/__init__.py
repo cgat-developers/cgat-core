@@ -5,9 +5,53 @@ pipeline.py - Tools for CGAT Ruffus Pipelines
 =============================================
 
 This module provides a comprehensive set of tools to facilitate the creation and management
-of data processing pipelines using CGAT Ruffus. It includes functionalities for pipeline control,
-logging, parameterization, task execution, database uploads, temporary file management, and
-integration with AWS S3.
+of data processing pipelines using CGAT Ruffus. It includes functionalities for:
+
+1. Pipeline Control
+   - Task execution and dependency management
+   - Command-line interface for pipeline operations
+   - Logging and error handling
+
+2. Resource Management
+   - Cluster job submission and monitoring
+   - Memory and CPU allocation
+   - Temporary file handling
+
+3. Configuration
+   - Parameter management via YAML configuration
+   - Cluster settings customization
+   - Pipeline state persistence
+
+4. Cloud Integration
+   - AWS S3 support for input/output files
+   - Cloud-aware pipeline decorators
+   - Remote file handling
+
+Example Usage
+------------
+A basic pipeline using local files:
+
+.. code-block:: python
+
+    from cgatcore import pipeline as P
+
+    # Standard pipeline task
+    @P.transform("input.txt", suffix(".txt"), ".processed")
+    def process_local_file(infile, outfile):
+        # Processing logic here
+        pass
+
+Using S3 integration:
+
+.. code-block:: python
+
+    # S3-aware pipeline task
+    @P.s3_transform("s3://bucket/input.txt", suffix(".txt"), ".processed")
+    def process_s3_file(infile, outfile):
+        # Processing logic here
+        pass
+
+For detailed documentation, see: https://cgat-core.readthedocs.io/
 """
 
 
