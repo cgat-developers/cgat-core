@@ -1,15 +1,74 @@
 site_name: CGAT-core Documentation
-theme: material
+theme:
+  name: material
+  logo: img/CGAT_logo.png
+  favicon: img/CGAT_logo.png
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+  
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  
+  font:
+    text: Roboto
+    code: Roboto Mono
+  
+  icon:
+    repo: fontawesome/brands/github
+
+  custom_dir: docs/overrides
+
+extra_css:
+  - stylesheets/extra.css
+
 plugins:
   - search
   - mkdocstrings:
       default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+            show_if_no_docstring: true
 
 markdown_extensions:
   - admonition
   - codehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
   - toc:
       permalink: true
+
 nav:
   - Home: index.md
   - Getting Started:
@@ -17,7 +76,7 @@ nav:
     - Cluster Configuration: getting_started/run_parameters.md
     - Running a Pipeline: getting_started/examples.md
     - Running a Pipeline Tutorial: getting_started/tutorial.md
-    - Run Parameters: defining_workflow/run_parameters.md
+    - Run Parameters: getting_started/run_parameters.md
   - Building a Workflow:
       - Workflow Overview: defining_workflow/writing_workflows.md
       - Writing a Workflow Tutorial: defining_workflow/tutorial.md
@@ -30,9 +89,12 @@ nav:
     - Execution: pipeline_modules/execution.md
     - Utils: pipeline_modules/utils.md
     - Parameters: pipeline_modules/parameters.md
+    - Executors: pipeline_modules/executors.md
+    - Farm: pipeline_modules/farm.md
+    - Run Functions: pipeline_modules/run_function.md
   - Container support:
     - Individual tasks: container/tasks.md
-    - Whole pipeline: docs/container/whole_pipeline.md
+    - Whole pipeline: container/whole_pipeline.md
   - S3 Cloud:
     - S3 Pipeline: s3_integration/s3_pipeline.md
     - S3 Decorators: s3_integration/s3_decorators.md
@@ -55,3 +117,7 @@ nav:
     - Citations: project_info/citations.md
     - FAQ: project_info/faq.md
     - License: project_info/license.md
+
+repo_url: https://github.com/cgat-developers/cgat-core
+repo_name: cgat-developers/cgat-core
+edit_uri: edit/main/docs/
