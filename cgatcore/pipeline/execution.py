@@ -490,11 +490,21 @@ def join_statements(statements, infile, outfile=None):
 
 
 def will_run_on_cluster(options):
-    run_on_cluster = options.get("to_cluster", True) and \
-        not options.get("without_cluster", False) and \
-        HAS_DRMAA and \
-        GLOBAL_SESSION is not None
-    return run_on_cluster
+    # First check if we're explicitly running without cluster
+    if options.get("without_cluster", False):
+        return False
+        
+    wants_cluster = options.get("to_cluster", True)
+    
+    # Only raise error if DRMAA is required but not available
+    if wants_cluster and not HAS_DRMAA:
+        raise ValueError(
+            "Cluster execution requested (to_cluster=True) but DRMAA library is not available. "
+            "Please install drmaa package in your environment to enable cluster execution.")
+    
+    return (wants_cluster 
+            and HAS_DRMAA 
+            and GLOBAL_SESSION is not None)
 
 
 class Executor(object):
