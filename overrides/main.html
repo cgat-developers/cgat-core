@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block site_meta %}
+{{ super() }}
+<meta name="theme-color" content="#A4216A">
+{% endblock %}
+
+{% block announce %}
+  <a href="https://github.com/cgat-developers/cgat-core">
+    For updates follow <strong>@cgat-developers</strong> on
+    <span class="twemoji github">
+      {% include ".icons/fontawesome/brands/github.svg" %}
+    </span>
+    <strong>GitHub</strong>
+  </a>
+{% endblock %}
