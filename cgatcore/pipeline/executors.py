@@ -65,7 +65,7 @@ class SlurmExecutor(BaseExecutor):
             job_id = process.stdout.strip()
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
-            # Placeholder for job monitoring (should be replaced with actual logic)
+            # Monitor job completion
             self.monitor_job_completion(job_id)
 
             benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
@@ -75,6 +75,37 @@ class SlurmExecutor(BaseExecutor):
     def build_job_script(self, statement):
         """Custom build job script for Slurm."""
         return super().build_job_script(statement)
+
+    def monitor_job_completion(self, job_id):
+        """Monitor the completion of a Slurm job.
+
+        Args:
+            job_id (str): The Slurm job ID to monitor.
+
+        Raises:
+            RuntimeError: If the job fails or times out.
+        """
+        while True:
+            # Use sacct to get job status
+            cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if process.returncode != 0:
+                self.logger.error(f"Failed to get job status: {process.stderr}")
+                raise RuntimeError(f"Failed to get job status: {process.stderr}")
+
+            status = process.stdout.strip()
+            
+            # Check job status
+            if status in ["COMPLETED", "COMPLETED+"]:
+                self.logger.info(f"Job {job_id} completed successfully")
+                break
+            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
+                self.logger.error(f"Job {job_id} failed with status: {status}")
+                raise RuntimeError(f"Job {job_id} failed with status: {status}")
+            
+            # Wait before checking again
+            time.sleep(10)
 
 
 class TorqueExecutor(BaseExecutor):
