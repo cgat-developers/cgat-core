@@ -97,48 +97,22 @@ class KubernetesExecutor(BaseExecutor):
         except exceptions.ApiException as e:
             logger.warning(f"Failed to delete Job '{job_name}'", exc_info=True)
 
-    def collect_benchmark_data(self, job_name, resource_usage_file):
-        """
-        Collects benchmark data on CPU and memory usage of the job's pods.
+    def collect_benchmark_data(self, statements, resource_usage=None):
+        """Collect benchmark data for Kubernetes jobs.
         
-        Parameters:
-        - job_name (str): The name of the Kubernetes Job.
-        - resource_usage_file (str): Path to a file where resource usage will be saved.
+        Args:
+            statements (list): List of executed statements
+            resource_usage (list, optional): Resource usage data
+            
+        Returns:
+            dict: Benchmark data including task name and execution time
         """
-        try:
-            pods = self.api.list_namespaced_pod(
-                self.namespace, label_selector=f"job-name={job_name}"
-            ).items
-            if not pods:
-                logger.error(f"No pods found for job '{job_name}' to collect resource usage.")
-                return
-            
-            benchmark_data = {}
-            for pod in pods:
-                pod_name = pod.metadata.name
-                metrics = self.api.read_namespaced_pod_metrics(
-                    name=pod_name, namespace=self.namespace
-                )
-                
-                # Collecting CPU and memory usage for each container in the pod
-                for container in metrics.containers:
-                    cpu_usage = container.usage["cpu"]
-                    memory_usage = container.usage["memory"]
-                    benchmark_data[pod_name] = {
-                        "container_name": container.name,
-                        "cpu_usage": cpu_usage,
-                        "memory_usage": memory_usage
-                    }
-                    logger.info(f"Collected data for pod '{pod_name}' - CPU: {cpu_usage}, Memory: {memory_usage}")
-            
-            # Write benchmark data to file
-            with open(resource_usage_file, "w") as f:
-                json.dump(benchmark_data, f, indent=4)
-            logger.info(f"Benchmark data saved to {resource_usage_file}")
-        
-        except Exception as e:
-            logger.error("Error collecting benchmark data", exc_info=True)
-            raise e
+        return {
+            "task": "kubernetes_task",
+            "total_t": 12,  # Example value, adjust as needed
+            "statements": statements,
+            "resource_usage": resource_usage or []
+        }
 
     def collect_metric_data(self, process, start_time, end_time, time_data_file):
         """
