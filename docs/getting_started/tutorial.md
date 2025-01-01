@@ -8,9 +8,9 @@ The aim of this pipeline is to perform pseudoalignment using `kallisto`. The pip
 
 The `cgat-showcase` pipeline highlights some of the functionality of `cgat-core`. Additionally, more advanced workflows for next-generation sequencing analysis are available in the [cgat-flow repository](https://github.com/cgat-developers/cgat-flow).
 
-## Tutorial start
+## Tutorial start {#tutorial-start}
 
-### Step 1: Download the tutorial data
+### Step 1: Download the tutorial data {#download-data}
 
 Create a new directory, navigate to it, and download the test data:
 
@@ -21,7 +21,7 @@ wget https://www.cgat.org/downloads/public/showcase/showcase_test_data.tar.gz
 tar -zxvf showcase_test_data.tar.gz
 ```
 
-### Step 2: Generate a configuration YAML file
+### Step 2: Generate a configuration YAML file {#generate-config}
 
 Navigate to the test data directory and generate a configuration file for the pipeline:
 
@@ -38,7 +38,7 @@ python /path/to/file/pipeline_transdiffexpres.py config
 
 This will generate a `pipeline.yml` file containing configuration parameters that can be used to modify the pipeline output. For this tutorial, you do not need to modify the parameters to run the pipeline. In the [Modify Config](#modify-config) section below, you will find details on how to adjust the config file to change the pipeline's output.
 
-### Step 3: Run the pipeline
+### Step 3: Run the pipeline {#run-pipeline}
 
 To run the pipeline, execute the following command in the directory containing the `pipeline.yml` file:
 
@@ -56,17 +56,17 @@ cgatshowcase --help
 
 This will start the pipeline execution. Monitor the output for any errors or warnings.
 
-### Step 4: Review Results
+### Step 4: Review Results {#review-results}
 
 Once the pipeline completes, review the output files generated in the `showcase_test_data` directory. These files contain the results of the pseudoalignment.
 
-### Troubleshooting
+### Troubleshooting {#troubleshooting}
 
 - **Common Issues**: If you encounter errors during execution, ensure that all dependencies are installed and paths are correctly set.
 - **Logs**: Check the log files generated during the pipeline run for detailed error messages.
 - **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-core.readthedocs.io/en/latest/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
 
-### Step 5: Generate a report
+### Step 5: Generate a report {#generate-report}
 
 The final step is to generate a report to display the output of the pipeline. We recommend using `MultiQC` for generating reports from commonly used bioinformatics tools (such as mappers and pseudoaligners) and `Rmarkdown` for generating custom reports.
 
@@ -78,9 +78,9 @@ cgatshowcase transdiffexprs make build_report -v 5 --no-cluster
 
 This will generate a `MultiQC` report in the folder `MultiQC_report.dir/` and an `Rmarkdown` report in `R_report.dir/`.
 
-## Core Concepts
+## Core Concepts {#core-concepts}
 
-### Pipeline Structure
+### Pipeline Structure {#pipeline-structure}
 
 A CGAT pipeline typically consists of:
 1. **Tasks**: Individual processing steps
@@ -88,7 +88,7 @@ A CGAT pipeline typically consists of:
 3. **Configuration**: Pipeline settings
 4. **Execution**: Running the pipeline
 
-### Task Types
+### Task Types {#task-types}
 
 1. **@transform**: One-to-one file transformation
 ```python
@@ -111,7 +111,7 @@ def split_file(infile, outfiles):
     pass
 ```
 
-### Resource Management
+### Resource Management {#resource-management}
 
 Control resource allocation:
 ```python
@@ -126,7 +126,7 @@ def sort_bam(infile, outfile):
     P.run(statement)
 ```
 
-### Error Handling
+### Error Handling {#error-handling}
 
 Implement robust error handling:
 ```python
@@ -137,9 +137,9 @@ except P.PipelineError as e:
     raise
 ```
 
-## Advanced Topics
+## Advanced Topics {#advanced-topics}
 
-### 1. Pipeline Parameters
+### 1. Pipeline Parameters {#pipeline-parameters}
 
 Access configuration parameters:
 ```python
@@ -150,7 +150,7 @@ threads = PARAMS.get("threads", 1)
 input_dir = PARAMS["input_dir"]
 ```
 
-### 2. Logging
+### 2. Logging {#logging}
 
 Use the logging system:
 ```python
@@ -164,7 +164,7 @@ L.warning("Low memory condition")
 L.error("Task failed: %s" % e)
 ```
 
-### 3. Temporary Files
+### 3. Temporary Files {#temporary-files}
 
 Manage temporary files:
 ```python
@@ -180,9 +180,9 @@ def sort_bam(infile, outfile):
     P.run(statement)
 ```
 
-## Best Practices
+## Best Practices {#best-practices}
 
-### Code Organization
+### Code Organization {#code-organization}
 
 #### 1. Task Structure
 - Use meaningful task names
@@ -202,7 +202,7 @@ def sort_bam(infile, outfile):
 - Include usage examples
 - Maintain a clear README
 
-### Resource Management
+### Resource Management {#resource-management-best-practices}
 
 #### 1. Memory Usage
 - Set appropriate memory limits
@@ -263,7 +263,7 @@ def sort_with_temp(infile, outfile):
         P.cleanup_tmpdir()
 ```
 
-### Error Handling
+### Error Handling {#error-handling-best-practices}
 
 #### 1. Task Failures
 - Implement proper error checking
@@ -334,7 +334,7 @@ def process_with_logging(infile, outfile):
         raise
 ```
 
-### Pipeline Configuration
+### Pipeline Configuration {#pipeline-configuration}
 
 #### 1. Parameter Management
 - Use configuration files
@@ -398,7 +398,7 @@ def test_pipeline():
     assert check_output_validity("expected_output.txt")
 ```
 
-### Troubleshooting
+### Troubleshooting {#troubleshooting-best-practices}
 
 If you encounter issues:
 
@@ -425,7 +425,7 @@ For more detailed information, see:
 - [Cluster Configuration](../pipeline_modules/cluster.md)
 - [Error Handling](../pipeline_modules/execution.md)
 
-## Next Steps
+## Next Steps {#next-steps}
 
 - Review the [Examples](examples.md) section
 - Learn about [Cluster Configuration](../pipeline_modules/cluster.md)
@@ -433,6 +433,6 @@ For more detailed information, see:
 
 For more advanced topics, see the [Pipeline Modules](../pipeline_modules/overview.md) documentation.
 
-## Conclusion
+## Conclusion {#conclusion}
 
 This completes the tutorial for running the `transdiffexprs` pipeline for `cgat-showcase`. We hope you find it as useful as we do for writing workflows in Python.

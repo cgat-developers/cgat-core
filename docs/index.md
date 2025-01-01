@@ -176,7 +176,7 @@ By leveraging these modules and decorators, you can build powerful, scalable, an
 ## Quick Links
 
 - [Getting Started](getting_started/installation.md)
-- [Building a Workflow](defining_workflow/writing_workflow.md)
+- [Building a Workflow](defining_workflow/writing_workflows.md)
 - [Pipeline Modules Overview](pipeline_modules/overview.md)
 - [S3 Integration](s3_integration/s3_pipeline.md)
 - [Working with Remote Files](remote/s3.md)

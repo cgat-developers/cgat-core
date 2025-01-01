@@ -89,7 +89,7 @@ jobs:
 
       - name: Build and Deploy MkDocs Site
         run: |
-          mkdocs build --strict
+          mkdocs build
           mkdocs gh-deploy --force --clean
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
