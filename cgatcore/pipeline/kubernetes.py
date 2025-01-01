@@ -13,7 +13,23 @@ logger = logging.getLogger(__name__)
 
 
 class KubernetesExecutor(BaseExecutor):
+    """Executor for managing and running jobs on a Kubernetes cluster.
+    
+    This class is responsible for submitting jobs to a Kubernetes cluster, monitoring their execution,
+    and collecting benchmark data related to their performance.
+    
+    Attributes:
+        namespace (str): The Kubernetes namespace in which to run the jobs. Defaults to 'default'.
+        api (CoreV1Api): The Kubernetes Core API client for interacting with the cluster.
+        batch_api (BatchV1Api): The Kubernetes Batch API client for managing jobs.
+    """
+
     def __init__(self, **kwargs):
+        """Initializes the KubernetesExecutor with the specified configuration options.
+        
+        Args:
+            **kwargs: Additional configuration options, including the namespace.
+        """
         super().__init__(**kwargs)
         self.namespace = kwargs.get("namespace", "default")
         
@@ -28,6 +44,16 @@ class KubernetesExecutor(BaseExecutor):
             raise e
 
     def run(self, statement, job_path, job_condaenv):
+        """Submits a job to the Kubernetes cluster to run the specified command.
+        
+        This method creates a Kubernetes Job object and submits it to the cluster. The job runs the
+        specified command in a container, using the provided Conda environment.
+        
+        Args:
+            statement (str): The command to execute in the job.
+            job_path (str): The path to the job script.
+            job_condaenv (str): The name of the Conda environment to use.
+        """
         job_name = f"cgat-{os.path.basename(job_path)}-{int(time.time())}"
         container_image = "your-docker-image:tag"  # Replace with your Docker image
         
@@ -100,12 +126,15 @@ class KubernetesExecutor(BaseExecutor):
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Kubernetes jobs.
         
+        This method gathers information about the executed statements and any resource usage data.
+        
         Args:
-            statements (list): List of executed statements
-            resource_usage (list, optional): Resource usage data
-            
+            statements (list): List of executed statements.
+            resource_usage (list, optional): Resource usage data.
+        
         Returns:
-            dict: Benchmark data including task name and execution time
+            dict: A dictionary containing the task name, total execution time, executed statements,
+                  and resource usage data.
         """
         return {
             "task": "kubernetes_task",
