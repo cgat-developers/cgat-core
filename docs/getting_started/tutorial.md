@@ -40,7 +40,7 @@ This will generate a `pipeline.yml` file containing configuration parameters tha
 
 ### Step 3: Run the pipeline
 
-Run the pipeline using the following command:
+To run the pipeline, execute the following command in the directory containing the `pipeline.yml` file:
 
 ```bash
 cgatshowcase transdiffexpres make full -v5 --no-cluster
@@ -54,7 +54,19 @@ The `--no-cluster` flag will run the pipeline locally if you do not have access 
 cgatshowcase --help
 ```
 
-### Step 4: Generate a report
+This will start the pipeline execution. Monitor the output for any errors or warnings.
+
+### Step 4: Review Results
+
+Once the pipeline completes, review the output files generated in the `showcase_test_data` directory. These files contain the results of the pseudoalignment.
+
+### Troubleshooting
+
+- **Common Issues**: If you encounter errors during execution, ensure that all dependencies are installed and paths are correctly set.
+- **Logs**: Check the log files generated during the pipeline run for detailed error messages.
+- **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-core.readthedocs.io/en/latest/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
+
+### Step 5: Generate a report
 
 The final step is to generate a report to display the output of the pipeline. We recommend using `MultiQC` for generating reports from commonly used bioinformatics tools (such as mappers and pseudoaligners) and `Rmarkdown` for generating custom reports.
 
@@ -69,4 +81,3 @@ This will generate a `MultiQC` report in the folder `MultiQC_report.dir/` and an
 ## Conclusion
 
 This completes the tutorial for running the `transdiffexprs` pipeline for `cgat-showcase`. We hope you find it as useful as we do for writing workflows in Python.
-

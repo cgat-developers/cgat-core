@@ -222,3 +222,10 @@ P.run(statement)
 
 When running the pipeline, make sure to specify `--no-cluster` as a command line option.
 
+### Troubleshooting
+
+- **Common Issues**: If you encounter errors during pipeline execution, ensure that all dependencies are installed and paths are correctly set.
+- **Logs**: Check the log files generated during the pipeline run for detailed error messages.
+- **Support**: For further assistance, refer to the [CGAT-core documentation](https://cgat-developers.github.io/cgat-core/) or raise an issue on our [GitHub repository](https://github.com/cgat-developers/cgat-core/issues).
+
+
