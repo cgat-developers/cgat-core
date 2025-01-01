@@ -27,7 +27,7 @@ class SGEExecutor(BaseExecutor):
 
             self.logger.info(f"SGE job submitted: {process.stdout.strip()}")
 
-            # Placeholder for job monitoring (should be replaced with actual logic)
+            # Monitor job completion
             self.monitor_job_completion(process.stdout.strip())
 
             benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
@@ -37,6 +37,41 @@ class SGEExecutor(BaseExecutor):
     def build_job_script(self, statement):
         """Custom build job script for SGE."""
         return super().build_job_script(statement)
+
+    def monitor_job_completion(self, job_id):
+        """Monitor the completion of an SGE job.
+
+        Args:
+            job_id (str): The SGE job ID to monitor.
+
+        Raises:
+            RuntimeError: If the job fails or times out.
+        """
+        while True:
+            # Use qstat to get job status
+            cmd = f"qstat -j {job_id}"
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if process.returncode != 0:
+                # Job not found in qstat could mean it's completed
+                # Use qacct to get final status
+                cmd = f"qacct -j {job_id}"
+                process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                
+                if "exit_status" in process.stdout:
+                    exit_status = process.stdout.split("exit_status")[1].split()[0]
+                    if exit_status == "0":
+                        self.logger.info(f"Job {job_id} completed successfully")
+                        break
+                    else:
+                        self.logger.error(f"Job {job_id} failed with exit status: {exit_status}")
+                        raise RuntimeError(f"Job {job_id} failed with exit status: {exit_status}")
+                
+                self.logger.error(f"Failed to get job status: {process.stderr}")
+                raise RuntimeError(f"Failed to get job status: {process.stderr}")
+            
+            # Wait before checking again
+            time.sleep(10)
 
 
 class SlurmExecutor(BaseExecutor):
@@ -134,7 +169,7 @@ class TorqueExecutor(BaseExecutor):
             job_id = process.stdout.strip()
             self.logger.info(f"Torque job submitted with ID: {job_id}")
 
-            # Placeholder for job monitoring (should be replaced with actual logic)
+            # Monitor job completion
             self.monitor_job_completion(job_id)
 
             benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
@@ -144,6 +179,41 @@ class TorqueExecutor(BaseExecutor):
     def build_job_script(self, statement):
         """Custom build job script for Torque."""
         return super().build_job_script(statement)
+
+    def monitor_job_completion(self, job_id):
+        """Monitor the completion of a Torque job.
+
+        Args:
+            job_id (str): The Torque job ID to monitor.
+
+        Raises:
+            RuntimeError: If the job fails or times out.
+        """
+        while True:
+            # Use qstat to get job status
+            cmd = f"qstat -f {job_id}"
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if process.returncode != 0:
+                # Job not found in qstat could mean it's completed
+                # Use tracejob to get final status
+                cmd = f"tracejob {job_id}"
+                process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                
+                if "Exit_status=" in process.stdout:
+                    if "Exit_status=0" in process.stdout:
+                        self.logger.info(f"Job {job_id} completed successfully")
+                        break
+                    else:
+                        status = process.stdout.split("Exit_status=")[1].split()[0]
+                        self.logger.error(f"Job {job_id} failed with exit status: {status}")
+                        raise RuntimeError(f"Job {job_id} failed with exit status: {status}")
+                
+                self.logger.error(f"Failed to get job status: {process.stderr}")
+                raise RuntimeError(f"Failed to get job status: {process.stderr}")
+            
+            # Wait before checking again
+            time.sleep(10)
 
 
 class LocalExecutor(BaseExecutor):

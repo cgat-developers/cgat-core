@@ -103,6 +103,76 @@ def test_slurm_job_monitoring_failure(mock_subprocess_run):
         executor.run(["echo 'test'"])
 
 
+@patch('subprocess.run')
+def test_sge_job_monitoring(mock_subprocess_run):
+    # Setup mock responses for job submission and status checks
+    mock_subprocess_run.side_effect = [
+        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
+        Mock(returncode=1, stdout="", stderr=""),  # qstat fails (job completed)
+        Mock(returncode=0, stdout="exit_status    0", stderr="")  # qacct shows success
+    ]
+    
+    executor = SGEExecutor()
+    benchmark_data = executor.run(["echo 'test'"])
+    
+    # Verify job submission and monitoring calls
+    calls = mock_subprocess_run.call_args_list
+    assert len(calls) == 3
+    
+    # Check monitoring calls
+    assert "qstat -j 12345" in calls[1].args[0]
+    assert "qacct -j 12345" in calls[2].args[0]
+
+
+@patch('subprocess.run')
+def test_sge_job_monitoring_failure(mock_subprocess_run):
+    # Setup mock responses for job submission and failed status
+    mock_subprocess_run.side_effect = [
+        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
+        Mock(returncode=1, stdout="", stderr=""),  # qstat fails (job completed)
+        Mock(returncode=0, stdout="exit_status    1", stderr="")  # qacct shows failure
+    ]
+    
+    executor = SGEExecutor()
+    with pytest.raises(RuntimeError, match="Job 12345 failed with exit status: 1"):
+        executor.run(["echo 'test'"])
+
+
+@patch('subprocess.run')
+def test_torque_job_monitoring(mock_subprocess_run):
+    # Setup mock responses for job submission and status checks
+    mock_subprocess_run.side_effect = [
+        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
+        Mock(returncode=1, stdout="", stderr=""),  # qstat fails (job completed)
+        Mock(returncode=0, stdout="Exit_status=0", stderr="")  # tracejob shows success
+    ]
+    
+    executor = TorqueExecutor()
+    benchmark_data = executor.run(["echo 'test'"])
+    
+    # Verify job submission and monitoring calls
+    calls = mock_subprocess_run.call_args_list
+    assert len(calls) == 3
+    
+    # Check monitoring calls
+    assert "qstat -f 12345" in calls[1].args[0]
+    assert "tracejob 12345" in calls[2].args[0]
+
+
+@patch('subprocess.run')
+def test_torque_job_monitoring_failure(mock_subprocess_run):
+    # Setup mock responses for job submission and failed status
+    mock_subprocess_run.side_effect = [
+        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
+        Mock(returncode=1, stdout="", stderr=""),  # qstat fails (job completed)
+        Mock(returncode=0, stdout="Exit_status=1", stderr="")  # tracejob shows failure
+    ]
+    
+    executor = TorqueExecutor()
+    with pytest.raises(RuntimeError, match="Job 12345 failed with exit status: 1"):
+        executor.run(["echo 'test'"])
+
+
 @pytest.mark.parametrize(
     "executor_class, command, expected_task",
     [
