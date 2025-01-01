@@ -89,4 +89,5 @@ By leveraging these modules and decorators, you can build powerful, scalable, an
 - [S3 Integration](s3_integration/s3_pipeline.md)
 - [Working with Remote Files](remote/s3.md)
 - [Core Functions](function_doc/pipeline.md)
+- [Kubernetes Functions](function_doc/kubernetes.md)
 - [Project Info](project_info/contributing.md)
