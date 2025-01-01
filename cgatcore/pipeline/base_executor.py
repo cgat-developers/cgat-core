@@ -9,18 +9,33 @@ class BaseExecutor:
     def __init__(self, **kwargs):
         """Initialize the executor with configuration options."""
         self.config = kwargs
+        self.task_name = "base_task"  # Should be overridden by subclasses
+        self.default_total_time = 0  # Should be overridden by subclasses
 
     def run(self, statement, *args, **kwargs):
         """Run the given job statement. This should be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement this method")
 
-    def collect_benchmark_data(self, *args, **kwargs):
-        """Collect benchmark data if needed."""
-        raise NotImplementedError("Subclasses must implement this method")
-
     def collect_metric_data(self, *args, **kwargs):
         """Collect metric data if needed."""
         raise NotImplementedError("Subclasses must implement this method")
+
+    def collect_benchmark_data(self, statements, resource_usage=None):
+        """Collect benchmark data for job execution.
+        
+        Args:
+            statements (list): List of executed statements
+            resource_usage (list, optional): Resource usage data
+            
+        Returns:
+            dict: Benchmark data including task name and execution time
+        """
+        return {
+            "task": self.task_name,
+            "total_t": self.default_total_time,
+            "statements": statements,
+            "resource_usage": resource_usage or []
+        }
 
     def build_job_script(self, statement):
         """Build a simple job script for execution.

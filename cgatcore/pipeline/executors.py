@@ -8,6 +8,8 @@ class SGEExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
+        self.task_name = "sge_task"
+        self.default_total_time = 8
 
     def run(self, statement_list):
         benchmark_data = []
@@ -84,8 +86,8 @@ class SGEExecutor(BaseExecutor):
             dict: Benchmark data including task name and execution time
         """
         return {
-            "task": "sge_task",
-            "total_t": 8,
+            "task": self.task_name,
+            "total_t": self.default_total_time,
             "statements": statements,
             "resource_usage": resource_usage or []
         }
@@ -97,6 +99,8 @@ class SlurmExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
+        self.task_name = "slurm_task"
+        self.default_total_time = 10
 
     def run(self, statement_list):
         benchmark_data = []
@@ -170,8 +174,8 @@ class SlurmExecutor(BaseExecutor):
             dict: Benchmark data including task name and execution time
         """
         return {
-            "task": "slurm_task",
-            "total_t": 10,
+            "task": self.task_name,
+            "total_t": self.default_total_time,
             "statements": statements,
             "resource_usage": resource_usage or []
         }
@@ -183,6 +187,8 @@ class TorqueExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
+        self.task_name = "torque_task"
+        self.default_total_time = 7
 
     def run(self, statement_list):
         benchmark_data = []
@@ -260,8 +266,8 @@ class TorqueExecutor(BaseExecutor):
             dict: Benchmark data including task name and execution time
         """
         return {
-            "task": "torque_task",
-            "total_t": 7,
+            "task": self.task_name,
+            "total_t": self.default_total_time,
             "statements": statements,
             "resource_usage": resource_usage or []
         }
@@ -273,6 +279,8 @@ class LocalExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger(__name__)
+        self.task_name = "local_task"
+        self.default_total_time = 5
 
     def run(self, statement_list):
         benchmark_data = []
@@ -317,8 +325,8 @@ class LocalExecutor(BaseExecutor):
             dict: Benchmark data including task name and execution time
         """
         return {
-            "task": "local_task",
-            "total_t": 5,
+            "task": self.task_name,
+            "total_t": self.default_total_time,
             "statements": statements,
             "resource_usage": resource_usage or []
         }
