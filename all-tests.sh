@@ -6,7 +6,7 @@ set -xue
 pycodestyle
 
 # Run the template pipeline script with the `make all` command
-python tests/template_pipeline.py make all
+python tests/template_pipeline.py make all --local
 
 # Run tests using pytest
 pytest -v tests/test_import.py

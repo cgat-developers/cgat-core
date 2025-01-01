@@ -28,8 +28,6 @@ import inspect
 import shutil
 import subprocess
 import sys
-import tempfile
-import time
 import gevent.pool
 import gevent.queue
 from ruffus.task import _pipeline_prepare_to_run, topologically_sorted_nodes, \
@@ -1263,7 +1261,12 @@ def run_workflow(args, argv=None, pipeline=None):
     logger.debug(f"Starting run_workflow with action {args.pipeline_action}")
 
     # Instantiate Executor to manage job tracking and cleanup
-    executor = Executor(job_threads=args.multiprocess, work_dir=get_params()["work_dir"])
+    params = get_params()
+    executor = Executor(
+        job_threads=args.multiprocess, 
+        work_dir=params["work_dir"],
+        without_cluster=params.get("without_cluster", False),
+        to_cluster=params.get("to_cluster", True))
     executor.setup_signal_handlers()  # Set up signal handlers for cleanup on interruption
 
     # Determine tasks to force-run if specified

@@ -23,14 +23,20 @@ def build_pipeline():
 
 
 def test_pipeline_action_show(capsys, build_pipeline):
-    P.initialize(argv=["toolname", "show", "all"])
-    P.run_workflow(E.get_args(), pipeline=build_pipeline)
+    P.initialize(argv=["toolname", "show", "all", "--local"])  # Force local execution
+    args = E.get_args()
+    args.without_cluster = True  # Ensure we run without cluster
+    args.to_cluster = False
+    P.run_workflow(args, pipeline=build_pipeline)
     captured = capsys.readouterr()
     assert "Tasks which will be run" in captured.out
 
 
 def test_pipeline_action_state(capsys, build_pipeline):
-    P.initialize(argv=["toolname", "state"])
-    P.run_workflow(E.get_args(), pipeline=build_pipeline)
+    P.initialize(argv=["toolname", "state", "--local"])  # Force local execution
+    args = E.get_args()
+    args.without_cluster = True  # Ensure we run without cluster
+    args.to_cluster = False
+    P.run_workflow(args, pipeline=build_pipeline)
     captured = capsys.readouterr()
     assert captured.out.startswith("function\tactive")

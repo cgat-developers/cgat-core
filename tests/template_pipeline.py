@@ -76,13 +76,17 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    args = P.initialize(argv,
-                        config_file="template.yml",
-                        defaults={
-                            "min_value": 0.0,
-                            "num_samples": 1000,
-                            "mu": 0.0,
-                            "sigma": 1.0})
+    # Get the args first
+    args = P.initialize(argv, config_file="template.yml")
+
+    # Then use them in the defaults dictionary
+    P.get_params().update({
+        "min_value": 0.0,
+        "num_samples": 1000,
+        "mu": 0.0,
+        "sigma": 1.0,
+        "to_cluster": not args.without_cluster  # Now args is defined
+    })
 
     pipeline = ruffus.Pipeline("template_pipeline")
 

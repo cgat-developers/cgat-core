@@ -15,6 +15,8 @@ mocked_params = {
     "tmpdir": "/tmp",
     "work_dir": "/tmp",
     "os": "Linux",
+    "without_cluster": True,  # Explicitly disable cluster execution
+    "to_cluster": False,  # Explicitly disable cluster execution
 }
 
 
@@ -29,7 +31,7 @@ def test_run_with_container_support(mock_get_params):
         mock_popen.return_value = mock_process
 
         # Use Executor instance
-        executor = Executor()
+        executor = Executor(to_cluster=False, without_cluster=True)
 
         # Mock the method that collects benchmark data
         with patch.object(executor, "collect_benchmark_data", return_value=None) as mock_collect_benchmark:
@@ -61,7 +63,7 @@ def test_run_without_container_support(mock_get_params):
         mock_popen.return_value = mock_process
 
         # Use Executor instance
-        executor = Executor()
+        executor = Executor(to_cluster=False, without_cluster=True)
 
         # Mock the method that collects benchmark data
         with patch.object(executor, "collect_benchmark_data", return_value=None) as mock_collect_benchmark:
@@ -80,7 +82,7 @@ def test_run_without_container_support(mock_get_params):
 def test_invalid_container_runtime(mock_get_params):
     """Test handling of invalid container runtime."""
     with pytest.raises(ValueError, match="Container runtime must be 'docker' or 'singularity'"):
-        executor = Executor()
+        executor = Executor(to_cluster=False, without_cluster=True)
         executor.run(statement_list=["echo Test"], container_runtime="invalid_runtime")
 
 
@@ -88,7 +90,7 @@ def test_invalid_container_runtime(mock_get_params):
 def test_missing_required_params(mock_get_params):
     """Test handling of missing required parameters."""
     with pytest.raises(ValueError, match="An image must be specified when using a container runtime"):
-        executor = Executor()
+        executor = Executor(to_cluster=False, without_cluster=True)
         executor.run(statement_list=["echo Test"], container_runtime="docker")
 
 
@@ -99,7 +101,7 @@ def test_cleanup_on_failure(mock_cleanup, mock_get_params):
     from cgatcore.pipeline.execution import Executor  # Ensure proper import
 
     # Create an instance of Executor
-    executor = Executor()
+    executor = Executor(to_cluster=False, without_cluster=True)
 
     with patch("cgatcore.pipeline.execution.subprocess.Popen") as mock_popen:
         # Mock a process failure
@@ -135,6 +137,6 @@ def test_job_tracking(mock_get_params):
         mock_process.pid = 12345
         mock_popen.return_value = mock_process
 
-        run(statement=["echo Job tracking test"])
+        run(statement=["echo Job tracking test"], to_cluster=False, without_cluster=True)
 
         mock_popen.assert_called_once()
