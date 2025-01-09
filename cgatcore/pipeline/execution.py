@@ -82,6 +82,12 @@ from cgatcore.pipeline.utils import get_caller_locals, get_caller, get_calling_f
 from cgatcore.pipeline.files import get_temp_filename, get_temp_dir
 from cgatcore.pipeline.parameters import substitute_parameters, get_params
 from cgatcore.pipeline.cluster import get_queue_manager, JobInfo
+from cgatcore.pipeline.executors import SGEExecutor, SlurmExecutor, TorqueExecutor, LocalExecutor
+try:
+    from cgatcore.pipeline.kubernetes import KubernetesExecutor
+except ImportError:
+    KubernetesExecutor = None  # Fallback if Kubernetes is not available
+
 
 # talking to a cluster
 try:
@@ -422,6 +428,50 @@ def interpolate_statement(statement, kwargs):
         statement = re.sub(get_params()["mount_point"], "arv=", statement)
 
     return statement
+
+
+def get_executor(options=None):
+    """
+    Return an executor instance based on the specified queue manager in options.
+    
+    Parameters:
+    - options (dict): Dictionary containing execution options, 
+                      including "cluster_queue_manager".
+                      
+    Returns:
+    - Executor instance appropriate for the specified queue manager.
+    """
+    if options is None:
+        options = get_params()
+
+    if options.get("testing", False):
+        return LocalExecutor(**options)
+
+    # Check if to_cluster is explicitly set to False
+    if not options.get("to_cluster", True):  # Defaults to True if not specified
+        return LocalExecutor(**options)
+
+    queue_manager = options.get("cluster_queue_manager", None)
+
+    # Check for KubernetesExecutor
+    if queue_manager == "kubernetes" and KubernetesExecutor is not None:
+        return KubernetesExecutor(**options)
+    
+    # Check for SGEExecutor (Sun Grid Engine)
+    elif queue_manager == "sge" and shutil.which("qsub") is not None:
+        return SGEExecutor(**options)
+    
+    # Check for SlurmExecutor
+    elif queue_manager == "slurm" and shutil.which("sbatch") is not None:
+        return SlurmExecutor(**options)
+    
+    # Check for TorqueExecutor
+    elif queue_manager == "torque" and shutil.which("qsub") is not None:
+        return TorqueExecutor(**options)
+    
+    # Fallback to LocalExecutor, not sure if this should raise an error though, feels like it should
+    else:
+        return LocalExecutor(**options)
 
 
 def join_statements(statements, infile, outfile=None):
@@ -1318,32 +1368,6 @@ class LocalArrayExecutor(LocalExecutor):
     pass
 
 
-def make_runner(**kwargs):
-    """factory function returning an object capable of executing
-    a list of command line statements.
-    """
-
-    run_as_array = "job_array" in kwargs and kwargs["job_array"] is not None
-
-    # run on cluster if:
-    # * to_cluster is not defined or set to True
-    # * command line option without_cluster is set to False
-    # * an SGE session is present
-    run_on_cluster = will_run_on_cluster(kwargs)
-    if run_on_cluster:
-        if run_as_array:
-            runner = GridArrayExecutor(**kwargs)
-        else:
-            runner = GridExecutor(**kwargs)
-    else:
-        if run_as_array:
-            runner = LocalArrayExecutor(**kwargs)
-        else:
-            runner = LocalExecutor(**kwargs)
-
-    return runner
-
-
 def run(statement, **kwargs):
     """run a command line statement.
 
@@ -1442,7 +1466,7 @@ def run(statement, **kwargs):
     """
     logger = get_logger()
 
-    # combine options using priority
+    # Combine options using priority
     options = dict(list(get_params().items()))
     caller_options = get_caller_locals()
     options.update(list(caller_options.items()))
@@ -1451,7 +1475,7 @@ def run(statement, **kwargs):
         del options["self"]
     options.update(list(kwargs.items()))
 
-    # inject params named tuple from TaskLibrary functions into option
+    # Inject params named tuple from TaskLibrary functions into option
     # dict. This allows overriding options set in the code with options set
     # in a .yml file
     if "params" in options:
@@ -1460,7 +1484,7 @@ def run(statement, **kwargs):
         except AttributeError:
             pass
 
-    # insert parameters supplied through simplified interface such
+    # Insert parameters supplied through simplified interface such
     # as job_memory, job_options, job_queue
     options['cluster']['options'] = options.get(
         'job_options', options['cluster']['options'])
@@ -1483,34 +1507,33 @@ def run(statement, **kwargs):
 
     options["task_name"] = calling_module + "." + get_calling_function()
 
-    # build statements using parameter interpolation
+    # Build statements using parameter interpolation
     if isinstance(statement, list):
-        statement_list = []
-        for stmt in statement:
-            statement_list.append(interpolate_statement(stmt, options))
+        statement_list = [interpolate_statement(stmt, options) for stmt in statement]
     else:
         statement_list = [interpolate_statement(statement, options)]
 
     if len(statement_list) == 0:
-        logger.warn("no statements found - no execution")
+        logger.warn("No statements found - no execution")
         return []
 
     if options.get("dryrun", False):
         for statement in statement_list:
-            logger.info("dry-run: {}".format(statement))
+            logger.info("Dry-run: {}".format(statement))
         return []
 
-    # execute statement list
-    runner = make_runner(**options)
-    with runner as r:
-        benchmark_data = r.run(statement_list)
+    # Use get_executor to get the appropriate executor
+    executor = get_executor(options)  # Updated to use get_executor
 
-    # log benchmark_data
+    # Execute statement list within the context of the executor
+    with executor as e:
+        benchmark_data = e.run(statement_list)
+
+    # Log benchmark data
     for data in benchmark_data:
         logger.info(json.dumps(data))
 
-    BenchmarkData = collections.namedtuple(
-        'BenchmarkData', sorted(benchmark_data[0]))
+    BenchmarkData = collections.namedtuple('BenchmarkData', sorted(benchmark_data[0]))
     return [BenchmarkData(**d) for d in benchmark_data]
 
 

@@ -1,3 +1,6 @@
+# CGAT-core
+
+[![codecov](https://codecov.io/gh/cgat-developers/cgat-core/branch/main/graph/badge.svg)](https://codecov.io/gh/cgat-developers/cgat-core)
 
 ![CGAT-core](https://github.com/cgat-developers/cgat-core/blob/master/docs/img/CGAT_logo.png)
 ----------------------------------------
@@ -24,4 +27,3 @@ Installation
 The following sections describe how to install the [cgatcore](https://cgat-developers.github.io/cgat-core/) framework. 
 
 The preferred method to install the cgatcore is using conda, by following the instructions on [read the docs](https://cgat-core.readthedocs.io/en/latest/getting_started/Installation.html). However, there are a few other methods to install cgatcore, including pip and our own bash script installer.
-

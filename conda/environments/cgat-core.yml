@@ -29,6 +29,7 @@ dependencies:
 - pysftp
 - apsw
 - openssl
+- python-kubernetes
 # Testing
 - nose
 - pycodestyle
