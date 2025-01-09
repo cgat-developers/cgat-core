@@ -1306,11 +1306,27 @@ def stop(logger=None):
         outfile.close()
 
 
-def get_output_file(section):
+def get_output_file(section, suffix=None):
     '''return filename to write to, replacing any ``%s`` with section in
     the output pattern for files (``--output-filename-pattern``).
+
+    Arguments
+    ---------
+    section : string
+        section will replace any %s in the pattern for output files
+    suffix : string
+        optional suffix to append to the filename. If provided, it will be
+        added before any existing extension, or at the end if no extension exists.
     '''
-    return re.sub("%s", section, get_args().output_filename_pattern)
+    filename = re.sub("%s", section, get_args().output_filename_pattern)
+    
+    if suffix:
+        # Split filename into base and extension (if any)
+        root, ext = os.path.splitext(filename)
+        # Add suffix before extension (or at end if no extension)
+        filename = root + suffix + ext
+        
+    return filename
 
 
 def open_output_file(section, mode="w", encoding="utf-8"):
@@ -1326,10 +1342,10 @@ def open_output_file(section, mode="w", encoding="utf-8"):
     Arguments
     ---------
     section : string
-       section will replace any %s in the pattern for output files.
+        section will replace any %s in the pattern for output files
 
     mode : char
-       file opening mode
+        file opening mode
 
     Returns
     -------
