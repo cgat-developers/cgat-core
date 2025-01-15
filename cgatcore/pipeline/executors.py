@@ -118,8 +118,28 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Slurm job submission failed: {process.stderr}")
                 raise RuntimeError(f"Slurm job submission failed: {process.stderr}")
 
-            job_id = process.stdout.strip()
-            self.logger.info(f"Slurm job submitted with ID: {job_id}")
+            output = process.stdout.strip()
+            try:
+                # Try to convert directly first (for case where output is just the number)
+                try:
+                    job_id = str(int(output))
+                except ValueError:
+                    # If that fails, try to extract the last word and convert that
+                    job_id = str(int(output.split()[-1]))
+                
+                self.logger.info(f"Slurm job submitted with ID: {job_id}")
+                
+                # Add --parsable to ensure consistent output format for sacct
+                cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
+                # Test if we can query the job
+                test_process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if test_process.returncode != 0:
+                    raise ValueError(f"Could not query job status: {test_process.stderr}")
+                    
+            except (IndexError, ValueError) as e:
+                self.logger.error(f"Could not parse or verify job ID from sbatch output: {output}")
+                self.logger.error(f"Error: {str(e)}")
+                raise RuntimeError(f"Could not parse or verify job ID from sbatch output: {output}")
 
             # Monitor job completion
             self.monitor_job_completion(job_id)

@@ -718,9 +718,9 @@ def _setup_logging(options, logger_callback):
             lvl = logging.DEBUG
 
         if options.stdout == options.stdlog:
-            logformat = '# %(asctime)s %(levelname)s %(message)s'
+            logformat = '# %(asctime)s %(message)s'
         else:
-            logformat = '%(asctime)s %(levelname)s %(message)s'
+            logformat = '%(asctime)s %(message)s'
 
         logging.basicConfig(
             level=lvl,
