@@ -11,6 +11,10 @@ class BaseExecutor:
         self.config = kwargs
         self.task_name = "base_task"  # Should be overridden by subclasses
         self.default_total_time = 0  # Should be overridden by subclasses
+        
+        # Initialize job memory and threads
+        self.job_memory = kwargs.get('job_memory', '1G')
+        self.job_threads = kwargs.get('job_threads', 1)
 
     def run(self, statement, *args, **kwargs):
         """Run the given job statement. This should be implemented by subclasses."""

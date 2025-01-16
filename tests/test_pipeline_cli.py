@@ -69,8 +69,11 @@ def test_slurm_job_monitoring(mock_subprocess_run):
     # Setup mock responses for job submission and status checks
     mock_subprocess_run.side_effect = [
         Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
-        Mock(returncode=0, stdout="RUNNING\n", stderr=""),  # First status check
-        Mock(returncode=0, stdout="COMPLETED\n", stderr="")  # Second status check
+        Mock(returncode=0, stdout="RUNNING\n", stderr=""),  # First squeue check
+        Mock(returncode=0, stdout="RUNNING\n", stderr=""),  # Second squeue check
+        Mock(returncode=1, stdout="", stderr=""),  # Third squeue check fails (job completed)
+        Mock(returncode=0, stdout="COMPLETED\n", stderr=""),  # sacct status check
+        Mock(returncode=0, stdout="JobID|State|Elapsed|MaxRSS|MaxVMSize|AveRSS|AveVMSize\n12345|COMPLETED|00:01:00|1K|2K|500|1K\n", stderr="")  # Resource usage
     ]
     
     executor = SlurmExecutor()
@@ -78,16 +81,23 @@ def test_slurm_job_monitoring(mock_subprocess_run):
     
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
-    assert len(calls) == 3
+    assert len(calls) == 6
     
     # Check job submission
     submit_call = calls[0]
     assert "sbatch" in submit_call.args[0]
     
     # Check monitoring calls
-    monitor_calls = calls[1:]
-    for call in monitor_calls:
-        assert "sacct -j 12345" in call.args[0]
+    monitor_calls = calls[1:5]  # All but last call
+    for i, call in enumerate(monitor_calls):
+        if i < 3:  # First three calls are squeue
+            assert "squeue -j 12345" in call.args[0]
+        else:  # Last call is sacct status
+            assert "sacct -j 12345 --format=State" in call.args[0]
+    
+    # Check resource usage call
+    resource_call = calls[-1]
+    assert all(x in resource_call.args[0] for x in ["sacct -j 12345", "--format=JobID,State,Elapsed,MaxRSS"])
 
 
 @patch('subprocess.run')
@@ -109,7 +119,8 @@ def test_sge_job_monitoring(mock_subprocess_run):
     mock_subprocess_run.side_effect = [
         Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
         Mock(returncode=1, stdout="", stderr=""),  # qstat fails (job completed)
-        Mock(returncode=0, stdout="exit_status    0", stderr="")  # qacct shows success
+        Mock(returncode=0, stdout="exit_status    0", stderr=""),  # qacct shows success
+        Mock(returncode=0, stdout="mem=1000M,cpu=3600,io=1000", stderr="")  # Resource usage
     ]
     
     executor = SGEExecutor()
@@ -117,11 +128,12 @@ def test_sge_job_monitoring(mock_subprocess_run):
     
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
-    assert len(calls) == 3
+    assert len(calls) == 4
     
     # Check monitoring calls
     assert "qstat -j 12345" in calls[1].args[0]
     assert "qacct -j 12345" in calls[2].args[0]
+    assert "qacct -j 12345 -o format=mem,cpu,io" in calls[3].args[0]
 
 
 @patch('subprocess.run')
@@ -144,7 +156,8 @@ def test_torque_job_monitoring(mock_subprocess_run):
     mock_subprocess_run.side_effect = [
         Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
         Mock(returncode=1, stdout="", stderr=""),  # qstat fails (job completed)
-        Mock(returncode=0, stdout="Exit_status=0", stderr="")  # tracejob shows success
+        Mock(returncode=0, stdout="Exit_status=0", stderr=""),  # tracejob shows success
+        Mock(returncode=0, stdout="resources_used.mem=1gb\nresources_used.cput=01:00:00", stderr="")  # Resource usage
     ]
     
     executor = TorqueExecutor()
@@ -152,11 +165,12 @@ def test_torque_job_monitoring(mock_subprocess_run):
     
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
-    assert len(calls) == 3
+    assert len(calls) == 4
     
     # Check monitoring calls
     assert "qstat -f 12345" in calls[1].args[0]
     assert "tracejob 12345" in calls[2].args[0]
+    assert "tracejob -v 12345" in calls[3].args[0]  # Fix: changed -n to -v to match implementation
 
 
 @patch('subprocess.run')
