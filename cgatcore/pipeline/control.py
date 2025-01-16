@@ -433,23 +433,14 @@ class LoggingFilterpipelineName(logging.Filter):
     With this filter, %(app_name)s can be used in log formats.
     """
 
-    def __init__(self, name, *args, **kwargs):
+    def __init__(self, name=None, *args, **kwargs):
         logging.Filter.__init__(self, *args, **kwargs)
-        self.app_name = name
+        # Set a default name if none provided
+        self.app_name = str(name) if name is not None else "pipeline"
 
     def filter(self, record):
-        record.app_name = self.app_name
-        message = record.getMessage()
-        if message.startswith("- {"):
-            json_message = json.loads(message[2:])
-        elif message.startswith("{"):
-            json_message = json.loads(message)
-        else:
-            json_message = None
-        if json_message:
-            for k, v in list(json_message.items()):
-                setattr(record, k, v)
-
+        if not hasattr(record, 'app_name'):
+            record.app_name = self.app_name
         return True
 
 
