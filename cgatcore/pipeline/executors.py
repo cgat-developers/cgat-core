@@ -3,8 +3,9 @@ import time
 import logging
 import subprocess
 from abc import ABC, abstractmethod
-from .cluster import (DRMAACluster, SGECluster, 
-                     SlurmCluster, TorqueCluster, PBSProCluster)
+from .cluster import (
+    DRMAACluster, SGECluster, 
+    SlurmCluster, TorqueCluster, PBSProCluster)
 from .base_executor import BaseExecutor
 
 
@@ -15,6 +16,7 @@ class ClusterExecutorBase(ABC):
     def submit_and_monitor(self, job_script, job_args, job_name):
         """Submit and monitor a cluster job."""
         pass
+
 
 class DRMAAExecutorStrategy(ClusterExecutorBase):
     """DRMAA-based execution strategy using existing cluster.py functionality."""
@@ -45,6 +47,7 @@ class DRMAAExecutorStrategy(ClusterExecutorBase):
         finally:
             if 'jt' in locals():
                 self.session.deleteJobTemplate(jt)
+
 
 class SubprocessExecutorStrategy(ClusterExecutorBase):
     """Subprocess-based execution strategy."""
@@ -79,6 +82,7 @@ class SubprocessExecutorStrategy(ClusterExecutorBase):
     def _monitor_job(self, job_id, job_script):
         """Monitor job and return results."""
         pass
+
 
 class SGEExecutor(BaseExecutor):
     """SGE executor supporting both DRMAA and subprocess approaches."""
@@ -121,22 +125,26 @@ class SGEExecutor(BaseExecutor):
                 'output_path': f"{job_path}.o",
                 'error_path': f"{job_path}.e"
             }
-            
+
             retval = self.executor.submit_and_monitor(
                 job_path, job_args, job_args['job_name'])
             
-            benchmark_data.append(
-                self.collect_benchmark_data([statement], 
-                                         resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
+            benchmark_data.append(self.collect_benchmark_data([statement], 
+                                  resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
 
         return benchmark_data
+
 
 class SubprocessSGEStrategy(SubprocessExecutorStrategy):
     """Subprocess-based execution strategy for SGE."""
     
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SGE-specific submit command."""
-        return (f"qsub -N {job_name} -cwd -o {job_args['output_path']} -e {job_args['error_path']} {job_script}")
+        return (
+            f"qsub -N {job_name} -cwd "
+            f"-o {job_args['output_path']} "
+            f"-e {job_args['error_path']} "
+            f"{job_script}")
     
     def _parse_job_id(self, submit_output):
         """Parse job ID from SGE submission output."""
@@ -179,7 +187,8 @@ class SubprocessSGEStrategy(SubprocessExecutorStrategy):
         # Create a simple result object to match DRMAA interface
         class Result:
             def __init__(self):
-                self.resourceUsage = self._get_resource_usage(job_id)
+                self.resourceUsage = (
+                    self._get_resource_usage(job_id))
                 
             def _get_resource_usage(self, job_id):
                 """Get resource usage from qacct."""
@@ -196,6 +205,7 @@ class SubprocessSGEStrategy(SubprocessExecutorStrategy):
                 return {}
                 
         return Result()
+
 
 class SlurmExecutor(BaseExecutor):
     """SLURM executor supporting both DRMAA and subprocess approaches."""
@@ -242,18 +252,18 @@ class SlurmExecutor(BaseExecutor):
             retval = self.executor.submit_and_monitor(
                 job_path, job_args, job_args['job_name'])
             
-            benchmark_data.append(
-                self.collect_benchmark_data([statement], 
-                                         resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
+            benchmark_data.append(self.collect_benchmark_data([statement], 
+                                  resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
 
         return benchmark_data
+
 
 class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
     """Subprocess-based execution strategy for SLURM."""
     
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SLURM-specific submit command."""
-        return (f"sbatch --parsable "  # ensures consistent job ID output
+        return (f"sbatch --parsable "
                 f"--job-name={job_name} "
                 f"--output={job_args['output_path']} "
                 f"--error={job_args['error_path']} "
@@ -310,12 +320,16 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
         # Create a simple result object to match DRMAA interface
         class Result:
             def __init__(self):
-                self.resourceUsage = self._get_resource_usage(job_id)
+                self.resourceUsage = (
+                    self._get_resource_usage(job_id))
                 
             def _get_resource_usage(self, job_id):
                 """Get resource usage from sacct."""
-                cmd = (f"sacct -j {job_id} --format=JobID,State,Elapsed,MaxRSS,"
-                      f"MaxVMSize,AveRSS,AveVMSize --noheader --parsable2")
+                cmd = (
+                    f"sacct -j {job_id} "
+                    f"--format=JobID,State,Elapsed,MaxRSS,"
+                    f"MaxVMSize,AveRSS,AveVMSize "
+                    f"--noheader --parsable2")
                 process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
                 if process.returncode == 0:
                     # Parse and return as dict
@@ -329,6 +343,7 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                 return {}
                 
         return Result()
+
 
 class TorqueExecutor(BaseExecutor):
     """Torque executor supporting both DRMAA and subprocess approaches."""
@@ -375,18 +390,22 @@ class TorqueExecutor(BaseExecutor):
             retval = self.executor.submit_and_monitor(
                 job_path, job_args, job_args['job_name'])
             
-            benchmark_data.append(
-                self.collect_benchmark_data([statement], 
-                                         resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
+            benchmark_data.append(self.collect_benchmark_data([statement], 
+                                  resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
 
         return benchmark_data
+
 
 class SubprocessTorqueStrategy(SubprocessExecutorStrategy):
     """Subprocess-based execution strategy for Torque."""
     
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build Torque-specific submit command."""
-        return (f"qsub -N {job_name} -o {job_args['output_path']} -e {job_args['error_path']} {job_script}")
+        return (
+            f"qsub -N {job_name} "
+            f"-o {job_args['output_path']} "
+            f"-e {job_args['error_path']} "
+            f"{job_script}")
     
     def _parse_job_id(self, submit_output):
         """Parse job ID from Torque submission output."""
@@ -429,7 +448,8 @@ class SubprocessTorqueStrategy(SubprocessExecutorStrategy):
         # Create a simple result object to match DRMAA interface
         class Result:
             def __init__(self):
-                self.resourceUsage = self._get_resource_usage(job_id)
+                self.resourceUsage = (
+                    self._get_resource_usage(job_id))
                 
             def _get_resource_usage(self, job_id):
                 """Get resource usage from tracejob."""
@@ -446,6 +466,7 @@ class SubprocessTorqueStrategy(SubprocessExecutorStrategy):
                 return {}
                 
         return Result()
+
 
 class LocalExecutor(BaseExecutor):
     """Executor for running jobs locally."""

@@ -5,6 +5,7 @@ from cgatcore.pipeline.executors import (
     DRMAAExecutorStrategy, SubprocessExecutorStrategy
 )
 
+
 # Test DRMAA Strategy
 @pytest.mark.parametrize("executor_class,queue_manager", [
     (SlurmExecutor, "SlurmCluster"),
@@ -26,6 +27,7 @@ def test_drmaa_strategy(executor_class, queue_manager):
         assert mock_session.return_value.runJob.called
         assert len(result) == 1
         assert 'resourceUsage' in result[0]
+
 
 # Test Subprocess Strategy
 @pytest.mark.parametrize("executor_class,submit_cmd", [
@@ -51,12 +53,14 @@ def test_subprocess_strategy(executor_class, submit_cmd):
         assert submit_cmd in mock_run.call_args_list[0][0][0]
         assert len(result) == 1
 
+
 # Test Strategy Selection
 def test_drmaa_fallback():
     with patch('drmaa.Session', side_effect=ImportError):
         executor = SlurmExecutor(cluster_executor="drmaa")
         # Should fall back to subprocess
         assert isinstance(executor.executor, SubprocessExecutorStrategy)
+
 
 # Test Error Handling
 @pytest.mark.parametrize("executor_class", [
@@ -69,6 +73,7 @@ def test_submission_failure(executor_class):
         executor = executor_class(cluster_executor="subprocess")
         with pytest.raises(RuntimeError, match="job submission failed"):
             executor.run(["echo 'test'"])
+
 
 @pytest.mark.parametrize("executor_class", [
     SlurmExecutor, SGEExecutor, TorqueExecutor
