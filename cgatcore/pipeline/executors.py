@@ -3,10 +3,10 @@ import time
 import logging
 import subprocess
 from abc import ABC, abstractmethod
-from .cluster import (
+from cgatcore.pipeline.cluster import (
     DRMAACluster, SGECluster, 
     SlurmCluster, TorqueCluster, PBSProCluster)
-from .base_executor import BaseExecutor
+from cgatcore.pipeline.base_executor import BaseExecutor
 
 
 class ClusterExecutorBase(ABC):
