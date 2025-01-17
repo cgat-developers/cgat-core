@@ -262,6 +262,13 @@ class SlurmExecutor(BaseExecutor):
         # Always try DRMAA first
         try:
             import drmaa
+            # Try to clean up any existing session first
+            try:
+                old_session = drmaa.Session()
+                old_session.exit()
+            except:
+                pass
+            
             session = drmaa.Session()
             session.initialize()
             # Don't pass queue to DRMAACluster initialization
@@ -271,9 +278,9 @@ class SlurmExecutor(BaseExecutor):
                 queue_manager_cls=SlurmCluster,
                 **cluster_kwargs)
             self.logger.info("Using DRMAA-based execution")
-        except (ImportError, Exception) as e:
-            self.logger.warning(f"DRMAA initialization failed: {e}")
-            self.logger.warning("Falling back to subprocess-based execution")
+        except Exception as e:
+            self.logger.debug(f"DRMAA initialization failed: {str(e)}")
+            self.logger.info("Falling back to subprocess-based execution")
             self.executor = SubprocessSlurmStrategy(**kwargs)
 
     def run(self, statement_list):

@@ -643,16 +643,23 @@ class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
 
     def format(self, record):
+        # Ensure app_name is set with a default value if not present
+        if not hasattr(record, 'app_name'):
+            record.app_name = "cgat-core"
 
-        s = logging.Formatter.format(self, record)
-        if s.startswith("#"):
-            prefix = "#"
-        else:
-            prefix = ""
-        if record.message:
-            header, footer = s.split(record.message)
-            s = s.replace("\n", " \\\n%s" % prefix + " " * (len(header) - 1))
-        return s
+        try:
+            s = logging.Formatter.format(self, record)
+            if s.startswith("#"):
+                prefix = "#"
+            else:
+                prefix = ""
+            if record.message:
+                header, footer = s.split(record.message)
+                s = s.replace("\n", " \\\n%s" % prefix + " " * (len(header) - 1))
+            return s
+        except Exception as e:
+            # Fallback formatting if there's an error
+            return f"{record.levelname}: {record.getMessage()}"
 
 
 def get_args():
