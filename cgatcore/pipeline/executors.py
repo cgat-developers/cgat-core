@@ -400,16 +400,28 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
             if process.returncode != 0:
-                # Job not in queue, check final status with sacct
+                # Job not in queue anymore, check if it completed
                 cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
                 process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
                 
                 if process.returncode != 0:
-                    self.logger.error(f"Failed to get job status: {process.stderr}")
-                    raise RuntimeError(f"Failed to get job status: {process.stderr}")
-
-                status = process.stdout.strip().split('\n')[0].split('|')[0]  # Get first line, first field
-                status = status.upper()
+                    # If sacct fails, try scontrol as a backup
+                    cmd = f"scontrol show job {job_id}"
+                    process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                    
+                    if process.returncode != 0:
+                        self.logger.error(f"Failed to get job status: {process.stderr}")
+                        raise RuntimeError(f"Failed to get job status: {process.stderr}")
+                    
+                    # Parse scontrol output
+                    for line in process.stdout.split('\n'):
+                        if "JobState=" in line:
+                            status = line.split("JobState=")[1].split()[0].upper()
+                            break
+                    else:
+                        status = "UNKNOWN"
+                else:
+                    status = process.stdout.strip().split('|')[0].upper()
                 
                 # Check completion status
                 if any(s in status for s in COMPLETED_STATES):
@@ -418,12 +430,22 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                 elif any(s in status for s in FAILED_STATES):
                     self.logger.error(f"Job {job_id} failed with status: {status}")
                     raise RuntimeError(f"Job {job_id} failed with status: {status}")
-                else:
-                    # Unknown status - wait and check again
-                    self.logger.debug(f"Job {job_id} has unknown status: {status}")
+                elif status == "UNKNOWN":
+                    # If we can't determine the status, assume it's still running
+                    self.logger.debug(f"Could not determine status for job {job_id}, assuming still running")
             else:
                 # Job still in queue or running
                 status = process.stdout.strip().upper()
+                if not status:  # Empty status
+                    self.logger.debug(f"Empty status for job {job_id}, checking with scontrol")
+                    cmd = f"scontrol show job {job_id}"
+                    process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                    if process.returncode == 0:
+                        for line in process.stdout.split('\n'):
+                            if "JobState=" in line:
+                                status = line.split("JobState=")[1].split()[0].upper()
+                                break
+                    
                 self.logger.debug(f"Job {job_id} status: {status}")
                 
                 if status in FAILED_STATES:
@@ -432,8 +454,8 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                 elif status in COMPLETED_STATES:
                     self.logger.info(f"Job {job_id} completed successfully")
                     break
-                elif status in RUNNING_STATES:
-                    self.logger.debug(f"Job {job_id} is {status}")
+                elif status in RUNNING_STATES or not status:  # Include empty status here
+                    self.logger.debug(f"Job {job_id} is {status or 'in unknown state'}")
                 else:
                     self.logger.debug(f"Job {job_id} has unknown status: {status}")
             
@@ -463,6 +485,25 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                         'cpu': '0',
                         'exitcode': values[7] if len(values) > 7 else '0:0'
                     }
+                
+                # If sacct fails, try scontrol as backup
+                cmd = f"scontrol show job {job_id}"
+                process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if process.returncode == 0:
+                    # Parse memory from scontrol output
+                    mem = '0'
+                    for line in process.stdout.split('\n'):
+                        if "MaxRSS=" in line:
+                            mem = line.split("MaxRSS=")[1].split()[0]
+                            break
+                    return {
+                        'max_rss': mem,
+                        'max_vmem': '0',
+                        'wallclock': '0',
+                        'cpu': '0',
+                        'exitcode': '0:0'
+                    }
+                
                 return {
                     'max_rss': '0',
                     'max_vmem': '0',

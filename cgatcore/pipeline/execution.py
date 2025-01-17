@@ -227,38 +227,45 @@ class ContainerConfig:
 
 
 def start_session():
-    """start and initialize the global DRMAA session."""
-    global GLOBAL_SESSION
+    """Start a DRMAA session.
+    
+    This function will try to start a DRMAA session, handling cases where
+    a session might already exist.
+    """
+    import drmaa
+    import atexit
 
-    if HAS_DRMAA and GLOBAL_SESSION is None:
-        try:
-            # First try to clean up any existing sessions
+    try:
+        session = drmaa.Session()
+        session.initialize()
+        atexit.register(lambda: session.exit())
+        return session
+    except drmaa.errors.InvalidArgumentException as e:
+        if "already exist" in str(e):
+            # Try to clean up the existing session and start a new one
             try:
                 old_session = drmaa.Session()
                 old_session.exit()
-            except Exception as ex:
-                get_logger().debug("Could not clean up old DRMAA session: {}".format(ex))
+            except:
+                pass
+            # Try again
+            session = drmaa.Session()
+            session.initialize()
+            atexit.register(lambda: session.exit())
+            return session
+        raise
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Could not initialize DRMAA session: {str(e)}")
+        return None
 
-            GLOBAL_SESSION = drmaa.Session()
-            GLOBAL_SESSION.initialize()
-            get_logger().info("Successfully initialized DRMAA session")
-            return GLOBAL_SESSION
-        except drmaa.errors.InternalException as ex:
-            get_logger().warn("Could not initialize global DRMAA session: {}".format(ex))
-            GLOBAL_SESSION = None
-        except Exception as ex:
-            get_logger().warn("Unexpected error initializing DRMAA: {}".format(ex))
-            GLOBAL_SESSION = None
-    return GLOBAL_SESSION
-
-
-def close_session():
-    """close the global DRMAA session."""
-    global GLOBAL_SESSION
-
-    if GLOBAL_SESSION is not None:
-        GLOBAL_SESSION.exit()
-        GLOBAL_SESSION = None
+def close_session(session=None):
+    """Close a DRMAA session."""
+    if session:
+        try:
+            session.exit()
+        except:
+            pass
 
 
 def shellquote(statement):
@@ -1057,7 +1064,7 @@ class GridExecutor(Executor):
 
     def __init__(self, **kwargs):
         Executor.__init__(self, **kwargs)
-        self.session = GLOBAL_SESSION
+        self.session = start_session()
         if self.session is None:
             raise ValueError("no Grid Session found")
 
