@@ -221,7 +221,7 @@ class ContainerConfig:
         
         return " ".join([
             "singularity", "exec",
-            *volume_args, *env_vars, self.image,
+            *volume_args, *env_args, self.image,
             "bash", "-c", f"'{statement}'"
         ])
 
@@ -229,6 +229,19 @@ class ContainerConfig:
 def start_session():
     """Backwards compatibility wrapper for get_drmaa_session()."""
     return get_drmaa_session()
+
+
+def close_session():
+    """Close the DRMAA session if one exists."""
+    try:
+        import drmaa
+        session = drmaa.Session.drmsInfo
+        if session:
+            session.exit()
+            return True
+    except (ImportError, AttributeError) as e:
+        pass  # No DRMAA or no session to close
+    return False
 
 
 def get_drmaa_session():
