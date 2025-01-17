@@ -106,6 +106,34 @@ class SlurmExecutor(BaseExecutor):
         self.logger.addFilter(LoggingFilterpipelineName("slurm"))  
         self.task_name = "slurm_task"
         self.default_total_time = 10
+        
+        # Get default partition
+        self.get_default_partition()
+        
+    def get_default_partition(self):
+        """Get the default SLURM partition to use."""
+        # First check if partition is specified in config
+        partition = self.config.get("queue", None)
+        
+        if not partition:
+            # Try to get list of available partitions
+            try:
+                process = subprocess.run(["sinfo", "-h", "-o", "%R"], 
+                                      capture_output=True, text=True)
+                if process.returncode == 0:
+                    # Get first available partition
+                    partitions = process.stdout.strip().split('\n')
+                    if partitions:
+                        partition = partitions[0]
+                        self.logger.info(f"Using SLURM partition: {partition}")
+            except Exception as e:
+                self.logger.warning(f"Failed to get SLURM partitions: {e}")
+        
+        if not partition:
+            # If still no partition, try common names
+            partition = "all"  # Common default name
+            
+        self.default_partition = partition
 
     def run(self, statement_list):
         benchmark_data = []
@@ -146,7 +174,7 @@ class SlurmExecutor(BaseExecutor):
         
         # Get SLURM parameters from config or use defaults
         memory = self.config.get("memory", "4G")
-        queue = self.config.get("queue", "general")
+        queue = self.config.get("queue", self.default_partition)
         num_cpus = self.config.get("num_cpus", "1")
         runtime = self.config.get("runtime", "01:00:00")
         
