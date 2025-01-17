@@ -48,8 +48,7 @@ from cgatcore.pipeline.parameters import input_validation, get_params, get_param
 from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
 from cgatcore.pipeline.execution import (
-    execute, start_session, get_drmaa_session,
-    make_runner, submit_runner, close_session)
+    execute, start_session, get_drmaa_session, close_session)
 
 # redirect os.stat and other OS utilities to cached versions to speed
 # up ruffus. Be careful not to use os.stat in task functions.
