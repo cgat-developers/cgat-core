@@ -21,66 +21,60 @@ class ClusterExecutorBase(ABC):
 class DRMAAExecutorStrategy(ClusterExecutorBase):
     """DRMAA-based execution strategy using existing cluster.py functionality."""
     
-    def __init__(self, session, queue_manager_cls, **kwargs):
+    def __init__(self, session, queue_manager_cls, queue=None, **kwargs):
         self.session = session
+        self.queue = queue
         self.cluster_manager = queue_manager_cls(session, **kwargs)
         self.logger = logging.getLogger(__name__)
-        self.queue = kwargs.get('queue')
         
     def submit_and_monitor(self, job_script, job_args, job_name):
         """Use existing DRMAA cluster implementation."""
-        # Extract script path from tuple if needed
-        script_path = job_script[1] if isinstance(job_script, tuple) else job_script
-        
         try:
-            # Import drmaa here since it's only needed for this strategy
-            import drmaa
+            jt = self.session.createJobTemplate()
+            jt.workingDirectory = os.path.dirname(job_script)
+            jt.jobName = job_name
+            jt.remoteCommand = job_script
             
-            # Setup job using existing cluster.py functionality
-            jt = self.cluster_manager.setup_drmaa_job_template(
-                self.session,
-                job_name=job_name,
-                job_memory=job_args.get('job_memory'),
-                job_threads=job_args.get('job_threads'),
-                working_directory=os.path.dirname(script_path),
-                queue=self.queue)
+            # Set queue if specified
+            if self.queue:
+                jt.nativeSpecification = f"-p {self.queue}"
             
-            # Set the command to execute
-            jt.remoteCommand = script_path
-            jt.joinFiles = True
+            # Set memory and threads if specified
+            if job_args.get('job_memory'):
+                mem_spec = f"--mem={job_args['job_memory']}"
+                if jt.nativeSpecification:
+                    jt.nativeSpecification += f" {mem_spec}"
+                else:
+                    jt.nativeSpecification = mem_spec
+                    
+            if job_args.get('job_threads', 1) > 1:
+                thread_spec = f"--cpus-per-task={job_args['job_threads']}"
+                if jt.nativeSpecification:
+                    jt.nativeSpecification += f" {thread_spec}"
+                else:
+                    jt.nativeSpecification = thread_spec
             
-            # Submit job
-            job_id = self.session.runJob(jt)
-            self.logger.info(f"Submitted job {job_id}")
+            # Submit the job
+            jobid = self.session.runJob(jt)
+            self.logger.info(f"Submitted job {jobid} to queue {self.queue}")
             
-            # Monitor job status
-            retval = None
-            while True:
-                try:
-                    job_status = str(self.session.jobStatus(job_id))
-                    if job_status == str(drmaa.JobState.DONE):
-                        break
-                    elif job_status == str(drmaa.JobState.FAILED):
-                        raise RuntimeError(f"Job {job_id} failed with status: {job_status}")
-                    time.sleep(5)  # Wait before checking again
-                except drmaa.InvalidJobException:
-                    # Job completed and was cleaned up
-                    break
+            # Wait for job completion
+            retval = self.session.wait(jobid, self.session.TIMEOUT_WAIT_FOREVER)
+            self.logger.info(f"Job {jobid} completed with status {retval.exitStatus}")
             
-            # Get job info and resource usage
-            job_info = self.session.wait(job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-            hostname = job_info.resourceUsage.get('submission_host', 'unknown')
-            retval = self.cluster_manager.get_resource_usage(job_id, job_info, hostname)
+            # Clean up
+            self.session.deleteJobTemplate(jt)
             
-            return retval
+            # Return job info
+            return {
+                'exit_status': retval.exitStatus,
+                'resourceUsage': retval.resourceUsage if hasattr(retval, 'resourceUsage') else {},
+                'job_id': jobid
+            }
             
         except Exception as e:
-            self.logger.error(f"DRMAA execution failed: {e}")
+            self.logger.error(f"DRMAA job submission failed: {str(e)}")
             raise
-            
-        finally:
-            if 'jt' in locals():
-                self.session.deleteJobTemplate(jt)
 
 
 class SubprocessExecutorStrategy(ClusterExecutorBase):
@@ -262,26 +256,34 @@ class SlurmExecutor(BaseExecutor):
         # Always try DRMAA first
         try:
             import drmaa
-            # Try to clean up any existing session first
-            try:
-                old_session = drmaa.Session()
-                old_session.exit()
-            except:
-                pass
+            from cgatcore.pipeline.execution import start_session, close_session
             
-            session = drmaa.Session()
-            session.initialize()
+            # Use the global session management
+            session = start_session()
+            if session is None:
+                raise Exception("Failed to initialize DRMAA session")
+                
             # Don't pass queue to DRMAACluster initialization
             cluster_kwargs = {k: v for k, v in kwargs.items() if k != 'queue'}
             self.executor = DRMAAExecutorStrategy(
                 session=session,
                 queue_manager_cls=SlurmCluster,
+                queue=self.queue,  # Pass queue here
                 **cluster_kwargs)
             self.logger.info("Using DRMAA-based execution")
         except Exception as e:
             self.logger.debug(f"DRMAA initialization failed: {str(e)}")
             self.logger.info("Falling back to subprocess-based execution")
             self.executor = SubprocessSlurmStrategy(**kwargs)
+    
+    def __del__(self):
+        """Ensure DRMAA session is cleaned up."""
+        if hasattr(self, 'executor') and isinstance(self.executor, DRMAAExecutorStrategy):
+            try:
+                from cgatcore.pipeline.execution import close_session
+                close_session()
+            except:
+                pass
 
     def run(self, statement_list):
         """Execute statements on the cluster."""

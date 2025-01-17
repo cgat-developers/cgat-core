@@ -231,14 +231,25 @@ def start_session():
     global GLOBAL_SESSION
 
     if HAS_DRMAA and GLOBAL_SESSION is None:
-        GLOBAL_SESSION = drmaa.Session()
         try:
+            # First try to clean up any existing sessions
+            try:
+                old_session = drmaa.Session()
+                old_session.exit()
+            except Exception as ex:
+                get_logger().debug("Could not clean up old DRMAA session: {}".format(ex))
+
+            GLOBAL_SESSION = drmaa.Session()
             GLOBAL_SESSION.initialize()
+            get_logger().info("Successfully initialized DRMAA session")
+            return GLOBAL_SESSION
         except drmaa.errors.InternalException as ex:
-            get_logger().warn("could not initialize global drmaa session: {}".format(
-                ex))
+            get_logger().warn("Could not initialize global DRMAA session: {}".format(ex))
             GLOBAL_SESSION = None
-        return GLOBAL_SESSION
+        except Exception as ex:
+            get_logger().warn("Unexpected error initializing DRMAA: {}".format(ex))
+            GLOBAL_SESSION = None
+    return GLOBAL_SESSION
 
 
 def close_session():
