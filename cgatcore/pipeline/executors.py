@@ -381,13 +381,19 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
     def _monitor_job(self, job_id, job_script):
         """Monitor SLURM job and return results."""
         start_time = time.time()
-        max_wait_time = 30  # Maximum time to wait in seconds for test environment
-        check_interval = 2  # Time between checks in seconds
+        max_wait_time = 7200  # Maximum time to wait - 2 hours for real jobs
+        check_interval = 10  # Time between checks in seconds
+        
+        # Define job states
+        RUNNING_STATES = ["RUNNING", "PENDING", "CONFIGURING", "COMPLETING"]
+        COMPLETED_STATES = ["COMPLETED", "COMPLETE", "DONE"]
+        FAILED_STATES = ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY", 
+                        "BOOT_FAIL", "DEADLINE", "PREEMPTED", "REVOKED", "SPECIAL_EXIT"]
         
         while True:
             if time.time() - start_time > max_wait_time:
-                self.logger.warning(f"Job monitoring timed out after {max_wait_time} seconds")
-                break
+                self.logger.error(f"Job {job_id} exceeded maximum wait time of {max_wait_time} seconds")
+                raise RuntimeError(f"Job {job_id} exceeded maximum wait time")
                 
             # First try squeue to check if job is still running
             cmd = f"squeue -j {job_id} -h -o %T"
@@ -402,26 +408,34 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                     self.logger.error(f"Failed to get job status: {process.stderr}")
                     raise RuntimeError(f"Failed to get job status: {process.stderr}")
 
-                status = process.stdout.strip().split('\n')[0]  # Get first line only
+                status = process.stdout.strip().split('\n')[0].split('|')[0]  # Get first line, first field
+                status = status.upper()
                 
-                # Check for various forms of completion status
-                if any(s in status.upper() for s in ["COMPLETED", "COMPLETE", "DONE"]):
+                # Check completion status
+                if any(s in status for s in COMPLETED_STATES):
                     self.logger.info(f"Job {job_id} completed successfully")
                     break
-                elif any(s in status.upper() for s in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY"]):
+                elif any(s in status for s in FAILED_STATES):
                     self.logger.error(f"Job {job_id} failed with status: {status}")
                     raise RuntimeError(f"Job {job_id} failed with status: {status}")
+                else:
+                    # Unknown status - wait and check again
+                    self.logger.debug(f"Job {job_id} has unknown status: {status}")
             else:
                 # Job still in queue or running
-                status = process.stdout.strip()
+                status = process.stdout.strip().upper()
                 self.logger.debug(f"Job {job_id} status: {status}")
                 
-                if status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
+                if status in FAILED_STATES:
                     self.logger.error(f"Job {job_id} failed with status: {status}")
                     raise RuntimeError(f"Job {job_id} failed with status: {status}")
-                elif status == "COMPLETED":
+                elif status in COMPLETED_STATES:
                     self.logger.info(f"Job {job_id} completed successfully")
                     break
+                elif status in RUNNING_STATES:
+                    self.logger.debug(f"Job {job_id} is {status}")
+                else:
+                    self.logger.debug(f"Job {job_id} has unknown status: {status}")
             
             time.sleep(check_interval)
             
@@ -436,7 +450,7 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                 cmd = (
                     f"sacct -j {job_id} "
                     f"--format=JobID,State,Elapsed,MaxRSS,"
-                    f"MaxVMSize,AveRSS,AveVMSize "
+                    f"MaxVMSize,AveRSS,AveVMSize,ExitCode "
                     f"--noheader --parsable2")
                 process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
                 if process.returncode == 0:
@@ -447,7 +461,7 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                         'max_vmem': values[4] if len(values) > 4 else '0',
                         'wallclock': values[2] if len(values) > 2 else '0',
                         'cpu': '0',
-                        'exitcode': '0:0'
+                        'exitcode': values[7] if len(values) > 7 else '0:0'
                     }
                 return {
                     'max_rss': '0',
