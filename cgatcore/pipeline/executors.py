@@ -3,6 +3,7 @@ import time
 import logging
 import os
 import tempfile
+import re
 from cgatcore.pipeline.base_executor import BaseExecutor
 from cgatcore.pipeline.logging_utils import LoggingFilterpipelineName
 import glob
@@ -218,82 +219,124 @@ class SlurmExecutor(BaseExecutor):
         out_file = os.path.join(job_path, f"{script_name}.out")
         err_file = os.path.join(job_path, f"{script_name}.err")
         
+        # Parse the kallisto command to get output directory
+        # Example: kallisto quant ... -o quant/i48-control1_S1 ...
+        match = re.search(r'-o\s+(\S+)', statement)
+        if match:
+            output_dir = match.group(1)
+        else:
+            output_dir = None
+        
         # Write SLURM script with proper headers
         with open(script_path, "w") as script_file:
             script_file.write("#!/bin/bash\n")
             script_file.write(f"#SBATCH --output={out_file}\n")
             script_file.write(f"#SBATCH --error={err_file}\n\n")
             
-            # Load required modules
-            script_file.write("# Load required modules\n")
+            # Load required modules and set environment
+            script_file.write("# Load required modules and set environment\n")
             script_file.write("set -e\n")  # Exit on error
+            script_file.write("set -x\n")  # Print commands as they execute
             script_file.write("module purge\n")
             script_file.write("module load kallisto\n\n")
             
-            # Create output directory if it doesn't exist
-            script_file.write("# Create output directory\n")
-            script_file.write('mkdir -p "$(dirname "$(echo $@ | cut -d" " -f5)")"\n\n')
+            # Print environment info for debugging
+            script_file.write("# Print environment info\n")
+            script_file.write("echo 'Job started at: ' $(date)\n")
+            script_file.write("echo 'Running on node: ' $HOSTNAME\n")
+            script_file.write("echo 'Current directory: ' $PWD\n")
+            script_file.write("module list\n\n")
+            
+            # Create all necessary output directories
+            script_file.write("# Create output directories\n")
+            if output_dir:
+                script_file.write(f'mkdir -p "{output_dir}"\n')
+                # Also create directory for log file
+                script_file.write(f'mkdir -p "$(dirname "{output_dir}/abundance.tsv.log")"\n')
             
             # Add the actual command
+            script_file.write("# Run the command\n")
+            script_file.write(f"echo 'Running command: {statement}'\n")
             script_file.write(f"{statement}\n")
+            script_file.write("\necho 'Job finished at: ' $(date)\n")
         
         os.chmod(script_path, 0o755)  # Make it executable
         return statement, script_path
 
     def monitor_job_completion(self, job_id):
-        """Monitor the completion of a Slurm job.
-
-        Args:
-            job_id (str): The Slurm job ID to monitor.
-
-        Raises:
-            RuntimeError: If the job fails or times out.
-        """
-        job_status = None
-        error_msg = None
+        """Monitor a running SLURM job until it completes."""
         max_sleep_time = 10  # Maximum time to sleep between checks
+        sleep_time = 1      # Initial sleep time
         
         while True:
-            # Get job status using sacct
             try:
-                cmd = ["sacct", "-j", job_id, "--format=State,Elapsed,MaxRSS,NodeList", "--noheader", "--parsable2"]
+                # Use sacct to get detailed job information
+                cmd = ["sacct", "-j", str(job_id), "--format=State,ExitCode,NodeList,Start,End,Elapsed", "--parsable2", "--noheader"]
                 process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if process.returncode != 0:
+                    self.logger.error(f"Error checking job status: {process.stderr}")
+                    raise RuntimeError(f"Error checking job status: {process.stderr}")
+                
+                # Parse the sacct output
                 output = process.stdout.strip()
+                if not output:
+                    self.logger.info(f"Job {job_id} status: None")
+                    time.sleep(sleep_time)
+                    continue
                 
-                if output:
-                    # Get the first line of output (main job status)
-                    status_line = output.split('\n')[0]
-                    job_status = status_line
+                # Get the first line which contains the main job info
+                job_info = output.split('\n')[0].split('|')
+                state = job_info[0]
+                
+                self.logger.info(f"Job {job_id} status: {state}")
+                
+                if state in ["COMPLETED"]:
+                    return
+                elif state in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
+                    # Get the error file content
+                    try:
+                        err_file = os.path.join(os.getcwd(), "slurm_jobs", f"slurm_job_{job_id}.err")
+                        out_file = os.path.join(os.getcwd(), "slurm_jobs", f"slurm_job_{job_id}.out")
+                        error_content = ""
+                        
+                        if os.path.exists(err_file):
+                            with open(err_file, 'r') as f:
+                                error_content = f.read()
+                                if error_content:
+                                    self.logger.error(f"Job error output:\n{error_content}")
+                        
+                        if os.path.exists(out_file):
+                            with open(out_file, 'r') as f:
+                                out_content = f.read()
+                                if out_content:
+                                    self.logger.error(f"Job output:\n{out_content}")
+                                    
+                    except Exception as err_e:
+                        self.logger.error(f"Could not read error/output files: {str(err_e)}")
                     
-                    # Check if job is complete
-                    if "COMPLETED" in status_line:
-                        return
-                    elif any(state in status_line for state in ["FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY"]):
-                        error_msg = f"Job {job_id} failed with status: {status_line}"
-                        break
+                    # Try to get detailed job information
+                    try:
+                        cmd = ["scontrol", "show", "job", str(job_id)]
+                        process = subprocess.run(cmd, capture_output=True, text=True)
+                        if process.returncode == 0:
+                            self.logger.error(f"Detailed job info:\n{process.stdout}")
+                    except Exception as e:
+                        self.logger.error(f"Could not get detailed job info: {str(e)}")
+                        
+                    error_msg = f"Job {job_id} failed with status: {output}"
+                    raise RuntimeError(error_msg)
                 
-                # Job is still running or pending
-                self.logger.info(f"Job {job_id} status: {job_status}")
+                # Exponential backoff for sleep time
+                sleep_time = min(sleep_time * 1.5, max_sleep_time)
+                time.sleep(sleep_time)
                 
+            except subprocess.CalledProcessError as e:
+                self.logger.error(f"Error running sacct: {e}")
+                raise RuntimeError(f"Error running sacct: {e}")
             except Exception as e:
-                self.logger.error(f"Error checking job status: {str(e)}")
-            
-            time.sleep(min(max_sleep_time, 10))
-        
-        # If we get here, the job failed
-        if error_msg:
-            # Try to get error file content
-            try:
-                job_path = os.path.join(os.getcwd(), "slurm_jobs")
-                error_files = glob.glob(os.path.join(job_path, f"*{job_id}*.err"))
-                if error_files:
-                    with open(error_files[0], 'r') as f:
-                        error_content = f.read()
-                    error_msg += f"\nError file contents:\n{error_content}"
-            except Exception as e:
-                self.logger.error(f"Could not read error file: {str(e)}")
-            
-            raise RuntimeError(error_msg)
+                self.logger.error(f"Unexpected error monitoring job: {e}")
+                raise
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Slurm jobs.
