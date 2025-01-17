@@ -2,12 +2,14 @@ import subprocess
 import time
 import logging
 from cgatcore.pipeline.base_executor import BaseExecutor
+from cgatcore.pipeline.app_name_filter import AppNameFilter
 
 
 class SGEExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("cgatcore.pipeline")
+        self.logger.addFilter(AppNameFilter("sge"))  
         self.task_name = "sge_task"
         self.default_total_time = 8
 
@@ -98,7 +100,8 @@ class SlurmExecutor(BaseExecutor):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("cgatcore.pipeline")
+        self.logger.addFilter(AppNameFilter("slurm"))  
         self.task_name = "slurm_task"
         self.default_total_time = 10
 
@@ -110,7 +113,7 @@ class SlurmExecutor(BaseExecutor):
             full_statement, job_path = self.build_job_script(statement)
 
             # Build the Slurm job submission command
-            slurm_command = f"sbatch --job-name={self.config.get('job_name', 'default_job')} --output={job_path}.o --error={job_path}.e {job_path}"
+            slurm_command = f"sbatch --parsable --job-name={self.config.get('job_name', 'default_job')} --output={job_path}.o --error={job_path}.e {job_path}"
 
             process = subprocess.run(slurm_command, shell=True, capture_output=True, text=True)
 
@@ -118,6 +121,7 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Slurm job submission failed: {process.stderr}")
                 raise RuntimeError(f"Slurm job submission failed: {process.stderr}")
 
+            # Get just the job ID number from the output
             job_id = process.stdout.strip()
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
@@ -186,7 +190,8 @@ class TorqueExecutor(BaseExecutor):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("cgatcore.pipeline")
+        self.logger.addFilter(AppNameFilter("torque"))  
         self.task_name = "torque_task"
         self.default_total_time = 7
 
@@ -274,11 +279,12 @@ class TorqueExecutor(BaseExecutor):
 
 
 class LocalExecutor(BaseExecutor):
-    """Executor for running jobs locally."""
+    """Executor for running jobs locally using subprocess."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("cgatcore.pipeline")
+        self.logger.addFilter(AppNameFilter("local"))  
         self.task_name = "local_task"
         self.default_total_time = 5
 
