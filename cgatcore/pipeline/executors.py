@@ -2,7 +2,6 @@ import os
 import time
 import logging
 import subprocess
-import drmaa
 from abc import ABC, abstractmethod
 from cgatcore.pipeline.cluster import (
     DRMAACluster, SGECluster, 
