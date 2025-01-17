@@ -142,10 +142,21 @@ class SlurmExecutor(BaseExecutor):
 
             full_statement, job_path = self.build_job_script(statement)
 
-            # Submit the job script directly
-            slurm_command = ["sbatch", "--parsable"]
-            slurm_command.append(job_path)
-
+            # Build complete sbatch command with all necessary parameters
+            slurm_command = [
+                "sbatch",
+                "--parsable",
+                f"--partition={self.default_partition}",
+                f"--mem={self.config.get('memory', '4G')}",
+                f"--cpus-per-task={self.config.get('num_cpus', '1')}",
+                f"--time={self.config.get('runtime', '01:00:00')}",
+                "--export=ALL",
+                f"--output={job_path}.out",
+                f"--error={job_path}.err",
+                job_path
+            ]
+            
+            self.logger.info(f"Submitting SLURM job with command: {' '.join(slurm_command)}")
             process = subprocess.run(slurm_command, capture_output=True, text=True)
 
             if process.returncode != 0:
@@ -156,10 +167,13 @@ class SlurmExecutor(BaseExecutor):
             job_id = process.stdout.strip()
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
-            # Monitor job completion
-            self.monitor_job_completion(job_id)
-
-            benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
+            try:
+                # Monitor job completion
+                self.monitor_job_completion(job_id)
+                benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
+            except Exception as e:
+                self.logger.error(f"Error monitoring job {job_id}: {str(e)}")
+                raise
 
         return benchmark_data
 
@@ -202,24 +216,47 @@ class SlurmExecutor(BaseExecutor):
         Raises:
             RuntimeError: If the job fails or times out.
         """
+        # First check if job exists immediately after submission
+        immediate_check = subprocess.run(
+            ["scontrol", "show", "job", job_id],
+            capture_output=True,
+            text=True
+        )
+        self.logger.info(f"Initial job status check: {immediate_check.stdout}")
+        if immediate_check.returncode != 0:
+            self.logger.error(f"Job {job_id} not found immediately after submission: {immediate_check.stderr}")
+            raise RuntimeError(f"Job {job_id} not found after submission")
+
         while True:
-            # Use sacct to get job status
-            cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
-            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            # Use sacct to get detailed job status
+            cmd = ["sacct", "-j", job_id, "--format=State,Elapsed,MaxRSS,NodeList%20", "--noheader", "--parsable2"]
+            process = subprocess.run(cmd, capture_output=True, text=True)
             
             if process.returncode != 0:
                 self.logger.error(f"Failed to get job status: {process.stderr}")
                 raise RuntimeError(f"Failed to get job status: {process.stderr}")
 
             status = process.stdout.strip()
+            self.logger.info(f"Job {job_id} status: {status}")
             
             # Check job status
-            if status in ["COMPLETED", "COMPLETED+"]:
+            if "COMPLETED" in status:
                 self.logger.info(f"Job {job_id} completed successfully")
                 break
-            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
-                self.logger.error(f"Job {job_id} failed with status: {status}")
-                raise RuntimeError(f"Job {job_id} failed with status: {status}")
+            elif any(state in status for state in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]):
+                error_msg = f"Job {job_id} failed with status: {status}"
+                self.logger.error(error_msg)
+                
+                # Get the job's error file content
+                error_file = f"slurm-{job_id}.err"
+                try:
+                    with open(error_file, 'r') as f:
+                        error_content = f.read()
+                        self.logger.error(f"Job error output:\n{error_content}")
+                except Exception as e:
+                    self.logger.error(f"Could not read error file {error_file}: {e}")
+                
+                raise RuntimeError(error_msg)
             
             # Wait before checking again
             time.sleep(10)
