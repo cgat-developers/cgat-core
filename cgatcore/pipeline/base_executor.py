@@ -68,3 +68,52 @@ class BaseExecutor:
         """Exit the runtime context related to this object."""
         # Cleanup logic, if any, can be added here
         pass
+
+
+class Executor(BaseExecutor):
+    """Main executor class that handles job execution and resource management."""
+
+    def __init__(self, **kwargs):
+        """Initialize with configuration options."""
+        super().__init__(**kwargs)
+        self.task_name = "executor_task"
+        self.default_total_time = 5
+        
+        # Initialize job options
+        self.job_options = kwargs.get('job_options', '')
+        self.queue = kwargs.get('queue')
+        self.cluster_queue_manager = kwargs.get('cluster_queue_manager', 'slurm')
+
+    def run(self, statement_list, **kwargs):
+        """Execute a list of statements.
+        
+        Args:
+            statement_list (list): List of commands to execute
+            **kwargs: Additional execution options
+            
+        Returns:
+            tuple: (exit_code, stdout, stderr)
+        """
+        if isinstance(statement_list, str):
+            statement_list = [statement_list]
+            
+        results = []
+        for statement in statement_list:
+            # Choose appropriate executor based on configuration
+            if self.cluster_queue_manager == 'slurm':
+                from cgatcore.pipeline.executors import SlurmExecutor
+                executor = SlurmExecutor(**self.config)
+            elif self.cluster_queue_manager == 'sge':
+                from cgatcore.pipeline.executors import SGEExecutor
+                executor = SGEExecutor(**self.config)
+            elif self.cluster_queue_manager == 'torque':
+                from cgatcore.pipeline.executors import TorqueExecutor
+                executor = TorqueExecutor(**self.config)
+            else:
+                from cgatcore.pipeline.executors import LocalExecutor
+                executor = LocalExecutor(**self.config)
+                
+            result = executor.run(statement)
+            results.append(result)
+            
+        return results[0] if len(results) == 1 else results

@@ -49,10 +49,11 @@ from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
 from cgatcore.pipeline.execution import (
     execute, start_session, get_drmaa_session, close_session)
+from cgatcore.pipeline.executors import (
+    Executor, LocalExecutor, SlurmExecutor, SGEExecutor, TorqueExecutor)
 
 # redirect os.stat and other OS utilities to cached versions to speed
 # up ruffus. Be careful not to use os.stat in task functions.
-# Does ruffus rely on os.stat for completed tasks?
 SAVED_OS_STAT = os.stat
 SAVED_OS_PATH_ABSPATH = os.path.abspath
 SAVED_OS_PATH_REALPATH = os.path.realpath
