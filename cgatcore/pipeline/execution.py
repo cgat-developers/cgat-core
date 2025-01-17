@@ -287,6 +287,57 @@ class DRMAAExecutor:
             raise ValueError("Could not initialize DRMAA session")
 
 
+class Executor:
+    """Main executor class that handles job execution and resource management."""
+
+    def __init__(self, **kwargs):
+        """Initialize with configuration options."""
+        self.task_name = "executor_task"
+        self.default_total_time = 5
+        self.config = kwargs
+        
+        # Initialize job options
+        self.job_options = kwargs.get('job_options', '')
+        self.queue = kwargs.get('queue')
+        self.cluster_queue_manager = kwargs.get('cluster_queue_manager', 'slurm')
+        self.job_memory = kwargs.get('job_memory', '1G')
+        self.job_threads = kwargs.get('job_threads', 1)
+
+    def run(self, statement_list, **kwargs):
+        """Execute a list of statements.
+        
+        Args:
+            statement_list (list): List of commands to execute
+            **kwargs: Additional execution options
+            
+        Returns:
+            tuple: (exit_code, stdout, stderr)
+        """
+        if isinstance(statement_list, str):
+            statement_list = [statement_list]
+            
+        results = []
+        for statement in statement_list:
+            # Choose appropriate executor based on configuration
+            if self.cluster_queue_manager == 'slurm':
+                from cgatcore.pipeline.executors import SlurmExecutor
+                executor = SlurmExecutor(**self.config)
+            elif self.cluster_queue_manager == 'sge':
+                from cgatcore.pipeline.executors import SGEExecutor
+                executor = SGEExecutor(**self.config)
+            elif self.cluster_queue_manager == 'torque':
+                from cgatcore.pipeline.executors import TorqueExecutor
+                executor = TorqueExecutor(**self.config)
+            else:
+                from cgatcore.pipeline.executors import LocalExecutor
+                executor = LocalExecutor(**self.config)
+                
+            result = executor.run(statement)
+            results.append(result)
+            
+        return results[0] if len(results) == 1 else results
+
+
 def shellquote(statement):
     '''shell quote a string to be used as a function argument.
 
@@ -589,494 +640,6 @@ def will_run_on_cluster(options):
     return (wants_cluster 
             and HAS_DRMAA 
             and GLOBAL_SESSION is not None)
-
-
-class Executor(object):
-
-    def __init__(self, **kwargs):
-
-        self.logger = get_logger()
-        self.queue_manager = None
-        self.run_on_cluster = will_run_on_cluster(kwargs)
-        self.job_threads = kwargs.get("job_threads", 1)
-        self.active_jobs = []  # List to track active jobs
-
-        if "job_memory" in kwargs and "job_total_memory" in kwargs:
-            raise ValueError(
-                "both job_memory and job_total_memory have been given")
-
-        self.job_total_memory = kwargs.get('job_total_memory', None)
-        self.job_memory = kwargs.get('job_memory', None)
-
-        if self.job_total_memory == "unlimited" or self.job_memory == "unlimited":
-            self.job_total_memory = self.job_memory = "unlimited"
-        else:
-            if self.job_total_memory:
-                self.job_memory = iotools.bytes2human(
-                    iotools.human2bytes(self.job_total_memory) / self.job_threads)
-            elif self.job_memory:
-                self.job_total_memory = self.job_memory * self.job_threads
-            else:
-                self.job_memory = get_params()["cluster"].get(
-                    "memory_default", "4G")
-                if self.job_memory == "unlimited":
-                    self.job_total_memory = "unlimited"
-                else:
-                    self.job_total_memory = self.job_memory * self.job_threads
-
-        self.ignore_pipe_errors = kwargs.get('ignore_pipe_errors', False)
-        self.ignore_errors = kwargs.get('ignore_errors', False)
-
-        self.job_name = kwargs.get("job_name", "unknow_job_name")
-        self.task_name = kwargs.get("task_name", "unknown_task_name")
-
-        # deduce output directory/directories, requires somewhat
-        # consistent naming in the calling function.
-        outfiles = []
-        if "outfile" in kwargs:
-            outfiles.append(kwargs["outfile"])
-        if "outfiles" in kwargs:
-            outfiles.extend(kwargs["outfiles"])
-
-        self.output_directories = set(sorted(
-            [os.path.dirname(x) for x in outfiles]))
-
-        self.options = kwargs
-
-        self.work_dir = get_params()["work_dir"]
-
-        self.shellfile = kwargs.get("shell_logfile", None)
-        if self.shellfile:
-            if not self.shellfile.startswith(os.sep):
-                self.shellfile = os.path.join(
-                    self.work_dir, os.path.basename(self.shellfile))
-
-        self.monitor_interval_queued = kwargs.get('monitor_interval_queued', None)
-        if self.monitor_interval_queued is None:
-            self.monitor_interval_queued = get_params()["cluster"].get(
-                'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT)
-        self.monitor_interval_running = kwargs.get('monitor_interval_running', None)
-        if self.monitor_interval_running is None:
-            self.monitor_interval_running = get_params()["cluster"].get(
-                'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
-        # Set up signal handlers for clean-up on interruption
-        self.setup_signal_handlers()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
-    def expand_statement(self, statement):
-        '''add generic commands before and after statement.
-
-        The method scans the statement for arvados mount points and
-        inserts appropriate prefixes to make sure that the mount point
-        exists.
-
-        Arguments
-        ---------
-        statement : string
-            Command line statement to expand
-
-        Returns
-        -------
-        statement : string
-            The expanded statement.
-
-        '''
-
-        setup_cmds = []
-        teardown_cmds = []
-        cleanup_funcs = []
-
-        setup_cmds.append("umask 002")
-
-        for var in ["MKL_NUM_THREADS",
-                    "OPENBLAS_NUM_THREADS",
-                    "OMP_NUM_THREADS"]:
-            setup_cmds.append("export {}={}".format(
-                var, self.options.get("job_threads", 1)))
-
-        if "arv=" in statement:
-
-            # Todo: permit setting this in params
-            arvados_api_token = os.environ.get("ARVADOS_API_TOKEN", None)
-            arvados_api_host = os.environ.get("ARVADOS_API_HOST", None)
-            if not arvados_api_token:
-                raise ValueError(
-                    "arvados mount encountered in statement {}, "
-                    "but ARVADOS_API_TOKEN not defined".format(statement))
-
-            if not arvados_api_host:
-                raise ValueError(
-                    "arvados mount encountered in statement {}, "
-                    "but ARVADOS_API_HOST not defined".format(statement))
-
-            mountpoint = get_temp_filename(clear=True)
-
-            arvados_options = "--disable-event-listening --read-only"
-            setup_cmds.append("\n".join(
-                ('export ARVADOS_API_TOKEN="{arvados_api_token}"',
-                 'export ARVADOS_API_HOST="{arvados_api_host}"',
-                 'export ARVADOS_API_HOST_INSECURE=true',
-                 'export ARVADOS_MOUNT_POINT="{mountpoint}"',
-                 'mkdir -p "{mountpoint}"',
-                 'arv-mount {arvados_options} "{mountpoint}" 2>> /dev/null')).format(**locals()))
-
-            statement = re.sub("arv=", mountpoint + "/", statement)
-
-            # "arv-mount --unmount {mountpoint}" not available in newer
-            # arvados installs (0.1.20170707152712), so keep using
-            # fusermount. However, do not fail if you can't clean up, as
-            # there are arvados racing issues.
-            cleanup_funcs.append(("unmount_arvados",
-                                  '''{{
-                                  set +e &&
-                                  fusermount -u {mountpoint} &&
-                                  rm -rf {mountpoint} &&
-                                  set -e
-                                  }}'''.format(**locals())))
-
-        if "job_condaenv" in self.options:
-            # In conda < 4.4 there is an issue with parallel activations,
-            # see https://github.com/conda/conda/issues/2837 .
-            # This has been fixed in conda 4.4, but we are on conda
-            # 4.3, presumably because we are still on py35. A work-around
-            # to source activate is to add the explicit path of the environment
-            # in version >= 4.4, do
-            # setup_cmds.append(
-            #     "conda activate {}".format(self.options["job_condaenv"]))
-            # For old conda versions (note this will not work for tools that require
-            # additional environment variables)
-            setup_cmds.append(
-                "export PATH={}:$PATH".format(
-                    os.path.join(
-                        get_conda_environment_directory(
-                            self.options["job_condaenv"]),
-                        "bin")))
-
-        statement = "\n".join((
-            "\n".join(setup_cmds),
-            statement,
-            "\n".join(teardown_cmds)))
-
-        return statement, cleanup_funcs
-
-    def build_job_script(self,
-                         statement):
-        '''build job script from statement.
-
-        returns (name_of_script, stdout_path, stderr_path)
-        '''
-        tmpfilename = get_temp_filename(dir=self.work_dir, clear=True)
-        tmpfilename = tmpfilename + ".sh"
-
-        expanded_statement, cleanup_funcs = self.expand_statement(statement)
-
-        with open(tmpfilename, "w") as tmpfile:
-            # disabled: -l -O expand_aliases\n" )
-
-            # make executable
-            tmpfile.write("#!/bin/bash -eu\n")
-            if not self.ignore_pipe_errors:
-                tmpfile.write("set -o pipefail\n")
-
-            os.chmod(tmpfilename, stat.S_IRWXG | stat.S_IRWXU)
-
-            tmpfile.write("\ncd {}\n".format(self.work_dir))
-            if self.output_directories is not None:
-                for outdir in self.output_directories:
-                    if outdir:
-                        tmpfile.write("\nmkdir -p {}\n".format(outdir))
-
-            # create and set system scratch dir for temporary files
-            tmpfile.write("umask 002\n")
-
-            cluster_tmpdir = get_params()["cluster_tmpdir"]
-
-            if self.run_on_cluster and cluster_tmpdir:
-                tmpdir = cluster_tmpdir
-                tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
-                tmpfile.write("export TMPDIR\n")
-            else:
-                tmpdir = get_temp_dir(dir=get_params()["tmpdir"],
-                                      clear=True)
-                tmpfile.write("mkdir -p {}\n".format(tmpdir))
-                tmpfile.write("export TMPDIR={}\n".format(tmpdir))
-
-            cleanup_funcs.append(
-                ("clean_temp",
-                 "{{ rm -rf {}; }}".format(tmpdir)))
-
-            # output times whenever script exits, preserving
-            # return status
-            cleanup_funcs.append(("info",
-                                  "{ echo 'benchmark'; hostname; times; }"))
-            for cleanup_func, cleanup_code in cleanup_funcs:
-                tmpfile.write("\n{}() {}\n".format(cleanup_func, cleanup_code))
-
-            tmpfile.write("\nclean_all() {{ {}; }}\n".format(
-                "; ".join([x[0] for x in cleanup_funcs])))
-
-            tmpfile.write("\ntrap clean_all EXIT\n\n")
-
-            if self.job_memory not in ("unlimited", "etc") and \
-               self.options.get("cluster_memory_ulimit", False):
-                # restrict virtual memory
-                # Note that there are resources in SGE which could do this directly
-                # such as v_hmem.
-                # Note that limiting resident set sizes (RSS) with ulimit is not
-                # possible in newer kernels.
-                # -v and -m accept memory in kb
-                requested_memory_kb = max(
-                    1000,
-                    int(math.ceil(
-                        iotools.human2bytes(self.job_memory) / 1024 * self.job_threads)))
-                # unsetting error exit as often not permissions
-                tmpfile.write("set +e\n")
-                tmpfile.write("ulimit -v {} > /dev/null \n".format(
-                    requested_memory_kb))
-                tmpfile.write("ulimit -m {} > /dev/null \n".format(
-                    requested_memory_kb))
-                # set as hard limit
-                tmpfile.write("ulimit -H -v > /dev/null \n")
-                tmpfile.write("set -e\n")
-
-            if self.shellfile:
-
-                # make sure path exists that we want to write to
-                tmpfile.write("mkdir -p $(dirname \"{}\")\n".format(
-                    self.shellfile))
-
-                # output low-level debugging information to a shell log file
-                tmpfile.write(
-                    'echo "%s : START -> %s" >> %s\n' %
-                    (self.job_name, tmpfilename, self.shellfile))
-                # disabled - problems with quoting
-                # tmpfile.write( '''echo 'statement=%s' >> %s\n''' %
-                # (shellquote(statement), self.shellfile) )
-                tmpfile.write("set | sed 's/^/%s : /' >> %s\n" %
-                              (self.job_name, self.shellfile))
-                tmpfile.write("pwd | sed 's/^/%s : /' >> %s\n" %
-                              (self.job_name, self.shellfile))
-                tmpfile.write("hostname | sed 's/^/%s: /' >> %s\n" %
-                              (self.job_name, self.shellfile))
-                # cat /proc/meminfo is Linux specific
-                if get_params()['os'] == 'Linux':
-                    tmpfile.write("cat /proc/meminfo | sed 's/^/%s: /' >> %s\n" %
-                                  (self.job_name, self.shellfile))
-                elif get_params()['os'] == 'Darwin':
-                    tmpfile.write("vm_stat | sed 's/^/%s: /' >> %s\n" %
-                                  (self.job_name, self.shellfile))
-                tmpfile.write(
-                    'echo "%s : END -> %s" >> %s\n' %
-                    (self.job_name, tmpfilename, self.shellfile))
-                tmpfile.write("ulimit | sed 's/^/%s: /' >> %s\n" %
-                              (self.job_name, self.shellfile))
-
-            job_path = os.path.abspath(tmpfilename)
-
-            tmpfile.write(expanded_statement)
-            tmpfile.write("\n\n")
-            tmpfile.close()
-
-        return statement, job_path
-
-    def collect_benchmark_data(self,
-                               statements,
-                               resource_usage):
-        """collect benchmark data from a job's stdout and any resource usage
-        information that might be present.
-
-        If time_data is given, read output from time command.
-        """
-
-        benchmark_data = []
-
-        def get_val(d, v, alt):
-            val = d.get(v, alt)
-            if val == "unknown" or val is None:
-                val = alt
-            return val
-
-        # build resource usage data structure - part native, part
-        # mapped to common fields
-        for jobinfo, statement in zip(resource_usage, statements):
-
-            if resource_usage is None:
-                E.warn("no resource usage for {}".format(self.task_name))
-                continue
-
-            # add some common fields
-            data = {"task": self.task_name,
-                    "engine": self.__class__.__name__,
-                    "statement": statement,
-                    "job_id": jobinfo.jobId,
-                    "slots": self.job_threads}
-
-            # native specs
-            data.update(jobinfo.resourceUsage)
-
-            # translate specs
-            if self.queue_manager:
-                data.update(
-                    self.queue_manager.map_resource_usage(data, DATA2TYPE))
-
-            cpu_time = float(get_val(data, "cpu_t", 0))
-            start_time = float(get_val(data, "start_time", 0))
-            end_time = float(get_val(data, "end_time", 0))
-            data.update({
-                # avoid division by 0 error
-                "percent_cpu": (
-                    100.0 * cpu_time / max(1.0, (end_time - start_time)) / self.job_threads),
-                "total_t": end_time - start_time
-            })
-            benchmark_data.append(data)
-
-        return benchmark_data
-
-    def set_container_config(self, image, volumes=None, env_vars=None, runtime="docker"):
-        """Set container configuration for all tasks executed by this executor."""
-
-        if not image:
-            raise ValueError("An image must be specified for the container configuration.")
-        self.container_config = ContainerConfig(image=image, volumes=volumes, env_vars=env_vars, runtime=runtime)
-        
-    def start_job(self, job_info):
-        """Add a job to active_jobs list when it starts."""
-        self.active_jobs.append(job_info)
-        self.logger.info(f"Job started: {job_info}")
-
-    def finish_job(self, job_info):
-        """Remove a job from active_jobs list when it finishes."""
-        if job_info in self.active_jobs:
-            self.active_jobs.remove(job_info)
-            self.logger.info(f"Job completed: {job_info}")
-
-    def cleanup_all_jobs(self):
-        """Clean up all remaining active jobs on interruption."""
-        self.logger.info("Cleaning up all job outputs due to pipeline interruption")
-        for job_info in self.active_jobs:
-            self.cleanup_failed_job(job_info)
-        self.active_jobs.clear()  # Clear the list after cleanup
-
-    def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
-
-        def signal_handler(signum, frame):
-            self.logger.info(f"Received signal {signum}. Starting clean-up.")
-            self.cleanup_all_jobs()
-            exit(1)
-
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-
-    def cleanup_failed_job(self, job_info):
-        """Clean up files generated by a failed job."""
-        if "outfile" in job_info:
-            outfiles = [job_info["outfile"]]
-        elif "outfiles" in job_info:
-            outfiles = job_info["outfiles"]
-        else:
-            self.logger.warning(f"No output files found for job {job_info.get('job_name', 'unknown')}")
-            return
-
-        for outfile in outfiles:
-            if os.path.exists(outfile):
-                try:
-                    os.remove(outfile)
-                    self.logger.info(f"Removed failed job output file: {outfile}")
-                except OSError as e:
-                    self.logger.error(f"Error removing file {outfile}: {str(e)}")
-            else:
-                self.logger.info(f"Output file not found (already removed or not created): {outfile}")
-
-    def run(
-            self,
-            statement_list,
-            job_memory=None,
-            job_threads=None,
-            container_runtime=None,
-            image=None,
-            volumes=None,
-            env_vars=None,
-            **kwargs,):
-        
-        """
-        Execute a list of statements with optional container support.
-
-            Args:
-                statement_list (list): List of commands to execute.
-                job_memory (str): Memory requirements (e.g., "4G").
-                job_threads (int): Number of threads to use.
-                container_runtime (str): Container runtime ("docker" or "singularity").
-                image (str): Container image to use.
-                volumes (list): Volume mappings (e.g., ['/data:/data']).
-                env_vars (dict): Environment variables for the container.
-                **kwargs: Additional arguments.
-        """
-        # Validation checks
-        if container_runtime and container_runtime not in ["docker", "singularity"]:
-            self.logger.error(f"Invalid container_runtime: {container_runtime}")
-            raise ValueError("Container runtime must be 'docker' or 'singularity'")
-
-        if container_runtime and not image:
-            self.logger.error(f"Container runtime specified without an image: {container_runtime}")
-            raise ValueError("An image must be specified when using a container runtime")
-
-        benchmark_data = []
-
-        for statement in statement_list:
-            job_info = {"statement": statement}
-            self.start_job(job_info)
-
-            try:
-                # Prepare containerized execution
-                if container_runtime:
-                    self.set_container_config(image=image, volumes=volumes, env_vars=env_vars, runtime=container_runtime)
-                    statement = self.container_config.get_container_command(statement)
-
-                # Add memory and thread environment variables
-                if job_memory:
-                    env_vars = env_vars or {}
-                    env_vars["JOB_MEMORY"] = job_memory
-                if job_threads:
-                    env_vars = env_vars or {}
-                    env_vars["JOB_THREADS"] = job_threads
-
-                # Debugging: Log the constructed command
-                self.logger.info(f"Executing command: {statement}")
-
-                # Build and execute the statement
-                full_statement, job_path = self.build_job_script(statement)
-                process = subprocess.Popen(
-                    full_statement, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                )
-                stdout, stderr = process.communicate()
-
-                if process.returncode != 0:
-                    raise OSError(
-                        f"Job failed with return code {process.returncode}.\n"
-                        f"stderr: {stderr.decode('utf-8')}\ncommand: {statement}"
-                    )
-
-                # Collect benchmark data for successful jobs
-                benchmark_data.append(
-                    self.collect_benchmark_data(
-                        statement, resource_usage={"job_id": process.pid}
-                    )
-                )
-                self.finish_job(job_info)
-
-            except Exception as e:
-                self.logger.error(f"Job failed: {e}")
-                self.cleanup_failed_job(job_info)
-                if not self.ignore_errors:
-                    raise
-
-        return benchmark_data
 
 
 class GridExecutor(Executor):
