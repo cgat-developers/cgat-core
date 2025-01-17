@@ -310,18 +310,30 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.queue = kwargs.get('queue')
+        self.options = kwargs.get('options', '')
+        self.job_memory = kwargs.get('job_memory', '4G')
+        self.job_threads = kwargs.get('job_threads', 1)
     
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SLURM-specific submit command."""
-        cmd = [f"sbatch --parsable"]
+        cmd = ["sbatch", "--parsable"]
         
         if self.queue:
-            cmd.append(f"--partition={self.queue}")
+            cmd.extend(["--partition", self.queue])
+        
+        if self.job_memory and self.job_memory != "unlimited":
+            cmd.extend(["--mem", str(self.job_memory)])
+            
+        if self.job_threads and self.job_threads > 1:
+            cmd.extend(["--cpus-per-task", str(self.job_threads)])
+            
+        if self.options:
+            cmd.extend(self.options.split())
             
         cmd.extend([
-            f"--job-name={job_name}",
-            f"--output={job_args['output_path']}",
-            f"--error={job_args['error_path']}",
+            "--job-name", job_name,
+            "--output", job_args['output_path'],
+            "--error", job_args['error_path'],
             job_script
         ])
         
