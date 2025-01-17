@@ -507,33 +507,27 @@ def ruffus_return_dag(stream,
 
 
 def setup_logging(args, pipeline=None):
-
+    """setup logging.
+    """
     logger = logging.getLogger("cgatcore.pipeline")
 
     if args.log_config_filename is None:
+        if args.verbose:
+            level = logging.DEBUG
+        elif args.quiet:
+            level = logging.ERROR
+        else:
+            level = logging.INFO
 
-        # set up default file logger
-        handler = logging.FileHandler(
-            filename=args.pipeline_logfile,
-            mode="a")
+        format = '# %(asctime)s %(app_name)s %(levelname)s %(message)s'
+        formatter = logging.Formatter(format)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(level)
 
         if pipeline is not None:
-            pipeline_name = pipeline.name
-        else:
-            pipeline_name = get_params().get("pipeline_name", "main")
-
-        handler.setFormatter(
-            E.MultiLineFormatter(
-                "%(asctime)s %(levelname)s "
-                "%(app_name)s %(module)s "
-                "- %(message)s"))
-
-        logger.addFilter(LoggingFilterpipelineName(name=pipeline_name))
-        logger.addHandler(handler)
-
-        logger.info("pipeline log is {}".format(
-            args.pipeline_logfile))
-
+            logger.addFilter(LoggingFilterpipelineName(pipeline))
     return logger
 
 
