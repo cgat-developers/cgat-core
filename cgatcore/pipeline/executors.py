@@ -1,6 +1,8 @@
 import subprocess
 import time
 import logging
+import os
+import tempfile
 from cgatcore.pipeline.base_executor import BaseExecutor
 from cgatcore.pipeline.logging_utils import LoggingFilterpipelineName
 
@@ -112,10 +114,11 @@ class SlurmExecutor(BaseExecutor):
 
             full_statement, job_path = self.build_job_script(statement)
 
-            # Build the Slurm job submission command
-            slurm_command = f"sbatch --parsable --job-name={self.config.get('job_name', 'default_job')} --output={job_path}.o --error={job_path}.e {job_path}"
+            # Submit the job script directly
+            slurm_command = ["sbatch", "--parsable"]
+            slurm_command.append(job_path)
 
-            process = subprocess.run(slurm_command, shell=True, capture_output=True, text=True)
+            process = subprocess.run(slurm_command, capture_output=True, text=True)
 
             if process.returncode != 0:
                 self.logger.error(f"Slurm job submission failed: {process.stderr}")
@@ -134,7 +137,33 @@ class SlurmExecutor(BaseExecutor):
 
     def build_job_script(self, statement):
         """Custom build job script for Slurm."""
-        return super().build_job_script(statement)
+        job_script_dir = self.config.get("job_script_dir", tempfile.gettempdir())
+        os.makedirs(job_script_dir, exist_ok=True)
+        
+        # Generate a unique script name using timestamp
+        timestamp = int(time.time())
+        script_path = os.path.join(job_script_dir, f"slurm_job_{timestamp}.sh")
+        
+        # Get SLURM parameters from config or use defaults
+        memory = self.config.get("memory", "4G")
+        queue = self.config.get("queue", "general")
+        num_cpus = self.config.get("num_cpus", "1")
+        runtime = self.config.get("runtime", "01:00:00")
+        
+        # Write SLURM script with proper headers
+        with open(script_path, "w") as script_file:
+            script_file.write("#!/bin/bash\n")
+            script_file.write(f"#SBATCH --partition={queue}\n")
+            script_file.write(f"#SBATCH --mem={memory}\n")
+            script_file.write(f"#SBATCH --cpus-per-task={num_cpus}\n")
+            script_file.write(f"#SBATCH --time={runtime}\n")
+            script_file.write("#SBATCH --export=ALL\n\n")
+            
+            # Add the actual command
+            script_file.write(f"{statement}\n")
+        
+        os.chmod(script_path, 0o755)  # Make it executable
+        return statement, script_path
 
     def monitor_job_completion(self, job_id):
         """Monitor the completion of a Slurm job.
