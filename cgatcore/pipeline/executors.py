@@ -2,7 +2,7 @@ import subprocess
 import time
 import logging
 from cgatcore.pipeline.base_executor import BaseExecutor
-from cgatcore.pipeline.control import LoggingFilterpipelineName
+from cgatcore.pipeline.logging_utils import LoggingFilterpipelineName
 
 
 class SGEExecutor(BaseExecutor):

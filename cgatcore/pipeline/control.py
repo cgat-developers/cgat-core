@@ -427,32 +427,6 @@ def peek_parameters(workingdir,
     return dump
 
 
-class LoggingFilterpipelineName(logging.Filter):
-    """add pipeline name to log message.
-
-    With this filter, %(app_name)s can be used in log formats.
-    """
-
-    def __init__(self, name, *args, **kwargs):
-        logging.Filter.__init__(self, *args, **kwargs)
-        self.app_name = name
-
-    def filter(self, record):
-        record.app_name = self.app_name
-        message = record.getMessage()
-        if message.startswith("- {"):
-            json_message = json.loads(message[2:])
-        elif message.startswith("{"):
-            json_message = json.loads(message)
-        else:
-            json_message = None
-        if json_message:
-            for k, v in list(json_message.items()):
-                setattr(record, k, v)
-
-        return True
-
-
 def ruffus_return_dag(stream,
                       target_tasks=[],
                       forcedtorun_tasks=[],
@@ -509,6 +483,8 @@ def ruffus_return_dag(stream,
 def setup_logging(args, pipeline=None):
     """setup logging.
     """
+    from cgatcore.pipeline.logging_utils import LoggingFilterpipelineName
+    
     logger = logging.getLogger("cgatcore.pipeline")
 
     if args.log_config_filename is None:
