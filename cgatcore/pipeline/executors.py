@@ -33,6 +33,9 @@ class DRMAAExecutorStrategy(ClusterExecutorBase):
         script_path = job_script[1] if isinstance(job_script, tuple) else job_script
         
         try:
+            # Import drmaa here since it's only needed for this strategy
+            import drmaa
+            
             # Setup job using existing cluster.py functionality
             jt = self.cluster_manager.setup_drmaa_job_template(
                 self.session,
