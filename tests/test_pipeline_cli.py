@@ -1,22 +1,23 @@
-import pytest
+import unittest
 from unittest.mock import Mock, patch
 import sys
-
-# Mock DRMAA module before any imports
-mock_drmaa = Mock()
-mock_drmaa.Session = Mock()
-mock_drmaa.JobState.RUNNING = "RUNNING"
-mock_drmaa.JobState.DONE = "DONE"
-mock_drmaa.JobState.FAILED = "FAILED"
-mock_drmaa.Session.TIMEOUT_WAIT_FOREVER = -1
-sys.modules['drmaa'] = mock_drmaa
-
+import pytest
 from cgatcore.pipeline.executors import (
     LocalExecutor, SGEExecutor, SlurmExecutor, TorqueExecutor,
     SGECluster, SlurmCluster, TorqueCluster
 )
 from cgatcore.pipeline.kubernetes import KubernetesExecutor
 import cgatcore.pipeline.execution
+
+# Mock DRMAA module before any imports
+mock_drmaa = Mock()
+mock_drmaa.Session = Mock()
+mock_drmaa.JobState = Mock()
+mock_drmaa.JobState.DONE = 0
+mock_drmaa.JobState.RUNNING = "RUNNING"
+mock_drmaa.JobState.FAILED = "FAILED"
+mock_drmaa.Session.TIMEOUT_WAIT_FOREVER = -1
+sys.modules['drmaa'] = mock_drmaa
 
 mock = Mock()
 cgatcore.pipeline.execution.GLOBAL_SESSION = mock

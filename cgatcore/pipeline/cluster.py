@@ -127,12 +127,14 @@ class DRMAACluster(object):
 
         if len(stdout) != 2:
             E.warning("expected 2 lines in %s, but got %i" %
-                     (statement, len(stdout)))
+                      (statement, len(stdout)))
             return {}
 
         header = stdout[0].split("|")
         values = stdout[1].split("|")
-        data = dict(list(zip(header, values)))
+        data = dict(
+            list(zip(header, values))
+        )
 
         return self.parse_accounting_data(data, retval)
 
@@ -615,7 +617,9 @@ class SlurmCluster(DRMAACluster):
 
         header = stdout[0].split("|")
         values = stdout[1].split("|")
-        data = dict(list(zip(header, values)))
+        data = dict(
+            list(zip(header, values))
+        )
 
         return self.parse_accounting_data(data, retval)
 
