@@ -304,12 +304,12 @@ class SlurmExecutor(BaseExecutor):
     
     def __del__(self):
         """Ensure DRMAA session is cleaned up."""
-        if hasattr(self, 'executor') and isinstance(self.executor, DRMAAExecutorStrategy):
-            try:
-                from cgatcore.pipeline.execution import close_session
-                close_session()
-            except:
-                pass
+        try:
+            from cgatcore.pipeline.execution import close_session
+            close_session()
+        except Exception as e:
+            # Log but don't raise in destructor
+            self.logger.warning(f"Error during cleanup in destructor: {str(e)}")
 
     def run(self, statement_list):
         """Execute statements on the cluster."""
@@ -377,44 +377,41 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                 try:
                     memory = int(value.replace("G", "000").replace("M", "").replace("K", "0.001"))
                     sbatch_options.extend(["--mem", f"{memory}M"])
-                except:
-                    pass
+                except (ValueError, AttributeError) as e:
+                    self.logger.warning(f"Could not parse memory value '{value}': {str(e)}")
             elif option == "job_name":
                 sbatch_options.extend(["-J", value])
                 
         cmd = ["sbatch"] + sbatch_options + [tmpfile.name]
         
         # Submit job
-        process = subprocess.run(cmd, capture_output=True, text=True)
-        if process.returncode != 0:
-            raise OSError(f"Error submitting job: {process.stderr}")
-            
-        # Parse job ID from sbatch output
         try:
+            process = subprocess.run(cmd, capture_output=True, text=True)
+            if process.returncode != 0:
+                raise OSError(f"Error submitting job: {process.stderr}")
+                
+            # Parse job ID from sbatch output
             job_id = process.stdout.strip().split()[-1]
             return job_id, tmpfile.name
-        except:
-            raise ValueError(f"Could not parse job ID from sbatch output: {process.stdout}")
-    
+        except (subprocess.SubprocessError, IndexError) as e:
+            raise ValueError(f"Could not submit or parse job output: {str(e)}") from e
+            
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SLURM-specific submit command."""
         return (
             f"sbatch -N {job_name} -cwd "
             f"-o {job_args['output_path']} "
             f"-e {job_args['error_path']} "
-            f"{job_script}")
-    
+            f"{job_script}"
+        )
+
     def _parse_job_id(self, submit_output):
         """Parse job ID from SLURM submission output."""
-        job_id = submit_output.strip()
         try:
-            return str(int(job_id))  # Verify it's a valid number
-        except ValueError:
-            # Try to extract just the number if we got a full message
-            try:
-                return str(int(job_id.split()[-1]))
-            except (IndexError, ValueError):
-                raise RuntimeError(f"Could not parse job ID from sbatch output: {job_id}")
+            job_id = submit_output.strip().split()[-1]
+            return job_id
+        except (IndexError, AttributeError) as e:
+            raise ValueError(f"Could not parse job ID from: {submit_output}") from e
     
     def _monitor_job(self, job_id, job_script):
         """Monitor SLURM job and return results."""
@@ -426,25 +423,32 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
         RUNNING_STATES = ["RUNNING", "PENDING", "CONFIGURING", "COMPLETING"]
         COMPLETED_STATES = ["COMPLETED", "COMPLETE", "DONE"]
         FAILED_STATES = ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY", 
-                        "BOOT_FAIL", "DEADLINE", "PREEMPTED", "REVOKED", "SPECIAL_EXIT"]
+                         "BOOT_FAIL", "DEADLINE", "PREEMPTED", "REVOKED", "SPECIAL_EXIT"]
         
         def get_job_error():
             """Get detailed error information from SLURM."""
             error_info = []
             
             # Try sacct first for detailed state
-            cmd = (f"sacct -j {job_id} --format=JobID,State,ExitCode,DerivedExitCode,Comment,Reason --noheader --parsable2")
-            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            if process.returncode == 0 and process.stdout.strip():
-                error_info.append(f"SACCT details: {process.stdout.strip()}")
+            cmd = (f"sacct -j {job_id} --format=JobID,State,ExitCode,DerivedExitCode,"
+                   f"Comment,Reason --noheader --parsable2")
+            try:
+                process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if process.returncode == 0 and process.stdout.strip():
+                    error_info.append(f"SACCT details: {process.stdout.strip()}")
+            except subprocess.SubprocessError as e:
+                error_info.append(f"Error getting sacct details: {str(e)}")
             
             # Try scontrol for more details
             cmd = f"scontrol show job {job_id}"
-            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            if process.returncode == 0:
-                for line in process.stdout.split('\n'):
-                    if any(x in line for x in ['Reason=', 'ExitCode=', 'Comment=']):
-                        error_info.append(line.strip())
+            try:
+                process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if process.returncode == 0:
+                    for line in process.stdout.split('\n'):
+                        if any(x in line for x in ['Reason=', 'ExitCode=', 'Comment=']):
+                            error_info.append(line.strip())
+            except subprocess.SubprocessError as e:
+                error_info.append(f"Error getting scontrol details: {str(e)}")
             
             # Check job script output/error files
             script_dir = os.path.dirname(job_script)
@@ -457,7 +461,7 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                             if content:
                                 error_info.append(f"Content of {output_file}:")
                                 error_info.append(content)
-                    except Exception as e:
+                    except IOError as e:
                         error_info.append(f"Could not read {output_file}: {str(e)}")
             
             return '\n'.join(error_info)

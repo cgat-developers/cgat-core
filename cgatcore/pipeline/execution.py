@@ -221,9 +221,14 @@ class ContainerConfig:
         
         return " ".join([
             "singularity", "exec",
-            *volume_args, *env_args, self.image,
+            *volume_args, *env_vars, self.image,
             "bash", "-c", f"'{statement}'"
         ])
+
+
+def start_session():
+    """Backwards compatibility wrapper for get_drmaa_session()."""
+    return get_drmaa_session()
 
 
 def get_drmaa_session():
@@ -240,16 +245,18 @@ def get_drmaa_session():
             try:
                 old_session = drmaa.Session()
                 old_session.exit()
-            except:
-                pass
+            except Exception as e:  # Handle any session cleanup errors
+                logger = logging.getLogger("cgatcore.pipeline")
+                logger.warning(f"Error cleaning up existing DRMAA session: {str(e)}")
             # Now try to initialize again
             session.initialize()
             
         def cleanup_session():
             try:
                 session.exit()
-            except:
-                pass
+            except Exception as e:  # Handle any session cleanup errors
+                logger = logging.getLogger("cgatcore.pipeline")
+                logger.warning(f"Error cleaning up DRMAA session: {str(e)}")
         
         atexit.register(cleanup_session)
         return session
