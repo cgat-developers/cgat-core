@@ -7,6 +7,7 @@ from cgatcore.pipeline.cluster import (
     DRMAACluster, SGECluster, 
     SlurmCluster, TorqueCluster)
 from cgatcore.pipeline.base_executor import BaseExecutor
+import tempfile
 
 
 class ClusterExecutorBase(ABC):
@@ -228,7 +229,7 @@ class SubprocessSGEStrategy(SubprocessExecutorStrategy):
                 
             def _get_resource_usage(self, job_id):
                 """Get resource usage from qacct."""
-                cmd = (f"qacct -j {job_id} -o format=mem,cpu,io")
+                cmd = (f"qacct -j {job_id} --format=mem,cpu,io")
                 process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
                 if process.returncode == 0:
                     # Parse and return as dict
@@ -341,30 +342,67 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
         self.job_memory = kwargs.get('job_memory', '4G')
         self.job_threads = kwargs.get('job_threads', 1)
     
+    def submit_job(self, statement, job_kwargs):
+        """Submit job to cluster using sbatch."""
+        # Write job script
+        tmpfile = tempfile.NamedTemporaryFile(delete=False, prefix="pipeline", suffix=".sh", mode="w")
+        tmpfile.write("#!/bin/bash\n")
+        
+        # Add any environment setup
+        if "BASH_ENV" in os.environ:
+            tmpfile.write(f"source {os.environ['BASH_ENV']}\n")
+            
+        # Add conda environment activation if it exists
+        if "CONDA_PREFIX" in os.environ:
+            tmpfile.write(f"source {os.environ['CONDA_PREFIX']}/etc/profile.d/conda.sh\n")
+            tmpfile.write(f"conda activate {os.path.basename(os.environ['CONDA_PREFIX'])}\n")
+            
+        # Set error handling
+        tmpfile.write("set -e\n")  # Exit on error
+        tmpfile.write("set -o pipefail\n")  # Pipe fails if any command fails
+        
+        # Add the actual command
+        tmpfile.write(statement + "\n")
+        tmpfile.close()
+        
+        os.chmod(tmpfile.name, 0o755)
+        
+        # Prepare sbatch command
+        sbatch_options = []
+        for option, value in job_kwargs.items():
+            if option == "job_threads":
+                sbatch_options.extend(["-n", str(value)])
+            elif option == "job_memory":
+                # Convert memory to MB
+                try:
+                    memory = int(value.replace("G", "000").replace("M", "").replace("K", "0.001"))
+                    sbatch_options.extend(["--mem", f"{memory}M"])
+                except:
+                    pass
+            elif option == "job_name":
+                sbatch_options.extend(["-J", value])
+                
+        cmd = ["sbatch"] + sbatch_options + [tmpfile.name]
+        
+        # Submit job
+        process = subprocess.run(cmd, capture_output=True, text=True)
+        if process.returncode != 0:
+            raise OSError(f"Error submitting job: {process.stderr}")
+            
+        # Parse job ID from sbatch output
+        try:
+            job_id = process.stdout.strip().split()[-1]
+            return job_id, tmpfile.name
+        except:
+            raise ValueError(f"Could not parse job ID from sbatch output: {process.stdout}")
+    
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SLURM-specific submit command."""
-        cmd = ["sbatch", "--parsable"]
-        
-        if self.queue:
-            cmd.extend(["--partition", self.queue])
-        
-        if self.job_memory and self.job_memory != "unlimited":
-            cmd.extend(["--mem", str(self.job_memory)])
-            
-        if self.job_threads and self.job_threads > 1:
-            cmd.extend(["--cpus-per-task", str(self.job_threads)])
-            
-        if self.options:
-            cmd.extend(self.options.split())
-            
-        cmd.extend([
-            "--job-name", job_name,
-            "--output", job_args['output_path'],
-            "--error", job_args['error_path'],
-            job_script
-        ])
-        
-        return " ".join(cmd)
+        return (
+            f"sbatch -N {job_name} -cwd "
+            f"-o {job_args['output_path']} "
+            f"-e {job_args['error_path']} "
+            f"{job_script}")
     
     def _parse_job_id(self, submit_output):
         """Parse job ID from SLURM submission output."""
@@ -395,7 +433,7 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
             error_info = []
             
             # Try sacct first for detailed state
-            cmd = f"sacct -j {job_id} --format=JobID,State,ExitCode,DerivedExitCode,Comment,Reason --noheader --parsable2"
+            cmd = (f"sacct -j {job_id} --format=JobID,State,ExitCode,DerivedExitCode,Comment,Reason --noheader --parsable2")
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             if process.returncode == 0 and process.stdout.strip():
                 error_info.append(f"SACCT details: {process.stdout.strip()}")

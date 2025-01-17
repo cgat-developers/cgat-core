@@ -226,46 +226,45 @@ class ContainerConfig:
         ])
 
 
-def start_session():
-    """Start a DRMAA session.
-    
-    This function will try to start a DRMAA session, handling cases where
-    a session might already exist.
-    """
+def get_drmaa_session():
+    """Get a DRMAA session, handling existing sessions properly."""
     import drmaa
     import atexit
-
+    
     try:
         session = drmaa.Session()
-        session.initialize()
-        atexit.register(lambda: session.exit())
-        return session
-    except drmaa.errors.InvalidArgumentException as e:
-        if "already exist" in str(e):
-            # Try to clean up the existing session and start a new one
+        try:
+            session.initialize()
+        except drmaa.errors.AlreadyActiveSessionException:
+            # Try to exit any existing session first
             try:
                 old_session = drmaa.Session()
                 old_session.exit()
             except:
                 pass
-            # Try again
-            session = drmaa.Session()
+            # Now try to initialize again
             session.initialize()
-            atexit.register(lambda: session.exit())
-            return session
-        raise
+            
+        def cleanup_session():
+            try:
+                session.exit()
+            except:
+                pass
+        
+        atexit.register(cleanup_session)
+        return session
+        
     except Exception as e:
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger("cgatcore.pipeline")
         logger.warning(f"Could not initialize DRMAA session: {str(e)}")
         return None
 
-def close_session(session=None):
-    """Close a DRMAA session."""
-    if session:
-        try:
-            session.exit()
-        except:
-            pass
+
+class DRMAAExecutor:
+    def __init__(self, **kwargs):
+        self.session = get_drmaa_session()
+        if not self.session:
+            raise ValueError("Could not initialize DRMAA session")
 
 
 def shellquote(statement):
@@ -1064,7 +1063,7 @@ class GridExecutor(Executor):
 
     def __init__(self, **kwargs):
         Executor.__init__(self, **kwargs)
-        self.session = start_session()
+        self.session = get_drmaa_session()
         if self.session is None:
             raise ValueError("no Grid Session found")
 
