@@ -3,6 +3,11 @@ import os
 import tempfile
 
 
+def get_temp_filename(suffix=''):
+    """Return a temporary filename."""
+    return tempfile.mkstemp(suffix=suffix)[1]
+
+
 class BaseExecutor:
     """Base class for executors that defines the interface for running jobs."""
 
@@ -42,22 +47,24 @@ class BaseExecutor:
         }
 
     def build_job_script(self, statement):
-        """Build a simple job script for execution.
+        """Build a job script for execution.
+        
         Args:
-        statement (str): The command or script to be executed.
+            statement (str): The command to execute
+            
         Returns:
-        tuple: A tuple containing the full command (as a string) and the path where the job script is stored.
+            str: Path to the job script
         """
+        # Create temp script file
+        script_file = get_temp_filename(suffix='.sh')
         
-        job_script_dir = self.config.get("job_script_dir", tempfile.gettempdir())
-        os.makedirs(job_script_dir, exist_ok=True)
-    
-        script_path = os.path.join(job_script_dir, "job_script.sh")
-        with open(script_path, "w") as script_file:
-            script_file.write(f"#!/bin/bash\n\n{statement}\n")
-        
-        os.chmod(script_path, 0o755)  # Make it executable
-        return statement, script_path
+        with open(script_file, 'w') as f:
+            f.write('#!/bin/bash\n')
+            f.write(statement)
+            
+        # Make executable
+        os.chmod(script_file, 0o755)
+        return script_file
 
     def __enter__(self):
         """Enter the runtime context related to this object."""
