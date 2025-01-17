@@ -512,14 +512,14 @@ def setup_logging(args, pipeline=None):
     logger = logging.getLogger("cgatcore.pipeline")
 
     if args.log_config_filename is None:
-        if args.verbose:
+        # Default to INFO level if args.verbose is not set
+        level = logging.INFO
+        if hasattr(args, 'verbose') and args.verbose:
             level = logging.DEBUG
-        elif args.quiet:
+        elif hasattr(args, 'quiet') and args.quiet:
             level = logging.ERROR
-        else:
-            level = logging.INFO
 
-        format = '# %(asctime)s %(app_name)s %(levelname)s %(message)s'
+        format = '# %(asctime)s %(levelname)s %(message)s'
         formatter = logging.Formatter(format)
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(formatter)
@@ -527,7 +527,12 @@ def setup_logging(args, pipeline=None):
         logger.setLevel(level)
 
         if pipeline is not None:
+            # Only add app_name to format if pipeline is provided
+            format = '# %(asctime)s %(app_name)s %(levelname)s %(message)s'
+            formatter = logging.Formatter(format)
+            handler.setFormatter(formatter)
             logger.addFilter(LoggingFilterpipelineName(pipeline))
+
     return logger
 
 

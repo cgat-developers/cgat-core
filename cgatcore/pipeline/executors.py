@@ -2,14 +2,14 @@ import subprocess
 import time
 import logging
 from cgatcore.pipeline.base_executor import BaseExecutor
-from cgatcore.pipeline.app_name_filter import AppNameFilter
+from cgatcore.pipeline.control import LoggingFilterpipelineName
 
 
 class SGEExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger("cgatcore.pipeline")
-        self.logger.addFilter(AppNameFilter("sge"))  
+        self.logger.addFilter(LoggingFilterpipelineName("sge"))  
         self.task_name = "sge_task"
         self.default_total_time = 8
 
@@ -101,7 +101,7 @@ class SlurmExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger("cgatcore.pipeline")
-        self.logger.addFilter(AppNameFilter("slurm"))  
+        self.logger.addFilter(LoggingFilterpipelineName("slurm"))  
         self.task_name = "slurm_task"
         self.default_total_time = 10
 
@@ -191,7 +191,7 @@ class TorqueExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger("cgatcore.pipeline")
-        self.logger.addFilter(AppNameFilter("torque"))  
+        self.logger.addFilter(LoggingFilterpipelineName("torque"))  
         self.task_name = "torque_task"
         self.default_total_time = 7
 
@@ -284,7 +284,7 @@ class LocalExecutor(BaseExecutor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.logger = logging.getLogger("cgatcore.pipeline")
-        self.logger.addFilter(AppNameFilter("local"))  
+        self.logger.addFilter(LoggingFilterpipelineName("local"))  
         self.task_name = "local_task"
         self.default_total_time = 5
 
