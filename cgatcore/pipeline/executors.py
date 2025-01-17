@@ -102,12 +102,29 @@ class SGEExecutor(BaseExecutor):
 class SlurmExecutor(BaseExecutor):
     """Executor for running jobs on Slurm cluster."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, config, job_name, default_partition="main"):
+        """Initialize SLURM executor.
+
+        Args:
+            config (dict): Configuration dictionary.
+            job_name (str): Name of the job.
+            default_partition (str, optional): Default SLURM partition. Defaults to "main".
+        """
+        self.config = config
+        self.job_name = job_name
+        self.default_partition = default_partition
+
+        # Setup logging with a single handler to avoid duplication
         self.logger = logging.getLogger("cgatcore.pipeline")
-        self.logger.addFilter(LoggingFilterpipelineName("slurm"))  
-        self.task_name = "slurm_task"
-        self.default_total_time = 10
+        
+        # Remove any existing handlers to prevent duplication
+        if self.logger.hasHandlers():
+            self.logger.handlers.clear()
+            
+        # Add a single handler with our custom filter
+        handler = logging.StreamHandler()
+        handler.addFilter(LoggingFilterpipelineName(job_name))
+        self.logger.addHandler(handler)
         
         # Get default partition
         self.get_default_partition()
@@ -349,8 +366,8 @@ class SlurmExecutor(BaseExecutor):
             dict: Benchmark data including task name and execution time
         """
         return {
-            "task": self.task_name,
-            "total_t": self.default_total_time,
+            "task": "slurm_task",
+            "total_t": 10,
             "statements": statements,
             "resource_usage": resource_usage or []
         }
