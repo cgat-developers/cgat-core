@@ -90,8 +90,51 @@ class DRMAACluster(object):
         self.ignore_errors = ignore_errors
 
     def get_resource_usage(self, job_id, retval, hostname):
-        retval.resourceUsage["hostname"] = hostname
-        return [retval]
+        """Get resource usage for a completed job.
+
+        If retval is a DRMAA JobInfo object, extract info directly.
+        Otherwise, try to get info from sacct command.
+        """
+        if hasattr(retval, 'resourceUsage') and retval.resourceUsage:
+            # Convert resource usage to match expected format
+            data = {
+                'JobID': job_id,
+                'NodeList': hostname,
+                'Submit': retval.resourceUsage.get('submission_time', ''),
+                'Start': retval.resourceUsage.get('start_time', ''),
+                'End': retval.resourceUsage.get('end_time', ''),
+                'NCPUS': retval.resourceUsage.get('slots', ''),
+                'ExitCode': str(retval.exitStatus),
+                'ElapsedRaw': retval.resourceUsage.get('wallclock', ''),
+                'CPUTimeRaw': retval.resourceUsage.get('cpu', ''),
+                'UserCPU': retval.resourceUsage.get('user_time', ''),
+                'SystemCPU': retval.resourceUsage.get('system_time', ''),
+                'MaxDiskRead': retval.resourceUsage.get('io_input', ''),
+                'MaxDiskWrite': retval.resourceUsage.get('io_output', ''),
+                'AveVMSize': retval.resourceUsage.get('mem', ''),
+                'AveRSS': retval.resourceUsage.get('maxrss', ''),
+                'MaxRSS': retval.resourceUsage.get('maxrss', ''),
+                'MaxVMSize': retval.resourceUsage.get('maxvmem', ''),
+                'AvePages': retval.resourceUsage.get('minor_page_faults', ''),
+                'DerivedExitCode': retval.resourceUsage.get('signal', ''),
+                'MaxPages': retval.resourceUsage.get('major_page_faults', '')
+            }
+            return self.parse_accounting_data(data, retval)
+
+        # Fallback to sacct command if no DRMAA info available
+        statement = self.get_sacct_command(job_id)
+        stdout = E.run(statement, return_stdout=True).splitlines()
+
+        if len(stdout) != 2:
+            E.warning("expected 2 lines in %s, but got %i" %
+                     (statement, len(stdout)))
+            return {}
+
+        header = stdout[0].split("|")
+        values = stdout[1].split("|")
+        data = dict(list(zip(header, values)))
+
+        return self.parse_accounting_data(data, retval)
 
     def setup_drmaa_job_template(self,
                                  drmaa_session,
@@ -286,6 +329,57 @@ class DRMAACluster(object):
                       _convert(key, resource_usage.get(self.map_drmaa2benchmark_data.get(key, key), None), tpe))
                      for key, tpe in data2type.items()])
 
+    @classmethod
+    def parse_accounting_data(cls, data, retval):
+        """Parse accounting data from either DRMAA or sacct output.
+        
+        Args:
+            data: Either a dictionary (from DRMAA) or a string (from sacct)
+            retval: DRMAA job info object
+            
+        Returns:
+            List containing a single JobInfo object with parsed resource usage
+        """
+        def convert_value(*pair):
+            k, v = pair[0]
+            if k in ("UserCPU", "SystemCPU"):
+                n = 0
+                for x, f in zip(re.split("[-:]", str(v))[::-1], (1, 60, 3600, 86400)):
+                    n += float(x) * f
+                v = n
+            elif k in ("Start", "End", "Submit"):
+                try:
+                    v = time.mktime(datetime.datetime.strptime(
+                        str(v), "%Y-%m-%dT%H:%M:%S").timetuple())
+                except ValueError as ex:
+                    E.warning("could not parse time value '{}' for field '{}': {}".format(
+                        v, k, ex))
+                    v = None
+            elif k in ("ExitCode", ):
+                v = int(str(v).split(":")[0])
+            elif str(v).endswith("K"):
+                v = float(str(v)[:-1]) * 1000
+            elif str(v).endswith("M"):
+                v = float(str(v)[:-1]) * 1000000
+            elif str(v).endswith("G"):
+                v = float(str(v)[:-1]) * 1000000000
+            try:
+                v = int(v)
+            except (ValueError, TypeError):
+                pass
+            return k, v
+
+        # Convert data to dictionary if it's a string from sacct
+        if isinstance(data, str):
+            data_dict = dict(map(convert_value, zip(
+                cls.map_drmaa2benchmark_data.values(), data.split("|"))))
+        else:
+            # Handle dictionary data directly
+            data_dict = dict(map(convert_value, data.items()))
+
+        retval = retval._replace(resourceUsage=data_dict)
+        return [retval]
+
 
 class SGECluster(DRMAACluster):
 
@@ -464,12 +558,50 @@ class SlurmCluster(DRMAACluster):
                 pass
             return k, v
 
-        d = dict(map(convert_value, zip(
-            cls.map_drmaa2benchmark_data.values(), data.split("|"))))
-        retval = retval._replace(resourceUsage=d)
+        if isinstance(data, str):
+            # Handle string data from sacct command
+            data_dict = dict(map(convert_value, zip(
+                cls.map_drmaa2benchmark_data.values(), data.split("|"))))
+        else:
+            # Handle dictionary data from DRMAA
+            data_dict = dict(map(convert_value, [(k, str(v)) for k, v in data.items()]))
+
+        retval = retval._replace(resourceUsage=data_dict)
         return [retval]
 
     def get_resource_usage(self, job_id, retval, hostname):
+        """Get resource usage for a completed job.
+        
+        If retval is a DRMAA JobInfo object, extract info directly.
+        Otherwise, try to get info from sacct command.
+        """
+        if hasattr(retval, 'resourceUsage') and retval.resourceUsage:
+            # Convert DRMAA resource usage to match expected format
+            data = {
+                'NodeList': hostname,
+                'JobID': job_id,
+                'Submit': retval.resourceUsage.get('submission_time', ''),
+                'Start': retval.resourceUsage.get('start_time', ''),
+                'End': retval.resourceUsage.get('end_time', ''),
+                'NCPUS': retval.resourceUsage.get('slots', ''),
+                'ExitCode': str(retval.exitStatus),
+                'ElapsedRaw': retval.resourceUsage.get('wallclock', ''),
+                'CPUTimeRaw': retval.resourceUsage.get('cpu', ''),
+                'UserCPU': retval.resourceUsage.get('user_time', ''),
+                'SystemCPU': retval.resourceUsage.get('system_time', ''),
+                'MaxDiskRead': retval.resourceUsage.get('io_input', ''),
+                'MaxDiskWrite': retval.resourceUsage.get('io_output', ''),
+                'AveVMSize': retval.resourceUsage.get('mem', ''),
+                'AveRSS': retval.resourceUsage.get('maxrss', ''),
+                'MaxRSS': retval.resourceUsage.get('maxrss', ''),
+                'MaxVMSize': retval.resourceUsage.get('maxvmem', ''),
+                'AvePages': retval.resourceUsage.get('minor_page_faults', ''),
+                'DerivedExitCode': retval.resourceUsage.get('signal', ''),
+                'MaxPages': retval.resourceUsage.get('major_page_faults', '')
+            }
+            return self.parse_accounting_data(data, retval)
+
+        # Fallback to sacct command if no DRMAA info available
         # delay to help with sync'ing of book-keeping
         gevent.sleep(GEVENT_TIMEOUT_SACCT)
         statement = "sacct --noheader --units=K --parsable2 --format={} -j {} ".format(
@@ -479,8 +611,13 @@ class SlurmCluster(DRMAACluster):
         if len(stdout) != 2:
             E.warn("expected 2 lines in {}, but got {}".format(
                 statement, len(stdout)))
+            return {}
 
-        return self.parse_accounting_data(stdout[-1], retval)
+        header = stdout[0].split("|")
+        values = stdout[1].split("|")
+        data = dict(list(zip(header, values)))
+
+        return self.parse_accounting_data(data, retval)
 
 
 class TorqueCluster(DRMAACluster):

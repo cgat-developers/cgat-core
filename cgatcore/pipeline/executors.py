@@ -2,10 +2,11 @@ import os
 import time
 import logging
 import subprocess
+import drmaa
 from abc import ABC, abstractmethod
 from cgatcore.pipeline.cluster import (
     DRMAACluster, SGECluster, 
-    SlurmCluster, TorqueCluster, PBSProCluster)
+    SlurmCluster, TorqueCluster)
 from cgatcore.pipeline.base_executor import BaseExecutor
 
 
@@ -25,9 +26,13 @@ class DRMAAExecutorStrategy(ClusterExecutorBase):
         self.session = session
         self.cluster_manager = queue_manager_cls(session, **kwargs)
         self.logger = logging.getLogger(__name__)
+        self.queue = kwargs.get('queue')
         
     def submit_and_monitor(self, job_script, job_args, job_name):
         """Use existing DRMAA cluster implementation."""
+        # Extract script path from tuple if needed
+        script_path = job_script[1] if isinstance(job_script, tuple) else job_script
+        
         try:
             # Setup job using existing cluster.py functionality
             jt = self.cluster_manager.setup_drmaa_job_template(
@@ -35,14 +40,41 @@ class DRMAAExecutorStrategy(ClusterExecutorBase):
                 job_name=job_name,
                 job_memory=job_args.get('job_memory'),
                 job_threads=job_args.get('job_threads'),
-                working_directory=os.path.dirname(job_script))
-                
-            # Submit and monitor using existing implementation
+                working_directory=os.path.dirname(script_path),
+                queue=self.queue)
+            
+            # Set the command to execute
+            jt.remoteCommand = script_path
+            jt.joinFiles = True
+            
+            # Submit job
             job_id = self.session.runJob(jt)
-            retval = self.cluster_manager.collect_single_job_from_cluster(
-                job_id, job_script, jt.outputPath, jt.errorPath, job_script)
-                
+            self.logger.info(f"Submitted job {job_id}")
+            
+            # Monitor job status
+            retval = None
+            while True:
+                try:
+                    job_status = str(self.session.jobStatus(job_id))
+                    if job_status == str(drmaa.JobState.DONE):
+                        break
+                    elif job_status == str(drmaa.JobState.FAILED):
+                        raise RuntimeError(f"Job {job_id} failed with status: {job_status}")
+                    time.sleep(5)  # Wait before checking again
+                except drmaa.InvalidJobException:
+                    # Job completed and was cleaned up
+                    break
+            
+            # Get job info and resource usage
+            job_info = self.session.wait(job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+            hostname = job_info.resourceUsage.get('submission_host', 'unknown')
+            retval = self.cluster_manager.get_resource_usage(job_id, job_info, hostname)
+            
             return retval
+            
+        except Exception as e:
+            self.logger.error(f"DRMAA execution failed: {e}")
+            raise
             
         finally:
             if 'jt' in locals():
@@ -57,8 +89,19 @@ class SubprocessExecutorStrategy(ClusterExecutorBase):
         
     def submit_and_monitor(self, job_script, job_args, job_name):
         """Implement direct subprocess-based submission."""
-        # Existing subprocess implementation
-        cmd = self._build_submit_cmd(job_script, job_args, job_name)
+        # Add output/error paths if not provided
+        if isinstance(job_script, tuple):
+            script_content, script_path = job_script
+        else:
+            script_path = job_script
+            
+        if 'output_path' not in job_args:
+            job_args['output_path'] = f"{script_path}.o"
+        if 'error_path' not in job_args:
+            job_args['error_path'] = f"{script_path}.e"
+            
+        # Submit job
+        cmd = self._build_submit_cmd(script_path, job_args, job_name)
         process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         
         if process.returncode != 0:
@@ -66,7 +109,7 @@ class SubprocessExecutorStrategy(ClusterExecutorBase):
             raise RuntimeError(f"Job submission failed: {process.stderr}")
             
         job_id = self._parse_job_id(process.stdout)
-        return self._monitor_job(job_id, job_script)
+        return self._monitor_job(job_id, script_path)
     
     @abstractmethod
     def _build_submit_cmd(self, job_script, job_args, job_name):
@@ -92,47 +135,44 @@ class SGEExecutor(BaseExecutor):
         self.logger = logging.getLogger(__name__)
         self.task_name = "sge_task"
         self.default_total_time = 8
+        self.queue = kwargs.get('queue')  # Store queue for later use
         
-        # Initialize appropriate execution strategy
-        if kwargs.get("cluster_executor", "drmaa") == "drmaa":
-            try:
-                import drmaa
-                session = drmaa.Session()
-                session.initialize()
-                self.executor = DRMAAExecutorStrategy(
-                    session=session,
-                    queue_manager_cls=SGECluster,
-                    **kwargs)
-                self.logger.info("Using DRMAA-based execution")
-            except (ImportError, Exception) as e:
-                self.logger.warning(f"DRMAA initialization failed: {e}")
-                self.logger.warning("Falling back to subprocess-based execution")
-                self.executor = SubprocessSGEStrategy(**kwargs)
-        else:
+        # Always try DRMAA first
+        try:
+            import drmaa
+            session = drmaa.Session()
+            session.initialize()
+            # Don't pass queue to DRMAACluster initialization
+            cluster_kwargs = {k: v for k, v in kwargs.items() if k != 'queue'}
+            self.executor = DRMAAExecutorStrategy(
+                session=session,
+                queue_manager_cls=SGECluster,
+                **cluster_kwargs)
+            self.logger.info("Using DRMAA-based execution")
+        except (ImportError, Exception) as e:
+            self.logger.warning(f"DRMAA initialization failed: {e}")
+            self.logger.warning("Falling back to subprocess-based execution")
             self.executor = SubprocessSGEStrategy(**kwargs)
 
     def run(self, statement_list):
+        """Execute statements on the cluster."""
         benchmark_data = []
+
         for statement in statement_list:
-            self.logger.info(f"Running statement on SGE: {statement}")
-
-            full_statement, job_path = self.build_job_script(statement)
-            
+            job_script = self.build_job_script(statement)
             job_args = {
-                'job_name': self.config.get('job_name', 'default_job'),
                 'job_memory': self.job_memory,
-                'job_threads': self.job_threads,
-                'output_path': f"{job_path}.o",
-                'error_path': f"{job_path}.e"
+                'job_threads': self.job_threads
             }
-
             retval = self.executor.submit_and_monitor(
-                job_path, job_args, job_args['job_name'])
-            
-            benchmark_data.append(self.collect_benchmark_data([statement], 
-                                  resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
+                job_script, job_args, self.task_name)
+            # Handle both list and single Result objects
+            if isinstance(retval, (list, tuple)):
+                benchmark_data.extend(retval)
+            else:
+                benchmark_data.append(retval)
 
-        return benchmark_data
+        return self.collect_benchmark_data(statement_list, benchmark_data)
 
 
 class SubprocessSGEStrategy(SubprocessExecutorStrategy):
@@ -215,47 +255,44 @@ class SlurmExecutor(BaseExecutor):
         self.logger = logging.getLogger(__name__)
         self.task_name = "slurm_task"
         self.default_total_time = 10
+        self.queue = kwargs.get('queue')
         
-        # Initialize appropriate execution strategy
-        if kwargs.get("cluster_executor", "drmaa") == "drmaa":
-            try:
-                import drmaa
-                session = drmaa.Session()
-                session.initialize()
-                self.executor = DRMAAExecutorStrategy(
-                    session=session,
-                    queue_manager_cls=SlurmCluster,
-                    **kwargs)
-                self.logger.info("Using DRMAA-based execution")
-            except (ImportError, Exception) as e:
-                self.logger.warning(f"DRMAA initialization failed: {e}")
-                self.logger.warning("Falling back to subprocess-based execution")
-                self.executor = SubprocessSlurmStrategy(**kwargs)
-        else:
+        # Always try DRMAA first
+        try:
+            import drmaa
+            session = drmaa.Session()
+            session.initialize()
+            # Don't pass queue to DRMAACluster initialization
+            cluster_kwargs = {k: v for k, v in kwargs.items() if k != 'queue'}
+            self.executor = DRMAAExecutorStrategy(
+                session=session,
+                queue_manager_cls=SlurmCluster,
+                **cluster_kwargs)
+            self.logger.info("Using DRMAA-based execution")
+        except (ImportError, Exception) as e:
+            self.logger.warning(f"DRMAA initialization failed: {e}")
+            self.logger.warning("Falling back to subprocess-based execution")
             self.executor = SubprocessSlurmStrategy(**kwargs)
 
     def run(self, statement_list):
+        """Execute statements on the cluster."""
         benchmark_data = []
+
         for statement in statement_list:
-            self.logger.info(f"Running statement on Slurm: {statement}")
-
-            full_statement, job_path = self.build_job_script(statement)
-            
+            job_script = self.build_job_script(statement)
             job_args = {
-                'job_name': self.config.get('job_name', 'default_job'),
                 'job_memory': self.job_memory,
-                'job_threads': self.job_threads,
-                'output_path': f"{job_path}.o",
-                'error_path': f"{job_path}.e"
+                'job_threads': self.job_threads
             }
-            
             retval = self.executor.submit_and_monitor(
-                job_path, job_args, job_args['job_name'])
-            
-            benchmark_data.append(self.collect_benchmark_data([statement], 
-                                  resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
+                job_script, job_args, self.task_name)
+            # Handle both list and single Result objects
+            if isinstance(retval, (list, tuple)):
+                benchmark_data.extend(retval)
+            else:
+                benchmark_data.append(retval)
 
-        return benchmark_data
+        return self.collect_benchmark_data(statement_list, benchmark_data)
 
 
 class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
@@ -353,47 +390,44 @@ class TorqueExecutor(BaseExecutor):
         self.logger = logging.getLogger(__name__)
         self.task_name = "torque_task"
         self.default_total_time = 7
+        self.queue = kwargs.get('queue')  # Store queue for later use
         
-        # Initialize appropriate execution strategy
-        if kwargs.get("cluster_executor", "drmaa") == "drmaa":
-            try:
-                import drmaa
-                session = drmaa.Session()
-                session.initialize()
-                self.executor = DRMAAExecutorStrategy(
-                    session=session,
-                    queue_manager_cls=TorqueCluster,
-                    **kwargs)
-                self.logger.info("Using DRMAA-based execution")
-            except (ImportError, Exception) as e:
-                self.logger.warning(f"DRMAA initialization failed: {e}")
-                self.logger.warning("Falling back to subprocess-based execution")
-                self.executor = SubprocessTorqueStrategy(**kwargs)
-        else:
+        # Always try DRMAA first
+        try:
+            import drmaa
+            session = drmaa.Session()
+            session.initialize()
+            # Don't pass queue to DRMAACluster initialization
+            cluster_kwargs = {k: v for k, v in kwargs.items() if k != 'queue'}
+            self.executor = DRMAAExecutorStrategy(
+                session=session,
+                queue_manager_cls=TorqueCluster,
+                **cluster_kwargs)
+            self.logger.info("Using DRMAA-based execution")
+        except (ImportError, Exception) as e:
+            self.logger.warning(f"DRMAA initialization failed: {e}")
+            self.logger.warning("Falling back to subprocess-based execution")
             self.executor = SubprocessTorqueStrategy(**kwargs)
 
     def run(self, statement_list):
+        """Execute statements on the cluster."""
         benchmark_data = []
+
         for statement in statement_list:
-            self.logger.info(f"Running statement on Torque: {statement}")
-
-            full_statement, job_path = self.build_job_script(statement)
-            
+            job_script = self.build_job_script(statement)
             job_args = {
-                'job_name': self.config.get('job_name', 'default_job'),
                 'job_memory': self.job_memory,
-                'job_threads': self.job_threads,
-                'output_path': f"{job_path}.o",
-                'error_path': f"{job_path}.e"
+                'job_threads': self.job_threads
             }
-            
             retval = self.executor.submit_and_monitor(
-                job_path, job_args, job_args['job_name'])
-            
-            benchmark_data.append(self.collect_benchmark_data([statement], 
-                                  resource_usage=retval.resourceUsage if hasattr(retval, 'resourceUsage') else None))
+                job_script, job_args, self.task_name)
+            # Handle both list and single Result objects
+            if isinstance(retval, (list, tuple)):
+                benchmark_data.extend(retval)
+            else:
+                benchmark_data.append(retval)
 
-        return benchmark_data
+        return self.collect_benchmark_data(statement_list, benchmark_data)
 
 
 class SubprocessTorqueStrategy(SubprocessExecutorStrategy):

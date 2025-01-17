@@ -1415,11 +1415,16 @@ def run(statement,
     if return_stdout:
         try:
             output = subprocess.check_output(statement, shell=True, **kwargs)
+            if isinstance(output, bytes):
+                output = output.decode(encoding)
+            return output
         except subprocess.CalledProcessError as e:
             if on_error == "raise":
                 raise
             output = e.output
-        return output.decode(encoding)
+            if isinstance(output, bytes):
+                output = output.decode(encoding)
+            return output
 
     elif return_stderr:
         # expect that process fails
