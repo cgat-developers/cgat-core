@@ -307,13 +307,25 @@ class SlurmExecutor(BaseExecutor):
 class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
     """Subprocess-based execution strategy for SLURM."""
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.queue = kwargs.get('queue')
+    
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SLURM-specific submit command."""
-        return (f"sbatch --parsable "
-                f"--job-name={job_name} "
-                f"--output={job_args['output_path']} "
-                f"--error={job_args['error_path']} "
-                f"{job_script}")
+        cmd = [f"sbatch --parsable"]
+        
+        if self.queue:
+            cmd.append(f"--partition={self.queue}")
+            
+        cmd.extend([
+            f"--job-name={job_name}",
+            f"--output={job_args['output_path']}",
+            f"--error={job_args['error_path']}",
+            job_script
+        ])
+        
+        return " ".join(cmd)
     
     def _parse_job_id(self, submit_output):
         """Parse job ID from SLURM submission output."""
