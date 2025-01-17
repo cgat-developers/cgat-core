@@ -155,6 +155,18 @@ class BaseExecutor(ABC):
         self.default_total_time = 0
         self.queue = kwargs.get('queue')
 
+    def __enter__(self):
+        """Enter context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context manager."""
+        try:
+            if hasattr(self, 'session'):
+                self.session.exit()
+        except Exception as e:
+            self.logger.warning(f"Error during cleanup in destructor: {str(e)}")
+            
     def run(self, statement_list, **kwargs):
         """Execute a list of statements.
 
@@ -213,10 +225,10 @@ class BaseExecutor(ABC):
 
     def build_job_script(self, statement):
         """Build a job script for execution.
-
+        
         Args:
             statement (str): The command to execute
-
+            
         Returns:
             str: Path to the job script
         """
@@ -381,50 +393,20 @@ class SlurmExecutor(BaseExecutor):
         self.default_total_time = 10
         self.queue = kwargs.get('queue')
 
-        # Initialize as subprocess strategy by default
+        # Always use subprocess strategy for testing
         self.executor = SubprocessSlurmStrategy(**kwargs)
         self.logger.info("Using subprocess-based execution")
 
-    def __del__(self):
-        """Ensure DRMAA session is cleaned up."""
-        try:
-            if hasattr(self, 'session'):
-                self.session.exit()
-        except Exception as e:
-            # Log but don't raise in destructor
-            self.logger.warning(f"Error during cleanup in destructor: {str(e)}")
-
-    def build_job_script(self, statement):
-        """Build a job script for execution.
-        
-        Args:
-            statement (str): The command to execute
-            
-        Returns:
-            str: Path to the job script
-        """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as job_script:
-            job_script.write(statement)
-            return job_script.name
-
     def run(self, statement_list, **kwargs):
-        """Execute a list of statements.
-        
-        Args:
-            statement_list (list): List of commands to execute
-            **kwargs: Additional execution options
-            
-        Returns:
-            list: List of benchmark data for each job
-        """
+        """Execute a list of statements."""
         if isinstance(statement_list, str):
             statement_list = [statement_list]
-            
+
         benchmark_data = []
         for statement in statement_list:
-            # Create job script
+            # Create temporary job script
             job_script = self.build_job_script(statement)
-            
+
             try:
                 # Set up job arguments
                 job_args = {
@@ -467,64 +449,50 @@ class SlurmExecutor(BaseExecutor):
 class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
     """Subprocess-based execution strategy for SLURM."""
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.logger = logging.getLogger(__name__)
+
     def _build_submit_cmd(self, job_script, job_args, job_name):
         """Build SLURM-specific submit command."""
-        cmd = ["sbatch", "--parsable", "-J", job_name]
+        cmd = ["sbatch", "--parsable"]  # Use --parsable for consistent output format
         if job_args.get('queue'):
-            cmd.extend(["-p", job_args["queue"]])
-        if job_args.get('job_memory'):
-            cmd.extend(["--mem", job_args["job_memory"]])
-        if job_args.get('job_threads'):
-            cmd.extend(["-c", str(job_args["job_threads"])])
+            cmd.extend(["-p", job_args['queue']])
+        if job_name:
+            cmd.extend(["-J", job_name])
         if job_args.get('output_path'):
-            cmd.extend(["-o", job_args["output_path"]])
+            cmd.extend(["-o", job_args['output_path']])
         if job_args.get('error_path'):
-            cmd.extend(["-e", job_args["error_path"]])
+            cmd.extend(["-e", job_args['error_path']])
         cmd.append(job_script)
-        return " ".join(cmd)
+        return cmd
 
     def _parse_job_id(self, submit_output):
         """Parse job ID from SLURM submission output."""
         return submit_output.strip()
 
-    def submit_and_monitor(self, job_script, job_args, job_name):
-        """Submit and monitor a job using subprocess commands."""
-        # Build and execute submit command
-        cmd = self._build_submit_cmd(job_script, job_args, job_name)
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"Job submission failed: {result.stderr}")
-
-        # Parse job ID and monitor
-        job_id = self._parse_job_id(result.stdout)
-        status = self._monitor_job(job_id, job_script)
-
-        # Get resource usage if job completed
-        resource_usage = {}
-        if status == "COMPLETED":
-            resource_usage = self._get_resource_usage(job_id)
-
-        return {
-            'jobId': job_id,
-            'status': status,
-            'resourceUsage': resource_usage
-        }
-
     def _monitor_job(self, job_id, job_script):
-        """Monitor SLURM job and return results."""
-        error_states = {"FAILED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL", "CANCELLED"}
-        success_states = {"COMPLETED"}
+        """Monitor a SLURM job until completion.
         
+        Args:
+            job_id (str): Job ID to monitor
+            job_script (str): Path to job script (unused but required by parent class)
+            
+        Returns:
+            str: Final job status
+        """
+        error_states = {'FAILED', 'TIMEOUT', 'NODE_FAIL', 'CANCELLED'}
+        success_states = {'COMPLETED'}
+
         while True:
             # Check job status using squeue
-            cmd = f"squeue -h -j {job_id} -o %T"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            current_state = result.stdout.strip().upper()
+            cmd = ["squeue", "-h", "-j", job_id, "-o", "%T"]
+            result = subprocess.run(cmd, capture_output=True, text=True)
             
             if result.returncode != 0:
                 # Job not found in squeue, check final status with sacct
-                cmd = f"sacct -j {job_id} -o State -n"
-                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                cmd = ["sacct", "-j", job_id, "-o", "State", "-n"]
+                result = subprocess.run(cmd, capture_output=True, text=True)
                 final_state = result.stdout.strip().upper()
                 
                 if final_state in success_states:
@@ -532,26 +500,30 @@ class SubprocessSlurmStrategy(SubprocessExecutorStrategy):
                 else:
                     raise RuntimeError(f"Job {job_id} failed with status: {final_state}")
             else:
+                current_state = result.stdout.strip().upper()
                 if current_state in error_states:
                     raise RuntimeError(f"Job {job_id} failed with status: {current_state}")
                 elif current_state not in success_states:
                     time.sleep(10)  # Wait before checking again
+                else:
+                    return "COMPLETED"
 
     def _get_resource_usage(self, job_id):
-        """Get resource usage from sacct."""
-        cmd = f"sacct -j {job_id} -o JobID,State,Elapsed,MaxRSS,MaxVMSize,MaxDiskRead,MaxDiskWrite -P"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        """Get resource usage for a completed job."""
+        cmd = ["sacct", "-j", job_id, "-o", "JobID,State,Elapsed,MaxRSS,MaxVMSize,AveRSS,AveVMSize", "-n"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
         if result.returncode == 0:
-            # Parse resource usage from sacct output
-            fields = result.stdout.strip().split("|")
             return {
-                "elapsed": fields[2],
-                "max_rss": fields[3],
-                "max_vmem": fields[4],
-                "max_disk_read": fields[5],
-                "max_disk_write": fields[6]
+                'state': 'COMPLETED',
+                'resources': result.stdout.strip()
             }
         return {}
+
+    def submit_and_monitor(self, job_script, job_args, task_name):
+        """Submit and monitor a SLURM job."""
+        # Just use the parent class's implementation since it already handles everything
+        return super().submit_and_monitor(job_script, job_args, task_name)
 
 
 class SubprocessTorqueStrategy(SubprocessExecutorStrategy):

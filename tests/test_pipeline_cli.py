@@ -79,8 +79,8 @@ def test_slurm_job_monitoring_drmaa(mock_subprocess_run):
     """Test SLURM job monitoring with DRMAA if available, otherwise subprocess"""
     # Setup mock responses for subprocess-based execution
     mock_subprocess_run.side_effect = [
-        # Job submission
-        Mock(returncode=0, stdout="12345\n", stderr=""),
+        # Job submission (with --parsable flag)
+        Mock(returncode=0, stdout="12345", stderr=""),
         # First squeue check
         Mock(returncode=0, stdout="RUNNING\n", stderr=""),
         # Second squeue check (job completed)
@@ -96,7 +96,11 @@ def test_slurm_job_monitoring_drmaa(mock_subprocess_run):
 
     # Verify subprocess calls were made
     assert mock_subprocess_run.called
-    assert len(mock_subprocess_run.call_args_list) >= 3  # submission, status checks, and resource usage
+    assert len(mock_subprocess_run.call_args_list) >= 3
+
+    # Verify first call was sbatch with --parsable
+    first_call = mock_subprocess_run.call_args_list[0]
+    assert "--parsable" in first_call[0][0]
 
     # Verify benchmark data exists
     assert benchmark_data
@@ -107,8 +111,8 @@ def test_slurm_job_monitoring(mock_subprocess_run):
     """Test SLURM job monitoring with subprocess execution"""
     # Setup mock responses
     mock_subprocess_run.side_effect = [
-        # Job submission
-        Mock(returncode=0, stdout="12345\n", stderr=""),
+        # Job submission (with --parsable flag)
+        Mock(returncode=0, stdout="12345", stderr=""),
         # First squeue check
         Mock(returncode=0, stdout="RUNNING\n", stderr=""),
         # Second squeue check (job completed)
@@ -125,6 +129,10 @@ def test_slurm_job_monitoring(mock_subprocess_run):
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
     assert len(calls) >= 3
+
+    # Verify first call was sbatch with --parsable
+    first_call = calls[0]
+    assert "--parsable" in first_call[0][0]
 
     # Check that we got benchmark data
     assert benchmark_data
