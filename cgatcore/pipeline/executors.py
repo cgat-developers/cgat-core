@@ -179,17 +179,18 @@ class SlurmExecutor(BaseExecutor):
 
     def build_job_script(self, statement):
         """Custom build job script for Slurm."""
-        job_script_dir = self.config.get("job_script_dir", tempfile.gettempdir())
+        job_script_dir = self.config.get("job_script_dir", os.getcwd())
         os.makedirs(job_script_dir, exist_ok=True)
         
         # Generate a unique script name using timestamp
         timestamp = int(time.time())
-        script_path = os.path.join(job_script_dir, f"slurm_job_{timestamp}.sh")
+        script_name = f"slurm_job_{timestamp}"
+        script_path = os.path.join(job_script_dir, f"{script_name}.sh")
         
         # Get SLURM parameters from config or use defaults
         memory = self.config.get("memory", "4G")
         queue = self.config.get("queue", self.default_partition)
-        num_cpus = self.config.get("num_cpus", "1")
+        num_cpus = self.config.get("job_threads", self.config.get("num_cpus", "1"))
         runtime = self.config.get("runtime", "01:00:00")
         
         # Write SLURM script with proper headers
@@ -199,7 +200,14 @@ class SlurmExecutor(BaseExecutor):
             script_file.write(f"#SBATCH --mem={memory}\n")
             script_file.write(f"#SBATCH --cpus-per-task={num_cpus}\n")
             script_file.write(f"#SBATCH --time={runtime}\n")
-            script_file.write("#SBATCH --export=ALL\n\n")
+            script_file.write("#SBATCH --export=ALL\n")
+            script_file.write(f"#SBATCH --output={script_name}.out\n")
+            script_file.write(f"#SBATCH --error={script_name}.err\n\n")
+            
+            # Load required modules
+            script_file.write("# Load required modules\n")
+            script_file.write("module purge\n")
+            script_file.write("module load kallisto\n\n")
             
             # Add the actual command
             script_file.write(f"{statement}\n")
