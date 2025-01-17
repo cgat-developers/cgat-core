@@ -60,6 +60,7 @@ import datetime
 import logging
 import gevent
 import cgatcore.experiment as E
+from abc import ABC, abstractmethod
 
 try:
     import drmaa
@@ -79,7 +80,7 @@ GEVENT_TIMEOUT_SACCT = 5
 GEVENT_TIMEOUT_WAIT = 1
 
 
-class DRMAACluster(object):
+class DRMAACluster(ABC):
 
     # dictionary mapping resource usage fields returned by DRMAA
     # to a common set of names.
@@ -88,6 +89,11 @@ class DRMAACluster(object):
     def __init__(self, session, ignore_errors=False):
         self.session = session
         self.ignore_errors = ignore_errors
+
+    @abstractmethod
+    def get_sacct_command(self, job_id):
+        """Get command to fetch accounting data. Must be implemented by subclasses."""
+        pass
 
     def get_resource_usage(self, job_id, retval, hostname):
         """Get resource usage for a completed job.
@@ -122,21 +128,25 @@ class DRMAACluster(object):
             return self.parse_accounting_data(data, retval)
 
         # Fallback to sacct command if no DRMAA info available
-        statement = self.get_sacct_command(job_id)
-        stdout = E.run(statement, return_stdout=True).splitlines()
+        try:
+            statement = self.get_sacct_command(job_id)
+            stdout = E.run(statement, return_stdout=True).splitlines()
 
-        if len(stdout) != 2:
-            E.warning("expected 2 lines in %s, but got %i" %
-                      (statement, len(stdout)))
+            if len(stdout) != 2:
+                E.warning("expected 2 lines in %s, but got %i" %
+                          (statement, len(stdout)))
+                return {}
+
+            header = stdout[0].split("|")
+            values = stdout[1].split("|")
+            data = dict(
+                list(zip(header, values))
+            )
+
+            return self.parse_accounting_data(data, retval)
+        except NotImplementedError:
+            # If get_sacct_command is not implemented, return empty dict
             return {}
-
-        header = stdout[0].split("|")
-        values = stdout[1].split("|")
-        data = dict(
-            list(zip(header, values))
-        )
-
-        return self.parse_accounting_data(data, retval)
 
     def setup_drmaa_job_template(self,
                                  drmaa_session,
@@ -240,7 +250,7 @@ class DRMAACluster(object):
             resource_usage = self.get_resource_usage(job_id, retval, hostname)
         except (ValueError, KeyError, TypeError, IndexError) as ex:
             E.warn("could not collect resource usage for job {}: {}".format(job_id, ex))
-            retval.resourceUsage["hostname"] = hostname
+            retval = JobInfo(job_id, {"hostname": hostname})
             resource_usage = [retval]
 
         try:
@@ -250,7 +260,7 @@ class DRMAACluster(object):
                 ("temporary job file %s not present for "
                  "clean-up - ignored") % job_path)
 
-        return stdout, stderr, resource_usage
+        return stdout, stderr, [retval] if not isinstance(resource_usage, list) else resource_usage
 
     def get_drmaa_job_stdout_stderr(self, stdout_path, stderr_path,
                                     tries=5, encoding="utf-8"):
@@ -414,6 +424,10 @@ class SGECluster(DRMAACluster):
         "major_page_faults": "ru_majflt",
         "unshared_data": "ru_idrss"}
 
+    def get_sacct_command(self, job_id):
+        """SGE doesn't have an equivalent to sacct, use qacct instead."""
+        raise NotImplementedError("SGE does not support sacct-style accounting")
+
     def get_native_specification(self,
                                  job_name,
                                  job_memory,
@@ -473,6 +487,11 @@ class SlurmCluster(DRMAACluster):
         "average_uss": "AveRSS",
         "signal": "DerivedExitCode",
         "major_page_faults": "MaxPages"}
+
+    def get_sacct_command(self, job_id):
+        """Get command to fetch accounting data."""
+        return "sacct --noheader --units=K --parsable2 --format={} -j {} ".format(
+            ",".join(self.map_drmaa2benchmark_data.values()), job_id)
 
     def get_native_specification(self,
                                  job_name,
@@ -626,6 +645,10 @@ class SlurmCluster(DRMAACluster):
 
 class TorqueCluster(DRMAACluster):
 
+    def get_sacct_command(self, job_id):
+        """Get command to fetch accounting data."""
+        return "tracejob -v {} | grep -E '^Resources|exit_status'".format(job_id)
+
     def get_native_specification(self,
                                  job_name,
                                  job_memory,
@@ -675,6 +698,10 @@ class TorqueCluster(DRMAACluster):
 
 
 class PBSProCluster(DRMAACluster):
+
+    def get_sacct_command(self, job_id):
+        """Get command to fetch accounting data."""
+        return "tracejob -v {} | grep -E '^Resources|exit_status'".format(job_id)
 
     def get_native_specification(self,
                                  job_name,
