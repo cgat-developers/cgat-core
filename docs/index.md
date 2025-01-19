@@ -4,6 +4,7 @@
 ![Conda](https://img.shields.io/conda/v/bioconda/cgatcore.svg)
 ![Build Status](https://github.com/cgat-developers/cgat-core/actions/workflows/cgatcore_python.yml/badge.svg)
 
+
 Welcome to the CGAT-core documentation! CGAT-core is a powerful Python framework for building and executing computational pipelines, with robust support for cluster environments and cloud integration.
 
 ## Key Features
