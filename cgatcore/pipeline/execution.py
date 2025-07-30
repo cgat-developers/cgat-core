@@ -580,8 +580,11 @@ class Executor(object):
             elif self.job_memory:
                 self.job_total_memory = self.job_memory * self.job_threads
             else:
-                self.job_memory = get_params()["cluster"].get(
-                    "memory_default", "4G")
+                params = get_params()
+                if "cluster" in params:
+                    self.job_memory = params["cluster"].get("memory_default", "4G")
+                else:
+                    self.job_memory = "4G"
                 if self.job_memory == "unlimited":
                     self.job_total_memory = "unlimited"
                 else:
@@ -616,12 +619,21 @@ class Executor(object):
 
         self.monitor_interval_queued = kwargs.get('monitor_interval_queued', None)
         if self.monitor_interval_queued is None:
-            self.monitor_interval_queued = get_params()["cluster"].get(
-                'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT)
+            params = get_params()
+            if "cluster" in params:
+                self.monitor_interval_queued = params["cluster"].get(
+                    'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT)
+            else:
+                self.monitor_interval_queued = GEVENT_TIMEOUT_WAIT
+                
         self.monitor_interval_running = kwargs.get('monitor_interval_running', None)
         if self.monitor_interval_running is None:
-            self.monitor_interval_running = get_params()["cluster"].get(
-                'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
+            params = get_params()
+            if "cluster" in params:
+                self.monitor_interval_running = params["cluster"].get(
+                    'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
+            else:
+                self.monitor_interval_running = GEVENT_TIMEOUT_WAIT
         # Set up signal handlers for clean-up on interruption
         self.setup_signal_handlers()
 
@@ -756,16 +768,29 @@ class Executor(object):
 
             # create and set system scratch dir for temporary files
             tmpfile.write("umask 002\n")
-
-            cluster_tmpdir = get_params()["cluster_tmpdir"]
-
-            if self.run_on_cluster and cluster_tmpdir:
-                tmpdir = cluster_tmpdir
-                tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
-                tmpfile.write("export TMPDIR\n")
-            else:
-                tmpdir = get_temp_dir(dir=get_params()["tmpdir"],
-                                      clear=True)
+            
+            try:
+                # Get parameters safely
+                params = get_params()
+                # Check if cluster_tmpdir exists in params
+                cluster_tmpdir = params.get("cluster_tmpdir", None)
+                tmpdir = None
+                
+                if self.run_on_cluster and cluster_tmpdir:
+                    # Use cluster temp directory
+                    tmpdir = cluster_tmpdir
+                    tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
+                    tmpfile.write("export TMPDIR\n")
+                else:
+                    # Use local temp directory
+                    tmpdir_param = params.get("tmpdir", "/tmp")
+                    tmpdir = get_temp_dir(dir=tmpdir_param, clear=True)
+                    tmpfile.write("mkdir -p {}\n".format(tmpdir))
+                    tmpfile.write("export TMPDIR={}\n".format(tmpdir))
+            except Exception as e:
+                # Fallback to a local directory if there's any error
+                self.logger.warning(f"Error accessing tmpdir parameters: {str(e)}, using local directory")
+                tmpdir = get_temp_filename(root=".", suffix="")
                 tmpfile.write("mkdir -p {}\n".format(tmpdir))
                 tmpfile.write("export TMPDIR={}\n".format(tmpdir))
 
@@ -1096,7 +1121,9 @@ class GridExecutor(Executor):
 
         # submit statements to cluster individually.
         benchmark_data = []
-        jt = self.setup_job(self.options["cluster"])
+        # Handle missing 'cluster' key
+        cluster_options = self.options.get("cluster", {})
+        jt = self.setup_job(cluster_options)
 
         job_ids, filenames = [], []
         for statement in statement_list:
@@ -1137,32 +1164,56 @@ class GridExecutor(Executor):
         return benchmark_data
 
     def setup_job(self, options):
-
-        jt = self.queue_manager.setup_drmaa_job_template(
-            self.session,
-            job_name=self.job_name,
-            job_memory=self.job_memory,
-            job_threads=self.job_threads,
-            working_directory=self.work_dir,
-            **options)
-        self.logger.info("job-options: %s" % jt.nativeSpecification)
-        return jt
+        # Ensure options is a dictionary even if None was passed
+        if options is None:
+            options = {}
+            
+        # Log what we're doing to help debug cluster issues
+        self.logger.debug(f"Setting up job with name={self.job_name}, memory={self.job_memory}, threads={self.job_threads}")
+        
+        try:
+            jt = self.queue_manager.setup_drmaa_job_template(
+                self.session,
+                job_name=self.job_name,
+                job_memory=self.job_memory,
+                job_threads=self.job_threads,
+                working_directory=self.work_dir,
+                **options)
+            self.logger.info("job-options: %s" % jt.nativeSpecification)
+            return jt
+        except Exception as e:
+            # If we encounter any issues, log them but don't crash
+            self.logger.warning(f"Error setting up job template: {str(e)}, using default settings")
+            # Create minimal job template with required fields only
+            jt = self.queue_manager.setup_drmaa_job_template(
+                self.session,
+                job_name=self.job_name,
+                working_directory=self.work_dir)
+            return jt
 
     def wait_for_job_completion(self, job_ids):
+        # Set safe defaults in case intervals weren't properly initialized
+        monitor_interval_running = getattr(self, 'monitor_interval_running', GEVENT_TIMEOUT_WAIT)
+        monitor_interval_queued = getattr(self, 'monitor_interval_queued', GEVENT_TIMEOUT_WAIT)
 
         self.logger.info("waiting for %i jobs to finish " % len(job_ids))
         running_job_ids = set(job_ids)
         while running_job_ids:
             for job_id in list(running_job_ids):
-                status = self.session.jobStatus(job_id)
-                if status in (drmaa.JobState.DONE, drmaa.JobState.FAILED):
-                    running_job_ids.remove(job_id)
-                if status in (drmaa.JobState.RUNNING):
-                    # The drmaa documentation is unclear as to what gets returned
-                    # for a job array when tasks can be in different states
-                    gevent.sleep(self.monitor_interval_running)
-                else:
-                    gevent.sleep(self.monitor_interval_queued)
+                try:
+                    status = self.session.jobStatus(job_id)
+                    if status in (drmaa.JobState.DONE, drmaa.JobState.FAILED):
+                        running_job_ids.remove(job_id)
+                    if status in (drmaa.JobState.RUNNING):
+                        # The drmaa documentation is unclear as to what gets returned
+                        # for a job array when tasks can be in different states
+                        gevent.sleep(monitor_interval_running)
+                    else:
+                        gevent.sleep(monitor_interval_queued)
+                        break
+                except Exception as e:
+                    self.logger.warning(f"Error checking job status for {job_id}: {str(e)}")
+                    running_job_ids.remove(job_id)  # Remove to avoid infinite loop
                     break
 
 
@@ -1184,7 +1235,9 @@ class GridArrayExecutor(GridExecutor):
 
         full_statement, job_path = self.build_job_script(master_statement)
 
-        jt = self.setup_job(self.options["cluster"])
+        # Handle missing 'cluster' key
+        cluster_options = self.options.get("cluster", {})
+        jt = self.setup_job(cluster_options)
         stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
             jt, job_path)
 
@@ -1486,10 +1539,12 @@ def run(statement, **kwargs):
 
     # Insert parameters supplied through simplified interface such
     # as job_memory, job_options, job_queue
-    options['cluster']['options'] = options.get(
-        'job_options', options['cluster']['options'])
-    options['cluster']['queue'] = options.get(
-        'job_queue', options['cluster']['queue'])
+    # Handle case where 'cluster' key might not exist in options
+    if 'cluster' in options:
+        options['cluster']['options'] = options.get(
+            'job_options', options['cluster']['options'])
+        options['cluster']['queue'] = options.get(
+            'job_queue', options['cluster']['queue'])
     options['without_cluster'] = options.get('without_cluster')
 
     # SGE compatible job_name
