@@ -1531,8 +1531,19 @@ def run_workflow(args, argv=None, pipeline=None):
 
         # Generate default config files
         elif args.pipeline_action == "config":
-            pipeline_path = os.path.splitext(get_caller().__file__)[0]
+            # Use pipelinedir parameter which points to the actual pipeline directory
+            # This is more reliable than get_caller() which can return the wrong module
+            params = get_params()
+            if "pipelinedir" in params:
+                pipeline_path = os.path.join(params["pipelinedir"], os.path.basename(sys.argv[0]))
+                pipeline_path = os.path.splitext(pipeline_path)[0]
+            else:
+                # Fallback to the old method if pipelinedir isn't available
+                pipeline_path = os.path.splitext(get_caller().__file__)[0]
+            
             general_path = os.path.join(os.path.dirname(pipeline_path), "configuration")
+            logger.debug(f"Using pipeline path: {pipeline_path}")
+            logger.debug(f"Using general path: {general_path}")
             write_config_files(pipeline_path, general_path)
 
         # Clone pipeline structure
