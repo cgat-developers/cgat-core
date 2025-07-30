@@ -251,19 +251,72 @@ def write_config_files(pipeline_path, general_path):
     
     # If no config files were found or copied, raise an error
     if not found_files:
-        # Log detailed search information before raising error
-        logger.warning(f"Searched for config files {config_files} in: {search_paths}")
+        # No need to create default files, just focus on finding existing ones
         
-        # Check if any of the paths actually exist
-        existing_paths = [p for p in search_paths if os.path.isdir(p)]
+        # ENHANCED SEARCH: Try to find any directory with the script_basename name
+        # First in the immediate search paths, and then recursively if needed
+        module_dirs_to_check = []
         
-        if not existing_paths:
-            raise ValueError(
-                f"Could not find any valid configuration directories. "
-                f"Please ensure the pipeline module is correctly installed.")
-        else:
-            # Try listing contents of these directories for debugging
-            debug_info = []
+        # First check the script_dir and its parent for the module
+        for base_dir in [script_dir, os.path.dirname(script_dir)]:
+            # Walk only one level deep at first
+            logger.debug(f"Scanning for module directories in {base_dir}")
+            try:
+                for item in os.listdir(base_dir):
+                    item_path = os.path.join(base_dir, item)
+                    # Look for exact module name match
+                    if os.path.isdir(item_path) and item == script_basename:
+                        module_dirs_to_check.append(item_path)
+                        logger.debug(f"Found exact module match at {item_path}")
+            except Exception as e:
+                logger.debug(f"Error listing {base_dir}: {str(e)}")
+        
+        # If we found module dirs in the immediate search, check them first
+        for module_dir in module_dirs_to_check:
+            for config_file in config_files:
+                config_path = os.path.join(module_dir, config_file)
+                if os.path.exists(config_path):
+                    logger.info(f"Found config file in module directory: {config_path}")
+                    found_files.append(config_path)
+                    return found_files
+        
+        # Now try recursively searching in wider directories for config files
+        for base_path in paths:
+            if os.path.isdir(base_path):
+                logger.debug(f"Recursively searching in {base_path} for config files or module directories")
+                for root, dirs, files in os.walk(base_path, topdown=True):
+                    # Skip hidden directories and common exclude patterns
+                    dirs[:] = [d for d in dirs if not d.startswith('.')
+                               and d not in ('__pycache__', 'site-packages', '.git')]
+                    
+                    # Check if the current directory name matches the script basename (module name)
+                    # This would be a strong signal that it's the right module directory
+                    dir_name = os.path.basename(root)
+                    if dir_name == script_basename:
+                        logger.debug(f"Found directory matching module name: {root}")
+                        # Check if any config files exist here
+                        for config_file in config_files:
+                            full_path = os.path.join(root, config_file)
+                            if os.path.exists(full_path):
+                                logger.info(f"Found config file in module directory: {full_path}")
+                                found_files.append(full_path)
+                                return found_files
+                    
+                    # Also check for config files in the current directory
+                    for config_file in config_files:
+                        full_path = os.path.join(root, config_file)
+                        if os.path.exists(full_path):
+                            logger.info(f"Found config file via recursive search: {full_path}")
+                            found_files.append(full_path)
+                            return found_files
+        
+        # Log paths that were searched and what was found in them for debugging
+        existing_paths = [p for p in paths if os.path.isdir(p)]
+        logger.warning(f"Searched for config files {config_files} in: {existing_paths}")
+        
+        # Log the contents of first few directories for more detailed debugging
+        debug_info = []
+        if existing_paths:
             for path in existing_paths[:3]:  # Limit to first 3 for brevity
                 try:
                     contents = os.listdir(path)
@@ -1552,19 +1605,71 @@ def run_workflow(args, argv=None, pipeline=None):
         # Generate default config files
         elif args.pipeline_action == "config":
             # Use pipelinedir parameter which points to the actual pipeline directory
-            # This is more reliable than get_caller() which can return the wrong module
             params = get_params()
-            if "pipelinedir" in params:
-                pipeline_path = os.path.join(params["pipelinedir"], os.path.basename(sys.argv[0]))
-                pipeline_path = os.path.splitext(pipeline_path)[0]
-            else:
-                # Fallback to the old method if pipelinedir isn't available
-                pipeline_path = os.path.splitext(get_caller().__file__)[0]
             
-            general_path = os.path.join(os.path.dirname(pipeline_path), "configuration")
-            logger.debug(f"Using pipeline path: {pipeline_path}")
+            # First check if pipeline_yml is directly specified in params
+            if "pipeline_yml" in params and params["pipeline_yml"]:
+                # If pipeline_yml is already defined, we can use those files directly
+                logger.info(f"Using pipeline_yml from parameters: {params['pipeline_yml']}")
+                # Just need to verify they exist
+                for yml_file in params["pipeline_yml"]:
+                    if os.path.exists(yml_file):
+                        logger.info(f"Verified config file exists: {yml_file}")
+                    else:
+                        logger.warning(f"Config file specified in pipeline_yml does not exist: {yml_file}")
+                # No need to search further, as these files are explicitly defined
+                return
+            
+            # Determine the correct pipeline module name from sys.argv[0]
+            script_name = os.path.basename(sys.argv[0])
+            pipeline_name = os.path.splitext(script_name)[0]  # Remove extension
+            logger.debug(f"Pipeline script name: {script_name}")
+            logger.debug(f"Pipeline module name: {pipeline_name}")
+            
+            # Try different ways of resolving pipeline path
+            pipeline_paths = []
+            
+            # Method 1: Use pipelinedir + script name
+            if "pipelinedir" in params:
+                path1 = os.path.join(params["pipelinedir"], script_name)
+                path1 = os.path.splitext(path1)[0]
+                pipeline_paths.append(path1)
+                logger.debug(f"Resolved path 1: {path1}")
+                
+                # Also check for a direct module directory
+                module_dir = os.path.join(params["pipelinedir"], pipeline_name)
+                if os.path.isdir(module_dir):
+                    pipeline_paths.append(module_dir)
+                    logger.debug(f"Found direct module directory: {module_dir}")
+                    
+                    # Check if pipeline.yml exists in this module dir
+                    module_config = os.path.join(module_dir, "pipeline.yml")
+                    if os.path.exists(module_config):
+                        logger.info(f"Found module config at: {module_config}")
+                        # This is the expected location, so we prioritize it
+                        pipeline_paths.insert(0, module_dir)
+            
+            # Method 2: Fall back to get_caller()
+            path2 = os.path.splitext(get_caller().__file__)[0]
+            if path2 not in pipeline_paths:  # Avoid duplicates
+                pipeline_paths.append(path2)
+                logger.debug(f"Resolved path 2: {path2}")
+            
+            general_path = os.path.join(os.path.dirname(pipeline_paths[0]), "configuration")
             logger.debug(f"Using general path: {general_path}")
-            write_config_files(pipeline_path, general_path)
+            
+            # Try write_config_files with all potential paths
+            found_files = []
+            for path in pipeline_paths:
+                logger.debug(f"Attempting to write config files using path: {path}")
+                try:
+                    found = write_config_files(path, general_path)
+                    if found:
+                        found_files.extend(found)
+                        logger.debug(f"Successfully found config files using path: {path}")
+                        break
+                except ValueError as e:
+                    logger.debug(f"Failed to find config files using path: {path}\nError: {str(e)}")
 
         # Clone pipeline structure
         elif args.pipeline_action == "clone":
