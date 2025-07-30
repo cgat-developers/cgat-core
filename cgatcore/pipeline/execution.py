@@ -95,9 +95,31 @@ try:
     HAS_DRMAA = True
 except (ImportError, RuntimeError, OSError):
     HAS_DRMAA = False
+    drmaa = None
 
-# global drmaa session
+# global drmaa session - initialized lazily only when needed
 GLOBAL_SESSION = None
+
+def initialize_drmaa_session():
+    """Initialize DRMAA session only when needed.
+    Returns True if session initialization was successful, False otherwise.
+    """
+    global GLOBAL_SESSION
+    if GLOBAL_SESSION is not None:
+        return True  # Already initialized
+        
+    if not HAS_DRMAA:
+        return False  # DRMAA not available
+    
+    try:
+        get_logger().debug("Initializing DRMAA session")
+        GLOBAL_SESSION = drmaa.Session()
+        GLOBAL_SESSION.initialize()
+        return True
+    except Exception as e:
+        get_logger().warning(f"Could not initialize DRMAA session: {str(e)}")
+        GLOBAL_SESSION = None
+        return False
 
 # Timeouts for event loop
 GEVENT_TIMEOUT_STARTUP = 5
@@ -444,11 +466,22 @@ def get_executor(options=None):
     if options is None:
         options = get_params()
 
+    # Always use LocalExecutor for testing
     if options.get("testing", False):
         return LocalExecutor(**options)
+        
+    # Check if engine is set to local (e.g., when --local flag is used)
+    try:
+        params = get_params()
+        engine = params.get("engine", None)
+        if engine == "local":
+            return LocalExecutor(**options)
+    except Exception as e:
+        # Log but continue if we can't access params
+        get_logger().debug(f"Error checking engine parameter: {str(e)}")
 
     # Check if to_cluster is explicitly set to False
-    if not options.get("to_cluster", True):  # Defaults to True if not specified
+    if not options.get("to_cluster", True):
         return LocalExecutor(**options)
 
     queue_manager = options.get("cluster_queue_manager", None)
@@ -537,21 +570,42 @@ def join_statements(statements, infile, outfile=None):
 
 
 def will_run_on_cluster(options):
+    """Helper function to determine whether job will be executed on cluster
+
+    Arguments
+    ---------
+    options : dict
+        Dictionary of options.
+    """
+    
+    # Check global params to see if we're using local engine
+    # This ensures --local flag is properly respected
+    try:
+        params = get_params()
+        engine = params.get("engine", None)
+        if engine == "local":
+            return False
+    except Exception:
+        # If we can't get params, proceed with other checks
+        pass
+    
     # First check if we're explicitly running without cluster
     if options.get("without_cluster", False):
         return False
-        
+    
+    # Check if this specific task should run on cluster
     wants_cluster = options.get("to_cluster", True)
     
-    # Only raise error if DRMAA is required but not available
-    if wants_cluster and not HAS_DRMAA:
-        raise ValueError(
-            "Cluster execution requested (to_cluster=True) but DRMAA library is not available. "
-            "Please install drmaa package in your environment to enable cluster execution.")
+    # Skip DRMAA check if we don't want to use cluster
+    if not wants_cluster:
+        return False
     
-    return (wants_cluster 
-            and HAS_DRMAA 
-            and GLOBAL_SESSION is not None)
+    # Only raise error if DRMAA is required but not available
+    if not HAS_DRMAA:
+        # Rather than fail, just run locally when DRMAA is unavailable
+        return False
+        
+    return wants_cluster
 
 
 class Executor(object):
@@ -1071,9 +1125,27 @@ class GridExecutor(Executor):
 
     def __init__(self, **kwargs):
         Executor.__init__(self, **kwargs)
+        
+        # Check if we're explicitly set to run locally
+        try:
+            params = get_params()
+            engine = params.get("engine", None)
+            if engine == "local":
+                self.logger.warning("Local engine specified with GridExecutor. This is an error in executor selection.")
+                raise ValueError("GridExecutor used with local engine setting")
+        except Exception as e:
+            # Log but continue since this isn't the main DRMAA check
+            self.logger.debug(f"Error checking engine parameter: {str(e)}")
+        
+        # Initialize DRMAA session - required for cluster execution
+        if not initialize_drmaa_session():
+            # This is a hard error - we need DRMAA for cluster execution
+            error_msg = "Could not initialize DRMAA session. To run locally, use the --local flag."
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+            
+        # Get the global session now that it's initialized
         self.session = GLOBAL_SESSION
-        if self.session is None:
-            raise ValueError("no Grid Session found")
 
         # if running on cluster, use a working directory on shared drive
         self.work_dir_is_local = iotools.is_local(self.work_dir)
@@ -1083,6 +1155,7 @@ class GridExecutor(Executor):
         self.logger.info('task: pid={}, grid-session={}, work_dir={}'.format(
             pid, str(self.session), self.work_dir))
 
+        # Set up queue manager
         self.queue_manager = get_queue_manager(
             kwargs.get("cluster_queue_manager"),
             self.session,
@@ -1118,50 +1191,66 @@ class GridExecutor(Executor):
             shutil.rmtree(self.work_dir)
 
     def run(self, statement_list):
+        # At this point, self.session should be a valid DRMAA session
+        # The __init__ method should have already checked for local execution mode
+        # and raised an error if DRMAA was not available
+        
+        # Make sure we have a valid session
+        if self.session is None:
+            error_msg = "No DRMAA session available. Cannot execute on cluster. Use --local flag to run locally."
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        # Regular cluster execution path
+        try:
+            # submit statements to cluster individually.
+            benchmark_data = []
+            # Handle missing 'cluster' key
+            cluster_options = self.options.get("cluster", {})
+            jt = self.setup_job(cluster_options)
+            
+            job_ids, filenames = [], []
+            for statement in statement_list:
+                self.logger.info("running statement:\n%s" % statement)
 
-        # submit statements to cluster individually.
-        benchmark_data = []
-        # Handle missing 'cluster' key
-        cluster_options = self.options.get("cluster", {})
-        jt = self.setup_job(cluster_options)
+                full_statement, job_path = self.build_job_script(statement)
 
-        job_ids, filenames = [], []
-        for statement in statement_list:
-            self.logger.info("running statement:\n%s" % statement)
+                stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
+                    jt, job_path)
 
-            full_statement, job_path = self.build_job_script(statement)
+                job_id = self.session.runJob(jt)
+                job_ids.append(job_id)
+                filenames.append((job_path, stdout_path, stderr_path))
+                self.logger.info(
+                    "job has been submitted with job_id %s" % str(job_id))
+                # give back control for bulk submission
+                gevent.sleep(GEVENT_TIMEOUT_STARTUP)
 
-            stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
-                jt, job_path)
+            self.wait_for_job_completion(job_ids)
 
-            job_id = self.session.runJob(jt)
-            job_ids.append(job_id)
-            filenames.append((job_path, stdout_path, stderr_path))
-            self.logger.info(
-                "job has been submitted with job_id %s" % str(job_id))
-            # give back control for bulk submission
-            gevent.sleep(GEVENT_TIMEOUT_STARTUP)
+            # collect and clean up
+            for job_id, statement, paths in zip(job_ids,
+                                                statement_list,
+                                                filenames):
+                job_path, stdout_path, stderr_path = paths
+                stdout, stderr, resource_usage = self.queue_manager.collect_single_job_from_cluster(
+                    job_id,
+                    statement,
+                    stdout_path,
+                    stderr_path,
+                    job_path)
 
-        self.wait_for_job_completion(job_ids)
-
-        # collect and clean up
-        for job_id, statement, paths in zip(job_ids,
-                                            statement_list,
-                                            filenames):
-            job_path, stdout_path, stderr_path = paths
-            # TODO: collect timings from individual jobs
-            stdout, stderr, resource_usage = self.queue_manager.collect_single_job_from_cluster(
-                job_id,
-                statement,
-                stdout_path,
-                stderr_path,
-                job_path)
-
-            benchmark_data.extend(
-                self.collect_benchmark_data([statement],
-                                            resource_usage))
-        self.session.deleteJobTemplate(jt)
-        return benchmark_data
+                benchmark_data.extend(
+                    self.collect_benchmark_data([statement],
+                                                resource_usage))
+            self.session.deleteJobTemplate(jt)
+            return benchmark_data
+            
+        except Exception as e:
+            # Provide a clear error message
+            error_msg = f"Cluster execution failed: {str(e)}. To run locally, use the --local flag."
+            self.logger.error(error_msg)
+            raise RuntimeError(error_msg) from e
 
     def setup_job(self, options):
         # Ensure options is a dictionary even if None was passed
