@@ -1456,14 +1456,16 @@ def run_workflow(args, argv=None, pipeline=None):
             job_threads=args.multiprocess, 
             work_dir=params["work_dir"],
             without_cluster=params.get("without_cluster", False),
-            to_cluster=params.get("to_cluster", True))
+            to_cluster=params.get("to_cluster", True),
+            shell_logfile=args.shell_logfile)
     else:
         # Simple executor without cluster capabilities for non-job actions
         executor = Executor(
             job_threads=args.multiprocess, 
             work_dir=params["work_dir"],
             without_cluster=True,  # Force without_cluster for non-make actions
-            to_cluster=False)       # Disable cluster for non-make actions
+            to_cluster=False,       # Disable cluster for non-make actions
+            shell_logfile=args.shell_logfile)
     executor.setup_signal_handlers()  # Set up signal handlers for cleanup on interruption
 
     # Determine tasks to force-run if specified
