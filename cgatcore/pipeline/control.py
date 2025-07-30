@@ -1611,14 +1611,29 @@ def run_workflow(args, argv=None, pipeline=None):
             if "pipeline_yml" in params and params["pipeline_yml"]:
                 # If pipeline_yml is already defined, we can use those files directly
                 logger.info(f"Using pipeline_yml from parameters: {params['pipeline_yml']}")
-                # Just need to verify they exist
+                
+                found_files = []
+                # Verify they exist and copy them to current directory
                 for yml_file in params["pipeline_yml"]:
                     if os.path.exists(yml_file):
                         logger.info(f"Verified config file exists: {yml_file}")
+                        
+                        # Copy to current directory if it doesn't exist
+                        dest_file = os.path.join(os.getcwd(), os.path.basename(yml_file))
+                        if not os.path.exists(dest_file):
+                            try:
+                                shutil.copy(yml_file, dest_file)
+                                logger.info(f"Copied {yml_file} to {dest_file}")
+                                found_files.append(dest_file)
+                            except Exception as e:
+                                logger.warning(f"Could not copy {yml_file} to current directory: {str(e)}")
+                        else:
+                            logger.info(f"Config file already exists in current directory: {dest_file}")
+                            found_files.append(dest_file)
                     else:
                         logger.warning(f"Config file specified in pipeline_yml does not exist: {yml_file}")
-                # No need to search further, as these files are explicitly defined
-                return
+                        
+                return found_files
             
             # Determine the correct pipeline module name from sys.argv[0]
             script_name = os.path.basename(sys.argv[0])
