@@ -674,8 +674,22 @@ class Executor(object):
 
         self.options = kwargs
 
-        self.work_dir = get_params()["work_dir"]
-
+        # Get work_dir with fallbacks to handle missing parameter more gracefully
+        try:
+            params = get_params()
+            # Try to get work_dir from params
+            self.work_dir = params.get("work_dir", None)
+            # If not found, use current directory
+            if self.work_dir is None:
+                self.work_dir = os.getcwd()
+                self.logger.debug(f"work_dir parameter not found, using current directory: {self.work_dir}")
+            else:
+                self.logger.debug(f"Using work_dir from params: {self.work_dir}")
+        except Exception as e:
+            self.logger.warning(f"Error getting work_dir parameter: {str(e)}")
+            self.work_dir = os.getcwd()
+            self.logger.debug(f"Using current directory as work_dir: {self.work_dir}")
+            
         self.shellfile = kwargs.get("shell_logfile", None)
         if self.shellfile:
             if not self.shellfile.startswith(os.sep):
