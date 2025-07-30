@@ -59,6 +59,18 @@ jobs:
           pip list
           openssl version
 
+      - name: Create template.yml for tests
+        run: |
+          echo "# Configuration for template pipeline tests" > tests/template.yml
+          echo "" >> tests/template.yml
+          echo "# Parameters for random number generation" >> tests/template.yml
+          echo "mu: 0" >> tests/template.yml
+          echo "sigma: 1" >> tests/template.yml
+          echo "num_samples: 100" >> tests/template.yml
+          echo "" >> tests/template.yml
+          echo "# Parameter for filtering" >> tests/template.yml
+          echo "min_value: 0" >> tests/template.yml
+
       - name: Test
         shell: bash -l {0}
         run: |
