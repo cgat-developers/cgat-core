@@ -45,6 +45,9 @@ jobs:
           channel-priority: true
           activate-environment: cgat-core
           environment-file: conda/environments/cgat-core.yml
+          auto-update-conda: true
+          use-mamba: true
+          miniforge-variant: Mambaforge
 
       - name: Configure Conda Paths
         run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
