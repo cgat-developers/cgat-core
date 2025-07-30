@@ -86,6 +86,7 @@ jobs:
                     mkdocstrings==0.24.0 \
                     mkdocstrings-python==1.7.3 \
                     pymdown-extensions==10.3 \
+                    mkdocs-autorefs==0.5.0 \
                     mkdocs-material[imaging]
 
       - name: Build and Deploy MkDocs Site
