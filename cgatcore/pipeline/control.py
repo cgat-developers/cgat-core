@@ -1297,6 +1297,13 @@ def run_workflow(args, argv=None, pipeline=None):
             start_session()
             try:
                 # Run pipeline and catch any errors
+                # Ensure parameters are initialized before multiprocessing
+                if args.multiprocess is not None and args.multiprocess > 1:
+                    # Force parameters to be available to child processes
+                    from cgatcore.pipeline.parameters import PARAMS
+                    # Access parameters to ensure they're loaded
+                    dummy = PARAMS.get("dummy", None)
+
                 ruffus.pipeline_run(
                     args.pipeline_targets, forcedtorun_tasks=forcedtorun_tasks,
                     logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
