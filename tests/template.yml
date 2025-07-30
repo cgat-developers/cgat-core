@@ -1,0 +1,9 @@
+# Configuration for template pipeline tests
+
+# Parameters for random number generation
+mu: 0
+sigma: 1
+num_samples: 100
+
+# Parameter for filtering
+min_value: 0
