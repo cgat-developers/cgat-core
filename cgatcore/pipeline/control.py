@@ -136,67 +136,85 @@ def write_config_files(pipeline_path, general_path):
     
     The function searches in the following locations (in order):
     1. Current directory (skips if file already exists)
-    2. Directory containing the pipeline script
-    3. General configuration directory
-    4. Common naming conventions for config directories
-    5. Special module-based structures
+    2. Module directory with same name as the script (preferred convention)
+    3. Directory containing the pipeline script
+    4. Common configuration directories (config, conf, etc.)
+    5. Other fallback locations
     '''
     
     # Get logger
     logger = logging.getLogger("cgatcore.pipeline")
     logger.debug(f"Looking for config files using pipeline_path={pipeline_path}")
     
-    # Get paths where config files might be located
-    paths = []
-    
-    # First check the provided paths
-    if pipeline_path:
-        paths.append(pipeline_path)
-        
-        # Also check for a 'config' or 'conf' directory next to the pipeline script
-        script_dir = os.path.dirname(pipeline_path)
-        for config_dirname in ['config', 'conf', 'configuration']:
-            config_path = os.path.join(script_dir, config_dirname)
-            if os.path.isdir(config_path):
-                paths.append(config_path)
-    
-    if general_path and os.path.isdir(general_path):
-        paths.append(general_path)
-    
-    # Get script name and directory info
+    # Get script name and directory info first (needed for module directory search)
     script_name = os.path.basename(pipeline_path)
     script_basename = os.path.splitext(script_name)[0]  # Remove extension
     script_dir = os.path.dirname(pipeline_path)
     
-    # PRIMARY: Check for module directory with same name as the script
+    # Store all potential config paths to search in order of priority
+    paths = []
+    
+    # PRIMARY: Look for module directory with same name as the script
     # This is the primary convention: pipeline_xyz.py should have configs in pipeline_xyz/
     module_dir = os.path.join(script_dir, script_basename)
     if os.path.isdir(module_dir):
         # Add this as the first path in the list (highest priority)
-        paths.insert(0, module_dir)
-        logger.debug(f"Found primary config directory at {module_dir}")
+        paths.append(module_dir)
+        logger.debug(f"Found primary module directory at {module_dir}")
     else:
-        logger.debug(f"Primary config directory not found at {module_dir}")
+        logger.debug(f"Primary module directory not found at {module_dir}")
         
-    # FALLBACKS: Only used if the primary convention doesn't yield results
-    
-    # 1. Check script's own directory
-    paths.append(script_dir)
-    
-    # 2. Check for conventional config directory names
-    if script_basename.startswith('pipeline_'):
-        # Get base name without 'pipeline_' prefix
-        base_name = script_basename[len('pipeline_'):]
+        # Try parent directory as well for different repository structures
+        parent_dir = os.path.dirname(script_dir)
+        parent_module_dir = os.path.join(parent_dir, script_basename)
+        if os.path.isdir(parent_module_dir):
+            paths.append(parent_module_dir)
+            logger.debug(f"Found module directory in parent at {parent_module_dir}")
+        else:
+            logger.debug(f"Module directory not found in parent at {parent_module_dir}")
         
         # Check for directory with just the base name (without pipeline_ prefix)
-        base_dir = os.path.join(script_dir, base_name)
-        if os.path.isdir(base_dir):
-            paths.append(base_dir)
+        if script_basename.startswith('pipeline_'):
+            base_name = script_basename[len('pipeline_'):]
+            base_dir = os.path.join(script_dir, base_name)
+            if os.path.isdir(base_dir):
+                paths.append(base_dir)
+                logger.debug(f"Found base name directory at {base_dir}")
     
-    # 3. Parent directory as a last resort
+    # SECONDARY: Add other standard locations
+    # Add the pipeline path itself
+    if pipeline_path:
+        paths.append(pipeline_path)
+        logger.debug(f"Added pipeline path: {pipeline_path}")
+    
+    # Check for standard config directories
+    for config_dirname in ['config', 'conf', 'configuration']:
+        config_path = os.path.join(script_dir, config_dirname)
+        if os.path.isdir(config_path):
+            paths.append(config_path)
+            logger.debug(f"Added config directory: {config_path}")
+    
+    # Add general configuration path if provided
+    if general_path and os.path.isdir(general_path):
+        paths.append(general_path)
+        logger.debug(f"Added general path: {general_path}")
+    
+    # Add script's own directory as last resort
+    paths.append(script_dir)
+    logger.debug(f"Added script directory: {script_dir}")
+    
+    # Remove any duplicate paths while preserving order
+    unique_paths = []
+    for path in paths:
+        if path not in unique_paths:
+            unique_paths.append(path)
+    paths = unique_paths
+    
+    # Last resort: Parent directory if not already added
     parent_dir = os.path.dirname(script_dir)
-    if parent_dir and parent_dir != script_dir:
+    if parent_dir and parent_dir != script_dir and parent_dir not in paths:
         paths.append(parent_dir)
+        logger.debug(f"Added parent directory as last resort: {parent_dir}")
     
     # Standard config files to look for
     config_files = ['pipeline.yml']
@@ -241,7 +259,7 @@ def write_config_files(pipeline_path, general_path):
         
         if not existing_paths:
             raise ValueError(
-                f"Could not find any valid configuration directories. " +
+                f"Could not find any valid configuration directories. "
                 f"Please ensure the pipeline module is correctly installed.")
         else:
             # Try listing contents of these directories for debugging
@@ -249,15 +267,17 @@ def write_config_files(pipeline_path, general_path):
             for path in existing_paths[:3]:  # Limit to first 3 for brevity
                 try:
                     contents = os.listdir(path)
-                    debug_info.append(f"{path} contains: {contents[:5]}" + 
-                                     ("..." if len(contents) > 5 else ""))
+                    debug_info.append(
+                        f"{path} contains: {contents[:5]}" 
+                        + ("..." if len(contents) > 5 else "")
+                    )
                 except Exception:
                     debug_info.append(f"{path} (could not list contents)")
             
             raise ValueError(
-                f"Could not find any of these config files: {config_files}\n" +
-                f"Searched in: {existing_paths}\n" +
-                f"Directory contents: {debug_info}\n" +
+                f"Could not find any of these config files: {config_files}\n"
+                f"Searched in: {existing_paths}\n"
+                f"Directory contents: {debug_info}\n"
                 f"Please ensure config files exist in one of these locations.")
     
     # Return list of files that were found/created
