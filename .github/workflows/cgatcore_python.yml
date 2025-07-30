@@ -35,14 +35,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge,bioconda,defaults
           channel-priority: true
-          miniforge-variant: Mambaforge
-          use-mamba: true
+          activate-environment: base
 
       - name: Create cgat-core environment
         shell: bash -l {0}
         run: |
-          mamba env create -f conda/environments/cgat-core.yml -n cgat-core
-          mamba init bash
+          conda env create -f conda/environments/cgat-core.yml -n cgat-core
+          conda init bash
           echo "conda activate cgat-core" >> ~/.bashrc
 
       - name: Configure Conda Paths
