@@ -470,22 +470,31 @@ def get_executor(options=None):
 
     # Always use LocalExecutor for testing
     if options.get("testing", False):
+        get_logger().debug("Using LocalExecutor because testing=True")
         return LocalExecutor(**options)
-        
-    # Check if engine is set to local (e.g., when --local flag is used)
+
+    # First check: --local flag sets engine to "local" in params
+    # This must be the highest priority
     try:
         params = get_params()
         engine = params.get("engine", None)
         if engine == "local":
+            get_logger().debug("Using LocalExecutor because engine=local in params (--local flag)")
             return LocalExecutor(**options)
     except Exception as e:
-        # Log but continue if we can't access params
         get_logger().debug(f"Error checking engine parameter: {str(e)}")
 
-    # Check if to_cluster is explicitly set to False
+    # Second check: to_cluster is explicitly set to False in options
     if not options.get("to_cluster", True):
+        get_logger().debug("Using LocalExecutor because to_cluster=False in options")
         return LocalExecutor(**options)
 
+    # Third check: without_cluster is True (another way --local can be specified)
+    if options.get("without_cluster", False):
+        get_logger().debug("Using LocalExecutor because without_cluster=True in options")
+        return LocalExecutor(**options)
+        
+    # Only check for cluster executors if we've determined we should use the cluster
     queue_manager = options.get("cluster_queue_manager", None)
 
     # Check for KubernetesExecutor
@@ -1668,9 +1677,24 @@ def run(statement, **kwargs):
             logger.info("Dry-run: {}".format(statement))
         return []
 
-    # Use get_executor to get the appropriate executor
-    executor = get_executor(options)  # Updated to use get_executor
-
+    # CRITICAL CHECK: If engine is set to local, ensure we don't try to use cluster
+    # This is a double-safety check since get_executor should already handle this
+    try:
+        params = get_params()
+        if params.get("engine", None) == "local":
+            logger.debug("Using LocalExecutor (from run) because engine=local in params")
+            executor = LocalExecutor(**options)
+        elif options.get("without_cluster", False):
+            logger.debug("Using LocalExecutor (from run) because without_cluster=True")
+            executor = LocalExecutor(**options)
+        else:
+            # Only call get_executor if we're not explicitly set to run locally
+            logger.debug("Selecting executor via get_executor")
+            executor = get_executor(options)
+    except Exception as e:
+        logger.warning(f"Error checking execution mode, defaulting to get_executor: {str(e)}")
+        executor = get_executor(options)
+    
     # Execute statement list within the context of the executor
     with executor as e:
         benchmark_data = e.run(statement_list)
