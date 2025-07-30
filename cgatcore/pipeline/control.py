@@ -130,26 +130,138 @@ def get_param_output(options=None):
 
 def write_config_files(pipeline_path, general_path):
     '''create default configuration files in `path`.
+    
+    This function searches for configuration files in various locations
+    and copies them to the current directory if they don't already exist.
+    
+    The function searches in the following locations (in order):
+    1. Current directory (skips if file already exists)
+    2. Directory containing the pipeline script
+    3. General configuration directory
+    4. Common naming conventions for config directories
+    5. Special module-based structures
     '''
-
-    paths = [pipeline_path, general_path]
+    
+    # Get logger
+    logger = E.get_logger()
+    logger.debug(f"Looking for config files using pipeline_path={pipeline_path}")
+    
+    # Get paths where config files might be located
+    paths = []
+    
+    # First check the provided paths
+    if pipeline_path:
+        paths.append(pipeline_path)
+        
+        # Also check for a 'config' or 'conf' directory next to the pipeline script
+        script_dir = os.path.dirname(pipeline_path)
+        for config_dirname in ['config', 'conf', 'configuration']:
+            config_path = os.path.join(script_dir, config_dirname)
+            if os.path.isdir(config_path):
+                paths.append(config_path)
+    
+    if general_path and os.path.isdir(general_path):
+        paths.append(general_path)
+    
+    # Get script name and directory info
+    script_name = os.path.basename(pipeline_path)
+    script_basename = os.path.splitext(script_name)[0]  # Remove extension
+    script_dir = os.path.dirname(pipeline_path)
+    
+    # PRIMARY: Check for module directory with same name as the script
+    # This is the primary convention: pipeline_xyz.py should have configs in pipeline_xyz/
+    module_dir = os.path.join(script_dir, script_basename)
+    if os.path.isdir(module_dir):
+        # Add this as the first path in the list (highest priority)
+        paths.insert(0, module_dir)
+        logger.debug(f"Found primary config directory at {module_dir}")
+    else:
+        logger.debug(f"Primary config directory not found at {module_dir}")
+        
+    # FALLBACKS: Only used if the primary convention doesn't yield results
+    
+    # 1. Check script's own directory
+    paths.append(script_dir)
+    
+    # 2. Check for conventional config directory names
+    if script_basename.startswith('pipeline_'):
+        # Get base name without 'pipeline_' prefix
+        base_name = script_basename[len('pipeline_'):]
+        
+        # Check for directory with just the base name (without pipeline_ prefix)
+        base_dir = os.path.join(script_dir, base_name)
+        if os.path.isdir(base_dir):
+            paths.append(base_dir)
+    
+    # 3. Parent directory as a last resort
+    parent_dir = os.path.dirname(script_dir)
+    if parent_dir and parent_dir != script_dir:
+        paths.append(parent_dir)
+    
+    # Standard config files to look for
     config_files = ['pipeline.yml']
-
+    
+    # Track search results for better error reporting
+    found_files = []
+    search_paths = []
+    
+    # Check if files already exist in current directory
     for dest in config_files:
         if os.path.exists(dest):
-            E.warn("file `%s` already exists - skipped" % dest)
+            E.warn(f"file `{dest}` already exists - skipped")
+            found_files.append(dest)
             continue
-
+            
+        # Try to find the config file in various locations
         for path in paths:
+            if not os.path.isdir(path):
+                continue
+                
+            search_paths.append(path)
             src = os.path.join(path, dest)
             if os.path.exists(src):
-                shutil.copyfile(src, dest)
-                E.info("created new configuration file `%s` " % dest)
-                break
+                try:
+                    shutil.copyfile(src, dest)
+                    E.info(f"Created new configuration file `{dest}` copied from {src}")
+                    found_files.append(dest)
+                    break
+                except (IOError, OSError) as e:
+                    E.warn(f"Failed to copy {src} to {dest}: {str(e)}")
         else:
+            # Continue to next config file if this one wasn't found
+            continue
+    
+    # If no config files were found or copied, raise an error
+    if not found_files:
+        # Log detailed search information before raising error
+        E.warn(f"Searched for config files {config_files} in: {search_paths}")
+        
+        # Check if any of the paths actually exist
+        existing_paths = [p for p in search_paths if os.path.isdir(p)]
+        
+        if not existing_paths:
             raise ValueError(
-                "default config file `%s` not found in %s" %
-                (config_files, paths))
+                f"Could not find any valid configuration directories. " +
+                f"Please ensure the pipeline module is correctly installed.")
+        else:
+            # Try listing contents of these directories for debugging
+            debug_info = []
+            for path in existing_paths[:3]:  # Limit to first 3 for brevity
+                try:
+                    contents = os.listdir(path)
+                    debug_info.append(f"{path} contains: {contents[:5]}" + 
+                                     ("..." if len(contents) > 5 else ""))
+                except Exception:
+                    debug_info.append(f"{path} (could not list contents)")
+            
+            raise ValueError(
+                f"Could not find any of these config files: {config_files}\n" +
+                f"Searched in: {existing_paths}\n" +
+                f"Directory contents: {debug_info}\n" +
+                f"Please ensure config files exist in one of these locations.")
+    
+    # Return list of files that were found/created
+    return found_files
 
 
 def print_config_files():
