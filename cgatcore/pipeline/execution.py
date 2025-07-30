@@ -695,6 +695,23 @@ class Executor(object):
             if not self.shellfile.startswith(os.sep):
                 self.shellfile = os.path.join(
                     self.work_dir, os.path.basename(self.shellfile))
+            
+            # Ensure directory exists for shell log file
+            shell_dir = os.path.dirname(self.shellfile)
+            if shell_dir and not os.path.exists(shell_dir):
+                try:
+                    os.makedirs(shell_dir, exist_ok=True)
+                    self.logger.debug(f"Created directory for shell log: {shell_dir}")
+                except OSError as e:
+                    self.logger.warning(f"Could not create directory for shell log: {str(e)}")
+                    
+            # Create an empty shell log file to ensure it exists
+            try:
+                with open(self.shellfile, 'a'):
+                    pass
+                self.logger.debug(f"Initialized shell log file: {self.shellfile}")
+            except OSError as e:
+                self.logger.warning(f"Could not initialize shell log file: {str(e)}")
 
         self.monitor_interval_queued = kwargs.get('monitor_interval_queued', None)
         if self.monitor_interval_queued is None:
