@@ -1262,11 +1262,23 @@ def run_workflow(args, argv=None, pipeline=None):
 
     # Instantiate Executor to manage job tracking and cleanup
     params = get_params()
-    executor = Executor(
-        job_threads=args.multiprocess, 
-        work_dir=params["work_dir"],
-        without_cluster=params.get("without_cluster", False),
-        to_cluster=params.get("to_cluster", True))
+    
+    # Only check for cluster capabilities when running 'make' action
+    # For other actions like 'config', 'show', etc., don't require DRMAA
+    if args.pipeline_action == "make":
+        # Full executor with potential cluster capabilities for running jobs
+        executor = Executor(
+            job_threads=args.multiprocess, 
+            work_dir=params["work_dir"],
+            without_cluster=params.get("without_cluster", False),
+            to_cluster=params.get("to_cluster", True))
+    else:
+        # Simple executor without cluster capabilities for non-job actions
+        executor = Executor(
+            job_threads=args.multiprocess, 
+            work_dir=params["work_dir"],
+            without_cluster=True,  # Force without_cluster for non-make actions
+            to_cluster=False)       # Disable cluster for non-make actions
     executor.setup_signal_handlers()  # Set up signal handlers for cleanup on interruption
 
     # Determine tasks to force-run if specified
