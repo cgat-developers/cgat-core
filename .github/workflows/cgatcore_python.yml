@@ -35,14 +35,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge,bioconda,defaults
           channel-priority: true
-          activate-environment: base
+          activate-environment: cgat-core-env
+          environment-file: conda/environments/cgat-core.yml
 
-      - name: Create cgat-core environment
+      - name: Verify conda environment
         shell: bash -l {0}
         run: |
-          conda env create -f conda/environments/cgat-core.yml -n cgat-core
-          conda init bash
-          echo "conda activate cgat-core" >> ~/.bashrc
+          conda info
+          conda list
 
       - name: Configure Conda Paths
         run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
@@ -61,7 +61,6 @@ jobs:
       - name: Test
         shell: bash -l {0}
         run: |
-          conda activate cgat-core
           pip install .
           ./all-tests.sh
 
