@@ -143,7 +143,7 @@ def write_config_files(pipeline_path, general_path):
     '''
     
     # Get logger
-    logger = E.get_logger()
+    logger = logging.getLogger("cgatcore.pipeline")
     logger.debug(f"Looking for config files using pipeline_path={pipeline_path}")
     
     # Get paths where config files might be located
@@ -208,7 +208,7 @@ def write_config_files(pipeline_path, general_path):
     # Check if files already exist in current directory
     for dest in config_files:
         if os.path.exists(dest):
-            E.warn(f"file `{dest}` already exists - skipped")
+            logger.warning(f"file `{dest}` already exists - skipped")
             found_files.append(dest)
             continue
             
@@ -222,11 +222,11 @@ def write_config_files(pipeline_path, general_path):
             if os.path.exists(src):
                 try:
                     shutil.copyfile(src, dest)
-                    E.info(f"Created new configuration file `{dest}` copied from {src}")
+                    logger.info(f"Created new configuration file `{dest}` copied from {src}")
                     found_files.append(dest)
                     break
                 except (IOError, OSError) as e:
-                    E.warn(f"Failed to copy {src} to {dest}: {str(e)}")
+                    logger.warning(f"Failed to copy {src} to {dest}: {str(e)}")
         else:
             # Continue to next config file if this one wasn't found
             continue
@@ -234,7 +234,7 @@ def write_config_files(pipeline_path, general_path):
     # If no config files were found or copied, raise an error
     if not found_files:
         # Log detailed search information before raising error
-        E.warn(f"Searched for config files {config_files} in: {search_paths}")
+        logger.warning(f"Searched for config files {config_files} in: {search_paths}")
         
         # Check if any of the paths actually exist
         existing_paths = [p for p in search_paths if os.path.isdir(p)]
