@@ -100,6 +100,7 @@ except (ImportError, RuntimeError, OSError):
 # global drmaa session - initialized lazily only when needed
 GLOBAL_SESSION = None
 
+
 def initialize_drmaa_session():
     """Initialize DRMAA session only when needed.
     Returns True if session initialization was successful, False otherwise.
@@ -120,6 +121,7 @@ def initialize_drmaa_session():
         get_logger().warning(f"Could not initialize DRMAA session: {str(e)}")
         GLOBAL_SESSION = None
         return False
+
 
 # Timeouts for event loop
 GEVENT_TIMEOUT_STARTUP = 5
