@@ -1297,13 +1297,27 @@ def run_workflow(args, argv=None, pipeline=None):
             start_session()
             try:
                 # Run pipeline and catch any errors
-                # Ensure parameters are initialized before multiprocessing
+                # Properly prepare for multiprocessing by explicitly handling parameters
+                from cgatcore.pipeline.parameters import PARAMS, HAVE_INITIALIZED
+                
+                # Force parameter loading before starting multiprocessing
+                # Ensure parameters are initialized and will be available to child processes
                 if args.multiprocess is not None and args.multiprocess > 1:
-                    # Force parameters to be available to child processes
-                    from cgatcore.pipeline.parameters import PARAMS
-                    # Access parameters to ensure they're loaded
-                    dummy = PARAMS.get("dummy", None)
-
+                    # Log parameters initialization status
+                    logger.debug(f"Parameters initialized: {HAVE_INITIALIZED}")
+                    logger.debug(f"Number of parameters: {len(PARAMS)}")
+                    
+                    # For macOS compatibility, we need to ensure parameters are properly
+                    # loaded before multiprocessing starts. Instead of accessing specific
+                    # parameters, we'll ensure the parameter system itself is initialized.
+                    if len(PARAMS) > 0:
+                        # Access a few common parameters if they exist, but don't require specific ones
+                        for key in list(PARAMS.keys())[:5]:  # Just access the first few parameters
+                            logger.debug(f"Parameter '{key}' loaded")
+                    else:
+                        # If no parameters were loaded, log a warning
+                        logger.warning("No pipeline parameters found. This might cause issues with multiprocessing.")
+                
                 ruffus.pipeline_run(
                     args.pipeline_targets, forcedtorun_tasks=forcedtorun_tasks,
                     logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
