@@ -81,10 +81,11 @@ jobs:
 
       - name: Install MkDocs and Dependencies
         run: |
-          pip install mkdocs \
-                    mkdocs-material \
-                    mkdocstrings[python] \
-                    pymdown-extensions \
+          pip install mkdocs==1.5.3 \
+                    mkdocs-material==9.4.6 \
+                    mkdocstrings==0.24.0 \
+                    mkdocstrings-python==1.7.3 \
+                    pymdown-extensions==10.3 \
                     mkdocs-material[imaging]
 
       - name: Build and Deploy MkDocs Site
