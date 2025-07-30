@@ -48,6 +48,8 @@ jobs:
           auto-update-conda: true
           use-mamba: true
           miniforge-variant: Mambaforge
+          auto-activate-base: false
+          create-environment: true
 
       - name: Configure Conda Paths
         run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
