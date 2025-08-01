@@ -730,7 +730,7 @@ class Executor(object):
                     'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
             else:
                 self.monitor_interval_running = GEVENT_TIMEOUT_WAIT
-        # Set up signal handlers for cleanup on interruption
+        # Set up signal handlers for clean-up on interruption
         self.setup_signal_handlers()
 
     def __enter__(self):
@@ -1043,191 +1043,19 @@ class Executor(object):
         """Clean up all remaining active jobs on interruption."""
         self.logger.info("Cleaning up all job outputs due to pipeline interruption")
         for job_info in self.active_jobs:
-            should_cleanup = self._should_cleanup_job(job_info)
-            if should_cleanup:
-                self.cleanup_failed_job(job_info)
-            else:
-                job_name = job_info.get('job_name', 'unknown')
-                self.logger.info(f"Skipping cleanup of job '{job_name}' - appears to have completed successfully")
-        
+            self.cleanup_failed_job(job_info)
         self.active_jobs.clear()  # Clear the list after cleanup
 
-    def _should_cleanup_job(self, job_info):
-        """Determine if a job should be cleaned up based on multiple criteria.
-        
-        Returns True if job should be cleaned up (failed/incomplete), False if it should be preserved.
-        """
-        import time
-        
-        # Get output files for this job
-        if "outfile" in job_info:
-            outfiles = [job_info["outfile"]]
-        elif "outfiles" in job_info:
-            outfiles = job_info["outfiles"]
-        else:
-            # No output files specified, safe to cleanup
-            return True
-        
-        # Check if job has an explicit completion status
-        job_status = job_info.get('status', None)
-        if job_status == 'completed':
-            return False  # Don't cleanup completed jobs
-        elif job_status in ['failed', 'cancelled', 'timeout']:
-            return True   # Cleanup explicitly failed jobs
-        
-        # For jobs without explicit status, use file-based heuristics
-        job_start_time = job_info.get('start_time', None)
-        current_time = time.time()
-        job_command = job_info.get('statement', '').lower()
-        
-        for outfile in outfiles:
-            if not os.path.exists(outfile):
-                # Output file doesn't exist, job likely didn't complete
-                return True
-            
-            file_stat = os.stat(outfile)
-            file_mtime = file_stat.st_mtime
-            file_size = file_stat.st_size
-            
-            # Check if file was created/modified recently (within job timeframe)
-            if job_start_time and file_mtime < job_start_time:
-                # File is older than job start, likely from previous run
-                return True
-            
-            # For very recent files (less than 30 seconds old), be more permissive
-            # This handles cases where cleanup happens immediately after job completion
-            if (current_time - file_mtime) < 30:
-                # Recent file, likely just created - don't cleanup
-                continue
-            
-            # Handle empty files with enhanced logic
-            if file_size == 0:
-                # Check if this is intentionally empty based on multiple factors
-                if self._is_intentionally_empty_file(outfile, job_command):
-                    # File is supposed to be empty, don't cleanup
-                    continue
-                else:
-                    # Empty file not expected, likely failed job
-                    return True
-        
-        # If we get here, all output files exist and pass validation
-        return False
-
-    def _is_intentionally_empty_file(self, filepath, job_command):
-        """Determine if an empty file is intentionally empty based on context."""
-        
-        # Get file extension and basename
-        _, ext = os.path.splitext(filepath.lower())
-        basename = os.path.basename(filepath.lower())
-        
-        # 1. Known empty-file extensions
-        empty_ok_extensions = [
-            '.log', '.txt', '.marker', '.done', '.flag', '.sentinel', 
-            '.checkpoint', '.lock', '.tmp', '.temp'
-        ]
-        if ext in empty_ok_extensions:
-            return True
-        
-        # 2. Common marker/dummy file patterns
-        marker_patterns = [
-            'done', 'complete', 'finished', 'marker', 'flag', 'sentinel',
-            'checkpoint', 'touch', 'dummy', 'placeholder'
-        ]
-        if any(pattern in basename for pattern in marker_patterns):
-            return True
-        
-        # 3. Command-based detection
-        if job_command:
-            # Check if command uses touch, which creates empty files intentionally
-            if 'touch' in job_command and filepath.split('/')[-1] in job_command:
-                return True
-            
-            # Check for other commands that might create empty files
-            empty_file_commands = ['touch', 'truncate', '> ', 'echo "" >', 'cat /dev/null >']
-            if any(cmd in job_command for cmd in empty_file_commands):
-                return True
-            
-            # Check for redirection that might create empty files
-            if f'> {filepath}' in job_command or f'>{filepath}' in job_command:
-                return True
-        
-        # 4. Directory-based hints (some directories commonly contain empty marker files)
-        parent_dir = os.path.dirname(filepath).lower()
-        if any(marker in parent_dir for marker in ['checkpoint', 'marker', 'flag', 'done']):
-            return True
-        
-        # If none of the above, assume empty file indicates failure
-        return False
-
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
-        
-        Uses aggressive signal blocking to prevent signal storms and
-        protects completed job outputs from cleanup.
-        """
-        import multiprocessing
-        import os
-        
-        # Get process info for logging
-        try:
-            current_process = multiprocessing.current_process()
-            process_name = current_process.name
-            process_pid = os.getpid()
-        except Exception:
-            process_name = "unknown"
-            process_pid = os.getpid()
-        
-        # COMPLETELY IGNORE signals in worker processes
-        if process_name != 'MainProcess':
-            self.logger.debug(f"Worker process {process_name} (PID {process_pid}): IGNORING all signals")
-            # Set all signals to be ignored in worker processes
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-            signal.signal(signal.SIGTERM, signal.SIG_IGN)
-            signal.signal(signal.SIGQUIT, signal.SIG_IGN)
-            signal.signal(signal.SIGHUP, signal.SIG_IGN)
-            return
+        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
 
-        # Global singleton pattern - only set up signal handlers once in main process
-        if hasattr(Executor, '_global_signal_handlers_set'):
-            self.logger.debug(f"Main process (PID {process_pid}): Signal handlers already set up globally, skipping")
-            return
-            
-        Executor._global_signal_handlers_set = True
-        self.logger.info(f"Main process (PID {process_pid}): Setting up AGGRESSIVE signal handlers")
-        
-        def aggressive_signal_handler(signum, frame):
-            # IMMEDIATELY block ALL signals to prevent any interruption
-            try:
-                signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP, signal.SIGUSR1, signal.SIGUSR2})
-            except:
-                pass
-            
-            # Global singleton flag to prevent multiple handlers
-            if hasattr(Executor, '_global_signal_handling_in_progress'):
-                os._exit(1)
-                return
-            Executor._global_signal_handling_in_progress = True
-            
-            self.logger.info(f"AGGRESSIVE HANDLER: Main process (PID {os.getpid()}) received signal {signum}. MINIMAL cleanup only.")
-            
-            # Reset ALL signal handlers to default immediately
-            signal.signal(signal.SIGINT, signal.SIG_DFL)
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
-            signal.signal(signal.SIGQUIT, signal.SIG_DFL)
-            signal.signal(signal.SIGHUP, signal.SIG_DFL)
-            
-            try:
-                self.cleanup_all_jobs()
-            except Exception as e:
-                self.logger.error(f"Error during cleanup: {e}")
-            
-            # Exit immediately without restoring signal mask
-            # No finally block to avoid any potential signal delivery
-            os._exit(1)
+        def signal_handler(signum, frame):
+            self.logger.info(f"Received signal {signum}. Starting clean-up.")
+            self.cleanup_all_jobs()
+            exit(1)
 
-        signal.signal(signal.SIGINT, aggressive_signal_handler)
-        signal.signal(signal.SIGTERM, aggressive_signal_handler)
-        self.logger.debug("AGGRESSIVE signal handlers set up in main process")
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
 
     def cleanup_failed_job(self, job_info):
         """Clean up files generated by a failed job."""
@@ -1328,10 +1156,7 @@ class Executor(object):
 
             except Exception as e:
                 self.logger.error(f"Job failed: {e}")
-                if self._should_cleanup_job(job_info):
-                    self.cleanup_failed_job(job_info)
-                else:
-                    self.logger.info(f"Preserving output files for job {job_info.get('job_name', 'unknown')} despite exception")
+                self.cleanup_failed_job(job_info)
                 if not self.ignore_errors:
                     raise
 
