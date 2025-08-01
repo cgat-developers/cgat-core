@@ -1163,9 +1163,22 @@ class Executor(object):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
 
         def signal_handler(signum, frame):
+            # Prevent recursive signal handling
+            if hasattr(self, '_signal_handling_in_progress'):
+                return
+            self._signal_handling_in_progress = True
+            
             self.logger.info(f"Received signal {signum}. Starting clean-up.")
-            self.cleanup_all_jobs()
-            exit(1)
+            try:
+                self.cleanup_all_jobs()
+            except Exception as e:
+                self.logger.error(f"Error during cleanup: {e}")
+            finally:
+                # Reset signal handlers to default to prevent cascade
+                signal.signal(signal.SIGINT, signal.SIG_DFL)
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+                # Use os._exit to avoid triggering more signal handlers
+                os._exit(1)
 
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
