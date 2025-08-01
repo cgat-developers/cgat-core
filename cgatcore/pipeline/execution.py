@@ -1034,10 +1034,68 @@ class Executor(object):
         self.logger.info(f"Job started: {job_info}")
 
     def finish_job(self, job_info):
-        """Remove a job from active_jobs list when it finishes."""
+        """Remove a job from active_jobs list when it finishes.
+        
+        Also verifies that expected output files exist and are accessible
+        before allowing downstream tasks to proceed. Includes retry logic
+        with exponential backoff to handle filesystem sync delays.
+        """
         if job_info in self.active_jobs:
             self.active_jobs.remove(job_info)
             self.logger.info(f"Job completed: {job_info}")
+            
+            # Verify output files exist if any were specified
+            if hasattr(job_info, 'output_files') and job_info.output_files:
+                self._verify_output_files_exist(job_info)
+    
+    def _verify_output_files_exist(self, job_info, max_retries=3, initial_wait=0.5):
+        """Verify that all output files from a job actually exist and are accessible.
+        
+        Uses retry logic with exponential backoff to handle filesystem sync delays.
+        
+        Args:
+            job_info: Job information object containing output_files attribute
+            max_retries: Maximum number of retries if files aren't found
+            initial_wait: Initial wait time in seconds (doubles with each retry)
+        """
+        import time
+        import os.path
+        
+        if not hasattr(job_info, 'output_files') or not job_info.output_files:
+            return
+            
+        # Convert single file to list for consistent handling
+        output_files = job_info.output_files
+        if isinstance(output_files, str):
+            output_files = [output_files]
+            
+        missing_files = [f for f in output_files if not os.path.exists(f)]
+        
+        # If all files exist immediately, we're done
+        if not missing_files:
+            return
+            
+        # Retry with exponential backoff for filesystem sync delays
+        wait_time = initial_wait
+        for retry in range(max_retries):
+            self.logger.debug(f"Some output files not found yet, waiting {wait_time}s: {missing_files}")
+            time.sleep(wait_time)
+            
+            # Check again after waiting
+            missing_files = [f for f in missing_files if not os.path.exists(f)]
+            
+            # If all files now exist, we're done
+            if not missing_files:
+                self.logger.debug(f"All output files now exist after retry {retry+1}")
+                return
+                
+            # Double wait time for next retry (exponential backoff)
+            wait_time *= 2
+            
+        # If we get here, some files are still missing after all retries
+        self.logger.warning(f"Some output files still missing after {max_retries} retries: {missing_files}")
+        # We don't raise an exception here as the job itself completed successfully
+        # The pipeline framework will handle missing files appropriately
 
     def cleanup_all_jobs(self):
         """Clean up all remaining active jobs on interruption."""
@@ -1049,34 +1107,52 @@ class Executor(object):
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
         
-        This implementation uses a singleton pattern to ensure signal handlers
-        are only registered once per process, even if this method is called multiple times.
-        It also prevents signal cascade by using os._exit instead of exit,
-        and blocks all signals while the handler is running to make it atomic.
-        The handler is only set up in the main process, not in worker processes.
+        This implementation uses a more robust approach to signal handling:
+        1. The main process registers a signal handler that cleans up and exits atomically
+        2. Worker processes completely IGNORE signals (SIG_IGN) to prevent cascades
+        3. Uses singleton pattern to ensure signal handlers are registered only once
+        
+        This prevents the signal storm problem where multiple processes receive signals.
         """
         import os
         import multiprocessing
 
-        # Only set up handlers in the main process to prevent signal storm in workers
-        if multiprocessing.current_process().name != 'MainProcess':
-            self.logger.debug(f"Not setting up signal handlers in worker process {multiprocessing.current_process().name}")
-            return
-
-        # Use module-level variables as a singleton pattern to track handler registration
-        # These globals must be defined at the module level to persist across method calls
+        # Different handling based on process type
+        is_main_process = multiprocessing.current_process().name == 'MainProcess'
+        process_name = multiprocessing.current_process().name
+        
+        # Module-level variables as a singleton pattern to track handler registration
         global _signal_handlers_installed
+        global _worker_signals_ignored
         global _cleanup_in_progress
         
         # Initialize globals if they don't exist
         if '_signal_handlers_installed' not in globals():
             _signal_handlers_installed = False
+        if '_worker_signals_ignored' not in globals():
+            _worker_signals_ignored = False
         if '_cleanup_in_progress' not in globals():
             _cleanup_in_progress = False
 
-        # Skip setup if handlers are already installed
+        # WORKER PROCESS: Set signals to be completely ignored
+        if not is_main_process:
+            # Skip if already set up for this worker
+            if _worker_signals_ignored:
+                return
+                
+            self.logger.debug(f"Setting worker process {process_name} to ignore all signals")
+            for sig in [signal.SIGTERM, signal.SIGINT]:
+                # SIG_IGN makes the process completely ignore these signals
+                signal.signal(sig, signal.SIG_IGN)
+                
+            # Mark this worker as having signals ignored
+            _worker_signals_ignored = True
+            return
+
+        # MAIN PROCESS: Set up atomic handler with robust cleanup
+        # Skip setup if handlers are already installed in main process
         if _signal_handlers_installed:
-            self.logger.debug("Signal handlers already installed, skipping registration")
+            self.logger.debug("Signal handlers already installed in main process, skipping registration")
             return
 
         def atomic_signal_handler(signum, frame):
@@ -1096,7 +1172,7 @@ class Executor(object):
                 signal.signal(sig, signal.SIG_IGN)
                 
             try:
-                self.logger.info(f"Received signal {signum}. Starting clean-up (atomically).")
+                self.logger.info(f"Received signal {signum} in main process. Starting clean-up (atomically).")
                 self.cleanup_all_jobs()
             except Exception as e:
                 self.logger.error(f"Error during signal handling cleanup: {e}")
@@ -1105,11 +1181,11 @@ class Executor(object):
                 for sig, handler in old_signals.items():
                     signal.signal(sig, handler)
                 
-                self.logger.info(f"Exiting due to signal {signum}")
+                self.logger.info(f"Main process exiting due to signal {signum}")
                 # Use os._exit instead of exit() to prevent propagation
                 os._exit(128 + signum)
         
-        # Set up the atomic signal handler
+        # Set up the atomic signal handler in main process only
         self.logger.debug("Setting up atomic signal handlers in main process")
         signal.signal(signal.SIGINT, atomic_signal_handler)
         signal.signal(signal.SIGTERM, atomic_signal_handler)
