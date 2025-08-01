@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     defaults:
       run:
@@ -28,23 +28,22 @@ jobs:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('conda/environments/cgat-core.yml') }}
 
-      - name: Set installer URL
-        id: set-installer-url
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" >> $GITHUB_ENV
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh" >> $GITHUB_ENV
-          fi
-
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          installer-url: ${{ env.installer-url }}
+          miniconda-version: "latest"
+          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          channels: conda-forge, bioconda, defaults
+          channels: conda-forge,bioconda,defaults
           channel-priority: true
-          activate-environment: cgat-core
+          activate-environment: cgat-core-env
           environment-file: conda/environments/cgat-core.yml
+
+      - name: Verify conda environment
+        shell: bash -l {0}
+        run: |
+          conda info
+          conda list
 
       - name: Configure Conda Paths
         run: echo "/usr/share/miniconda3/condabin" >> $GITHUB_PATH
@@ -60,7 +59,20 @@ jobs:
           pip list
           openssl version
 
+      - name: Create template.yml for tests
+        run: |
+          echo "# Configuration for template pipeline tests" > tests/template.yml
+          echo "" >> tests/template.yml
+          echo "# Parameters for random number generation" >> tests/template.yml
+          echo "mu: 0" >> tests/template.yml
+          echo "sigma: 1" >> tests/template.yml
+          echo "num_samples: 100" >> tests/template.yml
+          echo "" >> tests/template.yml
+          echo "# Parameter for filtering" >> tests/template.yml
+          echo "min_value: 0" >> tests/template.yml
+
       - name: Test
+        shell: bash -l {0}
         run: |
           pip install .
           ./all-tests.sh
@@ -81,10 +93,13 @@ jobs:
 
       - name: Install MkDocs and Dependencies
         run: |
-          pip install mkdocs \
-                    mkdocs-material \
-                    mkdocstrings[python] \
-                    pymdown-extensions \
+          pip install mkdocs==1.5.3 \
+                    mkdocs-material==9.4.6 \
+                    mkdocstrings==0.24.0 \
+                    mkdocstrings-python==1.7.3 \
+                    griffe==0.36.9 \
+                    pymdown-extensions==10.3 \
+                    mkdocs-autorefs==0.5.0 \
                     mkdocs-material[imaging]
 
       - name: Build and Deploy MkDocs Site

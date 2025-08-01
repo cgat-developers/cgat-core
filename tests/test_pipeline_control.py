@@ -27,7 +27,6 @@ def work_dir():
 
 def run_command(statement, work_dir, **kwargs):
     """Run a shell command in a specified working directory."""
-    print(statement)
     proc = subprocess.Popen(statement, shell=True, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, cwd=work_dir, **kwargs)
     stdout, stderr = proc.communicate()

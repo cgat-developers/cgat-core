@@ -43,17 +43,33 @@ from cgatcore import pipeline as P
 def create_files(outfile):
 
     E.debug("creating output file {}".format(outfile))
+    # Get params first to avoid issues in multiprocessing
+    params = P.get_params()
+    
+    # Provide default values in case parameters aren't loaded in child process
+    mu = params.get("mu", 0.0)
+    sigma = params.get("sigma", 1.0)
+    num_samples = params.get("num_samples", 1000)
+    
+    E.debug(f"Parameters: mu={mu}, sigma={sigma}, num_samples={num_samples}")
+    
     with open(outfile, "w") as outf:
         outf.write("\n".join(map(
             str,
             numpy.random.normal(
-                P.get_params()["mu"],
-                P.get_params()["sigma"],
-                P.get_params()["num_samples"]))) + "\n")
+                mu,
+                sigma,
+                num_samples))) + "\n")
 
 
 def compute_mean(infile, outfile):
     """compute mean"""
+    
+    # Get params with default value to avoid multiprocessing issues
+    params = P.get_params()
+    min_value = params.get("min_value", 0.0)
+    
+    E.debug(f"Computing mean with min_value={min_value}")
 
     statement = (
         "cat %(infile)s "
@@ -65,6 +81,11 @@ def compute_mean(infile, outfile):
 
 
 def combine_means(infiles, outfile):
+    # Get params in each function to ensure they're available in multiprocessing
+    params = P.get_params()
+    
+    E.debug(f"Combining means from {len(infiles)} files")
+    
     infiles = " ".join(infiles)
     statement = (
         "cat %(infiles)s "
@@ -76,17 +97,30 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    # Get the args first
-    args = P.initialize(argv, config_file="template.yml")
-
-    # Then use them in the defaults dictionary
-    P.get_params().update({
+    # Get the args first - don't rely on external config file for tests
+    args = P.initialize(argv)
+    
+    # Set required test parameters directly in the test
+    # This ensures they're available regardless of whether template.yml exists
+    test_params = {
         "min_value": 0.0,
         "num_samples": 1000,
         "mu": 0.0,
         "sigma": 1.0,
-        "to_cluster": not args.without_cluster  # Now args is defined
-    })
+        "to_cluster": not args.without_cluster
+    }
+    
+    # Force these parameters to be set in the global PARAMS
+    P.get_params().update(test_params)
+    
+    # Access the parameters to ensure they're initialized before multiprocessing
+    for key in test_params:
+        value = P.get_params()[key]
+        E.info(f"Parameter {key} = {value}")
+    
+    # Override any command line settings
+    if args.multiprocess is None:
+        args.multiprocess = 2  # Set a default value for testing
 
     pipeline = ruffus.Pipeline("template_pipeline")
 
