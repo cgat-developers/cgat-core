@@ -163,9 +163,8 @@ class SlurmExecutor(BaseExecutor):
                 continue
                 
             status = status_lines[0].strip()
-            self.logger.debug(f"Job {job_id} status: {status}")
             
-            # Check job status
+            # Only log status changes, not every check
             if status in ["COMPLETED", "COMPLETED+"]:
                 self.logger.info(f"Job {job_id} completed successfully")
                 break
@@ -173,7 +172,14 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Job {job_id} failed with status: {status}")
                 raise RuntimeError(f"Job {job_id} failed with status: {status}")
             elif status in ["RUNNING", "PENDING", "CONFIGURING"]:
-                self.logger.debug(f"Job {job_id} still {status.lower()}, waiting...")
+                # Only log the first time we see a running status or every 120 seconds
+                import time
+                current_time = time.time()
+                last_log_attr = f'_job_{job_id}_last_log_time'
+                
+                if not hasattr(self, last_log_attr) or (current_time - getattr(self, last_log_attr, 0)) >= 120:
+                    self.logger.info(f"Job {job_id} is {status.lower()}...")
+                    setattr(self, last_log_attr, current_time)
             else:
                 self.logger.warning(f"Job {job_id} has unknown status: {status}")
             
