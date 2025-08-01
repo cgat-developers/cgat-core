@@ -643,6 +643,9 @@ class MultiLineFormatter(logging.Formatter):
     '''logfile formatter: add identation for multi-line entries.'''
 
     def format(self, record):
+        # Ensure app_name is available for formatting, even in multiprocessing workers
+        if not hasattr(record, 'app_name'):
+            record.app_name = 'unknown'
 
         s = logging.Formatter.format(self, record)
         if s.startswith("#"):

@@ -118,7 +118,12 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Slurm job submission failed: {process.stderr}")
                 raise RuntimeError(f"Slurm job submission failed: {process.stderr}")
 
-            job_id = process.stdout.strip()
+            sbatch_output = process.stdout.strip()
+            if "Submitted batch job" in sbatch_output:
+                job_id = sbatch_output.split()[-1]  # Get the last word (job ID)
+            else:
+                job_id = sbatch_output  # Fallback to full output
+            
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
             # Monitor job completion
