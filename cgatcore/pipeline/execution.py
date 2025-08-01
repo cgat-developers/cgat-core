@@ -730,7 +730,7 @@ class Executor(object):
                     'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
             else:
                 self.monitor_interval_running = GEVENT_TIMEOUT_WAIT
-        # Set up signal handlers for clean-up on interruption
+        # Set up signal handlers for clean-up on interruption - only in main process
         self.setup_signal_handlers()
 
     def __enter__(self):
@@ -1039,21 +1039,100 @@ class Executor(object):
             self.active_jobs.remove(job_info)
             self.logger.info(f"Job completed: {job_info}")
 
-    def cleanup_all_jobs(self):
-        """Clean up all remaining active jobs on interruption."""
-        self.logger.info("Cleaning up all job outputs due to pipeline interruption")
+    def cleanup_all_jobs(self, preserve_completed=False):
+        """Clean up all remaining active jobs on interruption.
+        
+        Args:
+            preserve_completed: If True, don't clean up jobs that appear to have completed successfully
+        """
+        self.logger.info("Cleaning up job outputs due to pipeline interruption")
+        
         for job_info in self.active_jobs:
+            # Skip cleanup for jobs that have completed successfully
+            if preserve_completed and self._job_has_completed(job_info):
+                job_name = job_info.get('job_name', 'unknown')
+                self.logger.info(f"Preserving outputs of completed job: {job_name}")
+                continue
+                
             self.cleanup_failed_job(job_info)
+            
         self.active_jobs.clear()  # Clear the list after cleanup
+        
+    def _job_has_completed(self, job_info):
+        """Determine if a job has completed successfully based on its output files.
+        
+        Returns True if all output files exist and appear valid.
+        """
+        # Get output files for this job
+        if "outfile" in job_info:
+            outfiles = [job_info["outfile"]]
+        elif "outfiles" in job_info:
+            outfiles = job_info["outfiles"]
+        else:
+            return False  # No output files specified, consider not complete
+        
+        # Check if the job has an explicit completion status
+        if job_info.get('status', '') == 'completed':
+            return True
+        
+        # Check if all output files exist and have non-zero size
+        # (unless they're expected to be empty)
+        for outfile in outfiles:
+            if not os.path.exists(outfile):
+                return False
+                
+            # For HTML files (like FastQC outputs), require non-zero size
+            if outfile.endswith('.html') and os.path.getsize(outfile) == 0:
+                return False
+                
+        # All checks passed, job appears to have completed
+        return True
 
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
-
+        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
+        
+        Only registers signal handlers in the main process to prevent signal storms.
+        Preserves output files from successfully completed jobs.
+        """
+        import multiprocessing
+        import os
+        
+        # Only set up handlers in the main process to prevent signal storms
+        try:
+            current_process = multiprocessing.current_process()
+            if current_process.name != 'MainProcess':
+                # Ignore signals in worker processes
+                self.logger.debug(f"Worker process {current_process.name} (PID {os.getpid()}): IGNORING signals")
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
+                signal.signal(signal.SIGTERM, signal.SIG_IGN)
+                return
+        except Exception:
+            pass
+        
+        # Use a global flag to prevent multiple handlers running simultaneously
+        global _signal_handler_running
+        if not '_signal_handler_running' in globals():
+            _signal_handler_running = False
+        
         def signal_handler(signum, frame):
-            self.logger.info(f"Received signal {signum}. Starting clean-up.")
-            self.cleanup_all_jobs()
-            exit(1)
-
+            global _signal_handler_running
+            
+            # Prevent multiple handlers from running simultaneously
+            if _signal_handler_running:
+                return
+            _signal_handler_running = True
+            
+            self.logger.info(f"Main process (PID {os.getpid()}) received signal {signum}. Starting clean-up.")
+            
+            try:
+                self.cleanup_all_jobs(preserve_completed=True)
+            except Exception as e:
+                self.logger.error(f"Error during cleanup: {e}")
+            
+            # Use os._exit to exit immediately without further signal processing
+            os._exit(1)
+        
+        self.logger.debug(f"Setting up signal handlers in main process (PID {os.getpid()})")
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
@@ -1156,7 +1235,11 @@ class Executor(object):
 
             except Exception as e:
                 self.logger.error(f"Job failed: {e}")
-                self.cleanup_failed_job(job_info)
+                # Only clean up if job truly failed (not for successful jobs with exceptions)
+                if not self._job_has_completed(job_info):
+                    self.cleanup_failed_job(job_info)
+                else:
+                    self.logger.info(f"Preserving output files for job {job_info.get('job_name', 'unknown')} despite exception")
                 if not self.ignore_errors:
                     raise
 
