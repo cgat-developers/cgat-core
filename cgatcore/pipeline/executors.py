@@ -146,6 +146,7 @@ class SlurmExecutor(BaseExecutor):
         Raises:
             RuntimeError: If the job fails or times out.
         """
+        import time
         while True:
             # Use sacct to get job status
             cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
@@ -173,7 +174,6 @@ class SlurmExecutor(BaseExecutor):
                 raise RuntimeError(f"Job {job_id} failed with status: {status}")
             elif status in ["RUNNING", "PENDING", "CONFIGURING"]:
                 # Only log the first time we see a running status or every 120 seconds
-                import time
                 current_time = time.time()
                 last_log_attr = f'_job_{job_id}_last_log_time'
                 
