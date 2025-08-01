@@ -1162,40 +1162,41 @@ class Executor(object):
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
         
-        Only set up signal handlers in the main process to prevent
-        signal storms in multiprocessing environments.
+        Uses a global singleton pattern to ensure signal handlers are only
+        set up once, regardless of how many executor instances are created.
         """
         import multiprocessing
         
         # Only set up signal handlers in the main process
-        # In multiprocessing workers, we don't want signal handlers
         try:
-            # Check if we're in the main process
             current_process = multiprocessing.current_process()
             if current_process.name != 'MainProcess':
-                # We're in a worker process, don't set up signal handlers
                 self.logger.debug(f"Skipping signal handler setup in worker process: {current_process.name}")
                 return
         except Exception:
-            # If we can't determine the process type, assume main process
             pass
 
+        # Global singleton pattern - only set up signal handlers once
+        if hasattr(Executor, '_global_signal_handlers_set'):
+            self.logger.debug("Signal handlers already set up globally, skipping")
+            return
+            
+        Executor._global_signal_handlers_set = True
+        
         def atomic_signal_handler(signum, frame):
             # IMMEDIATELY block all signals to prevent interruption
-            # This makes the signal handler truly atomic
             old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP})
             
-            # Prevent recursive signal handling (extra safety)
-            if hasattr(self, '_signal_handling_in_progress'):
-                # Restore signal mask and exit immediately
+            # Global singleton flag to prevent multiple handlers
+            if hasattr(Executor, '_global_signal_handling_in_progress'):
                 signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
                 os._exit(1)
                 return
-            self._signal_handling_in_progress = True
+            Executor._global_signal_handling_in_progress = True
             
             self.logger.info(f"Main process received signal {signum}. Starting atomic clean-up.")
             
-            # Reset signal handlers to default immediately to prevent any cascade
+            # Reset signal handlers to default immediately
             signal.signal(signal.SIGINT, signal.SIG_DFL)
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             signal.signal(signal.SIGQUIT, signal.SIG_DFL)
