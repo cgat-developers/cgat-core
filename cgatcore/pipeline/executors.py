@@ -158,12 +158,17 @@ class SlurmExecutor(BaseExecutor):
 
             # Get the first line of status (main job status)
             status_lines = process.stdout.strip().split('\n')
-            if not status_lines:
-                self.logger.warning(f"No status found for job {job_id}, continuing to monitor...")
+            if not status_lines or not status_lines[0].strip():
+                # Job status not available yet (just submitted), wait and continue
                 time.sleep(10)
                 continue
                 
             status = status_lines[0].strip()
+            
+            # Handle empty status (job just submitted or sacct delay)
+            if not status:
+                time.sleep(10)
+                continue
             
             # Only log status changes, not every check
             if status in ["COMPLETED", "COMPLETED+"]:
@@ -181,7 +186,11 @@ class SlurmExecutor(BaseExecutor):
                     self.logger.info(f"Job {job_id} is {status.lower()}...")
                     setattr(self, last_log_attr, current_time)
             else:
-                self.logger.warning(f"Job {job_id} has unknown status: {status}")
+                # Only log unknown status once per job, not repeatedly
+                unknown_status_attr = f'_job_{job_id}_unknown_logged'
+                if not hasattr(self, unknown_status_attr):
+                    self.logger.warning(f"Job {job_id} has unknown status: '{status}'")
+                    setattr(self, unknown_status_attr, True)
             
             # Wait before checking again
             time.sleep(10)
