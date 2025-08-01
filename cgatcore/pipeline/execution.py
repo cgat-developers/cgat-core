@@ -1061,32 +1061,174 @@ class Executor(object):
     def _job_has_completed(self, job_info):
         """Determine if a job has completed successfully based on its output files.
         
-        Returns True if all output files exist and appear valid.
+        A job is considered completed if ANY of the following is true:
+        1. It has an explicit 'completed' status
+        2. ANY of its expected output files exist and are non-empty
+        3. Any output directory/file path found in the command exists and is non-empty
+        4. The log file exists and does not contain error indicators
         """
+        # Check if the job has an explicit completion status
+        job_status = job_info.get('status', '')
+        if job_status == 'completed':
+            return True
+            
         # Get output files for this job
         if "outfile" in job_info:
             outfiles = [job_info["outfile"]]
         elif "outfiles" in job_info:
             outfiles = job_info["outfiles"]
         else:
-            return False  # No output files specified, consider not complete
+            outfiles = []
+            
+        # Try all potential sources of output files/directories
+        all_outputs = set()
         
-        # Check if the job has an explicit completion status
-        if job_info.get('status', '') == 'completed':
-            return True
+        # 1. Add explicitly defined output files
+        all_outputs.update(outfiles)
         
-        # Check if all output files exist and have non-zero size
-        # (unless they're expected to be empty)
-        for outfile in outfiles:
-            if not os.path.exists(outfile):
-                return False
+        # 2. Add any redirected output files/dirs from command
+        job_statement = job_info.get('statement', '')
+        statement_outputs = self._extract_output_paths_from_statement(job_statement)
+        all_outputs.update(statement_outputs)
+        
+        # 3. For each output, try common alternative paths/patterns
+        alternative_outputs = set()
+        for outpath in all_outputs:
+            # Add common variants (with/without extension, parent dir, etc)
+            alternative_outputs.update(self._generate_alternative_paths(outpath))
+        all_outputs.update(alternative_outputs)
+        
+        # Check all potential outputs
+        for outpath in all_outputs:
+            # Skip empty paths
+            if not outpath:
+                continue
                 
-            # For HTML files (like FastQC outputs), require non-zero size
-            if outfile.endswith('.html') and os.path.getsize(outfile) == 0:
-                return False
-                
-        # All checks passed, job appears to have completed
-        return True
+            # Check if it's a directory with content
+            if os.path.isdir(outpath):
+                try:
+                    if os.listdir(outpath):  # Directory has content
+                        self.logger.info(f"Found non-empty directory: {outpath}")
+                        return True
+                except Exception:
+                    pass
+            
+            # Check if it's a file with content
+            elif os.path.isfile(outpath):
+                if os.path.getsize(outpath) > 0 or outpath.endswith(('.ok', '.success', '.done')):
+                    self.logger.info(f"Found non-empty output file: {outpath}")
+                    return True
+        
+        # If we have a log file, check if it indicates successful completion
+        logfiles = []
+        for outpath in all_outputs:
+            if outpath and outpath.endswith(('.log', '.out')):
+                logfiles.append(outpath)
+        
+        for logfile in logfiles:
+            if os.path.exists(logfile) and os.path.getsize(logfile) > 0:
+                # Try to determine if the job completed successfully from log file
+                try:
+                    with open(logfile, 'r') as f:
+                        log_content = f.read(4096)  # Read first 4KB only for efficiency
+                        if ('error' not in log_content.lower() and 
+                            'exception' not in log_content.lower() and
+                            'failed' not in log_content.lower()):
+                            self.logger.info(f"Log file exists without error indicators: {logfile}")
+                            return True
+                except Exception:
+                    pass
+        
+        # Nothing found - job hasn't completed successfully
+        self.logger.debug(f"No valid outputs found for job: {job_info.get('job_name', '')}")
+        return False
+        
+    def _extract_output_paths_from_statement(self, statement):
+        """Extract all possible output paths from a command statement."""
+        if not statement:
+            return set()
+            
+        import re
+        output_paths = set()
+        
+        # Find output redirection (both > and >> with optional 2>&1)
+        stdout_matches = re.findall(r'(?:>|>>)\s*(\S+)(?:\s+2>&1)?', statement)
+        output_paths.update(stdout_matches)
+        
+        # Find common output flags
+        output_flags = [
+            # Generic flags
+            r'\s+-o\s+(\S+)',            # -o output
+            r'\s+--output\s+(\S+)',       # --output output
+            r'\s+--output[=](\S+)',       # --output=output
+            r'\s+--output-dir\s+(\S+)',   # --output-dir path
+            r'\s+--output-dir[=](\S+)',   # --output-dir=path
+            r'\s+-d\s+(\S+)',            # -d dir
+            r'\s+--directory\s+(\S+)',    # --directory dir
+        ]
+        
+        for pattern in output_flags:
+            matches = re.findall(pattern, statement)
+            output_paths.update(matches)
+        
+        # Extract directory paths from the paths
+        dir_paths = set()
+        for path in output_paths:
+            dirname = os.path.dirname(path)
+            if dirname:
+                dir_paths.add(dirname)
+        
+        # Combine all paths
+        all_paths = output_paths.union(dir_paths)
+        
+        # Remove irrelevant paths like /dev/null
+        cleaned_paths = {p for p in all_paths if p != '/dev/null'}
+        
+        return cleaned_paths
+    
+    def _generate_alternative_paths(self, path):
+        """Generate alternative possible paths for a given output path."""
+        if not path:
+            return set()
+            
+        alternatives = set()
+        
+        # Original path
+        alternatives.add(path)
+        
+        # Directory containing the file
+        dirname = os.path.dirname(path)
+        if dirname:
+            alternatives.add(dirname)
+        
+        # For paths like 'dir/file.ext'
+        basename = os.path.basename(path)
+        stem, ext = os.path.splitext(basename)
+        
+        # Remove extensions (sometimes tools drop extensions)
+        if ext and ext.startswith('.'):
+            # Without extension
+            if dirname:
+                alternatives.add(f"{dirname}/{stem}")
+            else:
+                alternatives.add(stem)
+        
+            # With common alternative extensions
+            for alt_ext in [".html", ".txt", ".log", ".out", ".zip", ".json", ".yml"]:
+                if dirname:
+                    alternatives.add(f"{dirname}/{stem}{alt_ext}")
+                else:
+                    alternatives.add(f"{stem}{alt_ext}")
+        
+        # With _1, _2 suffixes for multi-file outputs
+        if dirname:
+            alternatives.add(f"{dirname}/{stem}_1{ext}")
+            alternatives.add(f"{dirname}/{stem}_2{ext}")
+        else:
+            alternatives.add(f"{stem}_1{ext}")
+            alternatives.add(f"{stem}_2{ext}")
+        
+        return alternatives
 
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
