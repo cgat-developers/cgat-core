@@ -1162,41 +1162,55 @@ class Executor(object):
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
         
-        Uses a global singleton pattern to ensure signal handlers are only
-        set up once, regardless of how many executor instances are created.
+        Uses aggressive signal blocking to prevent signal storms and
+        protects completed job outputs from cleanup.
         """
         import multiprocessing
+        import os
         
-        # Only set up signal handlers in the main process
+        # Get process info for logging
         try:
             current_process = multiprocessing.current_process()
-            if current_process.name != 'MainProcess':
-                self.logger.debug(f"Skipping signal handler setup in worker process: {current_process.name}")
-                return
+            process_name = current_process.name
+            process_pid = os.getpid()
         except Exception:
-            pass
+            process_name = "unknown"
+            process_pid = os.getpid()
+        
+        # COMPLETELY IGNORE signals in worker processes
+        if process_name != 'MainProcess':
+            self.logger.debug(f"Worker process {process_name} (PID {process_pid}): IGNORING all signals")
+            # Set all signals to be ignored in worker processes
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGQUIT, signal.SIG_IGN)
+            signal.signal(signal.SIGHUP, signal.SIG_IGN)
+            return
 
-        # Global singleton pattern - only set up signal handlers once
+        # Global singleton pattern - only set up signal handlers once in main process
         if hasattr(Executor, '_global_signal_handlers_set'):
-            self.logger.debug("Signal handlers already set up globally, skipping")
+            self.logger.debug(f"Main process (PID {process_pid}): Signal handlers already set up globally, skipping")
             return
             
         Executor._global_signal_handlers_set = True
+        self.logger.info(f"Main process (PID {process_pid}): Setting up AGGRESSIVE signal handlers")
         
-        def atomic_signal_handler(signum, frame):
-            # IMMEDIATELY block all signals to prevent interruption
-            old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP})
+        def aggressive_signal_handler(signum, frame):
+            # IMMEDIATELY block ALL signals to prevent any interruption
+            try:
+                signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP, signal.SIGUSR1, signal.SIGUSR2})
+            except:
+                pass
             
             # Global singleton flag to prevent multiple handlers
             if hasattr(Executor, '_global_signal_handling_in_progress'):
-                signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
                 os._exit(1)
                 return
             Executor._global_signal_handling_in_progress = True
             
-            self.logger.info(f"Main process received signal {signum}. Starting atomic clean-up.")
+            self.logger.info(f"AGGRESSIVE HANDLER: Main process (PID {os.getpid()}) received signal {signum}. MINIMAL cleanup only.")
             
-            # Reset signal handlers to default immediately
+            # Reset ALL signal handlers to default immediately
             signal.signal(signal.SIGINT, signal.SIG_DFL)
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             signal.signal(signal.SIGQUIT, signal.SIG_DFL)
