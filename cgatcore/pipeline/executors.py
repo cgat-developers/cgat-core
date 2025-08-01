@@ -155,7 +155,15 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Failed to get job status: {process.stderr}")
                 raise RuntimeError(f"Failed to get job status: {process.stderr}")
 
-            status = process.stdout.strip()
+            # Get the first line of status (main job status)
+            status_lines = process.stdout.strip().split('\n')
+            if not status_lines:
+                self.logger.warning(f"No status found for job {job_id}, continuing to monitor...")
+                time.sleep(10)
+                continue
+                
+            status = status_lines[0].strip()
+            self.logger.debug(f"Job {job_id} status: {status}")
             
             # Check job status
             if status in ["COMPLETED", "COMPLETED+"]:
@@ -164,6 +172,10 @@ class SlurmExecutor(BaseExecutor):
             elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
                 self.logger.error(f"Job {job_id} failed with status: {status}")
                 raise RuntimeError(f"Job {job_id} failed with status: {status}")
+            elif status in ["RUNNING", "PENDING", "CONFIGURING"]:
+                self.logger.debug(f"Job {job_id} still {status.lower()}, waiting...")
+            else:
+                self.logger.warning(f"Job {job_id} has unknown status: {status}")
             
             # Wait before checking again
             time.sleep(10)
