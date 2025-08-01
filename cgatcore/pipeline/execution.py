@@ -730,7 +730,7 @@ class Executor(object):
                     'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
             else:
                 self.monitor_interval_running = GEVENT_TIMEOUT_WAIT
-        # Set up signal handlers for clean-up on interruption - only in main process
+        # Set up signal handlers for clean-up on interruption
         self.setup_signal_handlers()
 
     def __enter__(self):
@@ -1039,244 +1039,68 @@ class Executor(object):
             self.active_jobs.remove(job_info)
             self.logger.info(f"Job completed: {job_info}")
 
-    def cleanup_all_jobs(self, preserve_completed=False):
-        """Clean up all remaining active jobs on interruption.
-        
-        Args:
-            preserve_completed: If True, don't clean up jobs that appear to have completed successfully
-        """
-        self.logger.info("Cleaning up job outputs due to pipeline interruption")
-        
+    def cleanup_all_jobs(self):
+        """Clean up all remaining active jobs on interruption."""
+        self.logger.info("Cleaning up all job outputs due to pipeline interruption")
         for job_info in self.active_jobs:
-            # Skip cleanup for jobs that have completed successfully
-            if preserve_completed and self._job_has_completed(job_info):
-                job_name = job_info.get('job_name', 'unknown')
-                self.logger.info(f"Preserving outputs of completed job: {job_name}")
-                continue
-                
             self.cleanup_failed_job(job_info)
-            
         self.active_jobs.clear()  # Clear the list after cleanup
-        
-    def _job_has_completed(self, job_info):
-        """Determine if a job has completed successfully based on its output files.
-        
-        A job is considered completed if ANY of the following is true:
-        1. It has an explicit 'completed' status
-        2. ANY of its expected output files exist and are non-empty
-        3. Any output directory/file path found in the command exists and is non-empty
-        4. The log file exists and does not contain error indicators
-        """
-        # Check if the job has an explicit completion status
-        job_status = job_info.get('status', '')
-        if job_status == 'completed':
-            return True
-            
-        # Get output files for this job
-        if "outfile" in job_info:
-            outfiles = [job_info["outfile"]]
-        elif "outfiles" in job_info:
-            outfiles = job_info["outfiles"]
-        else:
-            outfiles = []
-            
-        # Try all potential sources of output files/directories
-        all_outputs = set()
-        
-        # 1. Add explicitly defined output files
-        all_outputs.update(outfiles)
-        
-        # 2. Add any redirected output files/dirs from command
-        job_statement = job_info.get('statement', '')
-        statement_outputs = self._extract_output_paths_from_statement(job_statement)
-        all_outputs.update(statement_outputs)
-        
-        # 3. For each output, try common alternative paths/patterns
-        alternative_outputs = set()
-        for outpath in all_outputs:
-            # Add common variants (with/without extension, parent dir, etc)
-            alternative_outputs.update(self._generate_alternative_paths(outpath))
-        all_outputs.update(alternative_outputs)
-        
-        # Check all potential outputs
-        for outpath in all_outputs:
-            # Skip empty paths
-            if not outpath:
-                continue
-                
-            # Check if it's a directory with content
-            if os.path.isdir(outpath):
-                try:
-                    if os.listdir(outpath):  # Directory has content
-                        self.logger.info(f"Found non-empty directory: {outpath}")
-                        return True
-                except Exception:
-                    pass
-            
-            # Check if it's a file with content
-            elif os.path.isfile(outpath):
-                if os.path.getsize(outpath) > 0 or outpath.endswith(('.ok', '.success', '.done')):
-                    self.logger.info(f"Found non-empty output file: {outpath}")
-                    return True
-        
-        # If we have a log file, check if it indicates successful completion
-        logfiles = []
-        for outpath in all_outputs:
-            if outpath and outpath.endswith(('.log', '.out')):
-                logfiles.append(outpath)
-        
-        for logfile in logfiles:
-            if os.path.exists(logfile) and os.path.getsize(logfile) > 0:
-                # Try to determine if the job completed successfully from log file
-                try:
-                    with open(logfile, 'r') as f:
-                        log_content = f.read(4096)  # Read first 4KB only for efficiency
-                        if ('error' not in log_content.lower() and 
-                            'exception' not in log_content.lower() and
-                            'failed' not in log_content.lower()):
-                            self.logger.info(f"Log file exists without error indicators: {logfile}")
-                            return True
-                except Exception:
-                    pass
-        
-        # Nothing found - job hasn't completed successfully
-        self.logger.debug(f"No valid outputs found for job: {job_info.get('job_name', '')}")
-        return False
-        
-    def _extract_output_paths_from_statement(self, statement):
-        """Extract all possible output paths from a command statement."""
-        if not statement:
-            return set()
-            
-        import re
-        output_paths = set()
-        
-        # Find output redirection (both > and >> with optional 2>&1)
-        stdout_matches = re.findall(r'(?:>|>>)\s*(\S+)(?:\s+2>&1)?', statement)
-        output_paths.update(stdout_matches)
-        
-        # Find common output flags
-        output_flags = [
-            # Generic flags
-            r'\s+-o\s+(\S+)',            # -o output
-            r'\s+--output\s+(\S+)',       # --output output
-            r'\s+--output[=](\S+)',       # --output=output
-            r'\s+--output-dir\s+(\S+)',   # --output-dir path
-            r'\s+--output-dir[=](\S+)',   # --output-dir=path
-            r'\s+-d\s+(\S+)',            # -d dir
-            r'\s+--directory\s+(\S+)',    # --directory dir
-        ]
-        
-        for pattern in output_flags:
-            matches = re.findall(pattern, statement)
-            output_paths.update(matches)
-        
-        # Extract directory paths from the paths
-        dir_paths = set()
-        for path in output_paths:
-            dirname = os.path.dirname(path)
-            if dirname:
-                dir_paths.add(dirname)
-        
-        # Combine all paths
-        all_paths = output_paths.union(dir_paths)
-        
-        # Remove irrelevant paths like /dev/null
-        cleaned_paths = {p for p in all_paths if p != '/dev/null'}
-        
-        return cleaned_paths
-    
-    def _generate_alternative_paths(self, path):
-        """Generate alternative possible paths for a given output path."""
-        if not path:
-            return set()
-            
-        alternatives = set()
-        
-        # Original path
-        alternatives.add(path)
-        
-        # Directory containing the file
-        dirname = os.path.dirname(path)
-        if dirname:
-            alternatives.add(dirname)
-        
-        # For paths like 'dir/file.ext'
-        basename = os.path.basename(path)
-        stem, ext = os.path.splitext(basename)
-        
-        # Remove extensions (sometimes tools drop extensions)
-        if ext and ext.startswith('.'):
-            # Without extension
-            if dirname:
-                alternatives.add(f"{dirname}/{stem}")
-            else:
-                alternatives.add(stem)
-        
-            # With common alternative extensions
-            for alt_ext in [".html", ".txt", ".log", ".out", ".zip", ".json", ".yml"]:
-                if dirname:
-                    alternatives.add(f"{dirname}/{stem}{alt_ext}")
-                else:
-                    alternatives.add(f"{stem}{alt_ext}")
-        
-        # With _1, _2 suffixes for multi-file outputs
-        if dirname:
-            alternatives.add(f"{dirname}/{stem}_1{ext}")
-            alternatives.add(f"{dirname}/{stem}_2{ext}")
-        else:
-            alternatives.add(f"{stem}_1{ext}")
-            alternatives.add(f"{stem}_2{ext}")
-        
-        return alternatives
 
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
         
-        Only registers signal handlers in the main process to prevent signal storms.
-        Preserves output files from successfully completed jobs.
+        This implementation prevents signal cascade by using os._exit instead of exit,
+        and blocks all signals while the handler is running to make it atomic.
+        The handler is only set up in the main process, not in worker processes.
         """
-        import multiprocessing
         import os
-        
-        # Only set up handlers in the main process to prevent signal storms
-        try:
-            current_process = multiprocessing.current_process()
-            if current_process.name != 'MainProcess':
-                # Ignore signals in worker processes
-                self.logger.debug(f"Worker process {current_process.name} (PID {os.getpid()}): IGNORING signals")
-                signal.signal(signal.SIGINT, signal.SIG_IGN)
-                signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        import multiprocessing
+
+        # Only set up handlers in the main process to prevent signal storm in workers
+        if multiprocessing.current_process().name != 'MainProcess':
+            self.logger.debug(f"Not setting up signal handlers in worker process {multiprocessing.current_process().name}")
+            return
+
+        # Track if we're already in a signal handler to prevent re-entry
+        # This is a global variable to ensure it persists across signal handler calls
+        global _cleanup_in_progress
+        if '_cleanup_in_progress' not in globals():
+            _cleanup_in_progress = False
+
+        def atomic_signal_handler(signum, frame):
+            # Use a global flag to prevent re-entry or concurrent execution
+            global _cleanup_in_progress
+            
+            if _cleanup_in_progress:
+                self.logger.debug(f"Already handling signal {signum}, ignoring duplicate")
                 return
-        except Exception:
-            pass
-        
-        # Use a global flag to prevent multiple handlers running simultaneously
-        global _signal_handler_running
-        if not '_signal_handler_running' in globals():
-            _signal_handler_running = False
-        
-        def signal_handler(signum, frame):
-            global _signal_handler_running
+                
+            _cleanup_in_progress = True
             
-            # Prevent multiple handlers from running simultaneously
-            if _signal_handler_running:
-                return
-            _signal_handler_running = True
-            
-            self.logger.info(f"Main process (PID {os.getpid()}) received signal {signum}. Starting clean-up.")
-            
+            # Block all signals while we're cleaning up
+            old_signals = {}
+            for sig in [signal.SIGTERM, signal.SIGINT]:
+                old_signals[sig] = signal.getsignal(sig)
+                signal.signal(sig, signal.SIG_IGN)
+                
             try:
-                self.cleanup_all_jobs(preserve_completed=True)
+                self.logger.info(f"Received signal {signum}. Starting clean-up (atomically).")
+                self.cleanup_all_jobs()
             except Exception as e:
-                self.logger.error(f"Error during cleanup: {e}")
-            
-            # Use os._exit to exit immediately without further signal processing
-            os._exit(1)
+                self.logger.error(f"Error during signal handling cleanup: {e}")
+            finally:
+                # Restore original signal handlers before exiting
+                for sig, handler in old_signals.items():
+                    signal.signal(sig, handler)
+                
+                self.logger.info(f"Exiting due to signal {signum}")
+                # Use os._exit instead of exit() to prevent propagation
+                os._exit(128 + signum)
         
-        self.logger.debug(f"Setting up signal handlers in main process (PID {os.getpid()})")
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+        # Set up the atomic signal handler
+        self.logger.debug("Setting up atomic signal handlers in main process")
+        signal.signal(signal.SIGINT, atomic_signal_handler)
+        signal.signal(signal.SIGTERM, atomic_signal_handler)
 
     def cleanup_failed_job(self, job_info):
         """Clean up files generated by a failed job."""
@@ -1377,11 +1201,7 @@ class Executor(object):
 
             except Exception as e:
                 self.logger.error(f"Job failed: {e}")
-                # Only clean up if job truly failed (not for successful jobs with exceptions)
-                if not self._job_has_completed(job_info):
-                    self.cleanup_failed_job(job_info)
-                else:
-                    self.logger.info(f"Preserving output files for job {job_info.get('job_name', 'unknown')} despite exception")
+                self.cleanup_failed_job(job_info)
                 if not self.ignore_errors:
                     raise
 
