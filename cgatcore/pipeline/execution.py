@@ -730,8 +730,8 @@ class Executor(object):
                     'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
             else:
                 self.monitor_interval_running = GEVENT_TIMEOUT_WAIT
-        # Signal handlers will be set up explicitly by control.py
-        # Removed duplicate setup to prevent signal storm
+        # Set up signal handlers for cleanup on interruption
+        self.setup_signal_handlers()
 
     def __enter__(self):
         return self
