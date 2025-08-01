@@ -152,9 +152,12 @@ def patch_ruffus_is_file_exists_function():
     This replaces the Ruffus internal function that checks if files exist
     with our retry-enabled version.
     """
+    # Import modules within function scope to avoid UnboundLocalError
+    import ruffus
+    import ruffus.ruffus_exceptions
+    
     if not hasattr(ruffus.ruffus_exceptions, 'original_is_file_exists'):
         try:
-            import ruffus.ruffus_exceptions
             # Store the original function before patching
             ruffus.ruffus_exceptions.original_is_file_exists = ruffus.ruffus_exceptions.is_file_exists
             
