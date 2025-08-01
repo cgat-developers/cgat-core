@@ -49,11 +49,46 @@ class BaseExecutor:
         os.makedirs(job_script_dir, exist_ok=True)
     
         script_path = os.path.join(job_script_dir, "job_script.sh")
+        
+        # Enhanced script that handles output directory creation for shell redirection
+        enhanced_statement = self._prepare_statement_with_output_dirs(statement)
+        
         with open(script_path, "w") as script_file:
-            script_file.write(f"#!/bin/bash\n\n{statement}\n")
+            script_file.write(f"#!/bin/bash\n\n{enhanced_statement}\n")
         
         os.chmod(script_path, 0o755)  # Make it executable
-        return statement, script_path
+        return enhanced_statement, script_path
+
+    def _prepare_statement_with_output_dirs(self, statement):
+        """Prepare statement by ensuring output directories exist for shell redirection.
+        
+        This method analyzes the statement for output redirection patterns like
+        '> path/to/file.log' and ensures the parent directories exist.
+        """
+        import re
+        
+        # Find all output redirections in the statement
+        redirect_pattern = r'>\s+([^\s]+)'
+        redirections = re.findall(redirect_pattern, statement)
+        
+        if not redirections:
+            return statement
+        
+        # Build commands to create necessary directories
+        mkdir_commands = []
+        for output_file in redirections:
+            # Extract directory from output file path
+            output_dir = os.path.dirname(output_file)
+            if output_dir and output_dir != '.':
+                mkdir_commands.append(f"mkdir -p {output_dir}")
+        
+        if mkdir_commands:
+            # Remove duplicates while preserving order
+            unique_mkdir_commands = list(dict.fromkeys(mkdir_commands))
+            mkdir_statement = " && ".join(unique_mkdir_commands)
+            return f"{mkdir_statement} && {statement}"
+        
+        return statement
 
     def __enter__(self):
         """Enter the runtime context related to this object."""
