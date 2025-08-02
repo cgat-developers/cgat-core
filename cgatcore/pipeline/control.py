@@ -47,7 +47,6 @@ import cgatcore.iotools as iotools
 from cgatcore.pipeline.parameters import input_validation, get_params, get_parameters
 from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
-from cgatcore.pipeline.verification import patch_ruffus_is_file_exists_function, verify_files_exist
 from cgatcore.pipeline.execution import execute, start_session, \
     close_session, Executor
 
@@ -1445,11 +1444,6 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
 def run_workflow(args, argv=None, pipeline=None):
     logger = logging.getLogger("cgatcore.pipeline")
     logger.debug(f"Starting run_workflow with action {args.pipeline_action}")
-    
-    # Patch Ruffus file existence checking with our retry-enabled version
-    if args.pipeline_action == "make":
-        logger.info("Patching Ruffus file existence checking with retry logic")
-        patch_ruffus_is_file_exists_function()
 
     # Instantiate Executor to manage job tracking and cleanup
     params = get_params()

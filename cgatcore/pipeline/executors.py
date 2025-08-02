@@ -109,8 +109,10 @@ class SlurmExecutor(BaseExecutor):
 
             full_statement, job_path = self.build_job_script(statement)
 
-            # Build the Slurm job submission command
-            slurm_command = f"sbatch --job-name={self.config.get('job_name', 'default_job')} --output={job_path}.o --error={job_path}.e {job_path}"
+            # Build the Slurm job submission command with explicit time limit
+            # Default to 60 minutes if not specified in config
+            time_limit = self.config.get('job_time', '60:00')
+            slurm_command = f"sbatch --job-name={self.config.get('job_name', 'default_job')} --time={time_limit} --output={job_path}.o --error={job_path}.e {job_path}"
 
             process = subprocess.run(slurm_command, shell=True, capture_output=True, text=True)
 
