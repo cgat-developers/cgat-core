@@ -134,8 +134,66 @@ class SlurmExecutor(BaseExecutor):
         return benchmark_data
 
     def build_job_script(self, statement):
-        """Custom build job script for Slurm."""
-        return super().build_job_script(statement)
+        """Build a job script with Slurm-specific directives.
+        
+        Args:
+            statement (str): The command to execute
+            
+        Returns:
+            tuple: Enhanced statement and path to job script
+        """
+        import uuid
+        import time
+        import os
+        
+        # Get work_dir from the executor config or use current directory
+        work_dir = self.config.get('work_dir', os.getcwd())
+        
+        # Create job_scripts directory in work_dir if it doesn't exist
+        job_script_dir = os.path.join(work_dir, "job_scripts")
+        os.makedirs(job_script_dir, exist_ok=True)
+        
+        # Create a unique script name using job name (if available), timestamp, and UUID
+        job_name = self.config.get("job_name", "slurm_job")
+        timestamp = int(time.time())
+        unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
+        
+        # Format: ctmp_{job_name}_{timestamp}_{uuid}.sh
+        script_name = f"ctmp_{job_name}_{timestamp}_{unique_id}.sh"
+        script_path = os.path.join(job_script_dir, script_name)
+        
+        # Enhanced statement that handles output directory creation for shell redirection
+        enhanced_statement = self._prepare_statement_with_output_dirs(statement)
+        
+        # Slurm resource parameters
+        time_limit = self.config.get('job_time', '60:00')
+        memory = self.config.get('job_memory', '4G')
+        cpus = self.config.get('job_threads', 1)
+        
+        # Build Slurm job script with proper directives
+        script_content = [
+            "#!/bin/bash",
+            f"#SBATCH --job-name={job_name}",
+            f"#SBATCH --time={time_limit}",
+            f"#SBATCH --mem={memory}",
+            f"#SBATCH --cpus-per-task={cpus}",
+            f"#SBATCH --output={script_path}.o",
+            f"#SBATCH --error={script_path}.e",
+            "",
+            f"# Job: {job_name}",
+            f"# Generated: {time.ctime()}",
+            f"# ID: {unique_id}",
+            f"# Resources: {cpus} CPUs, {memory} memory, {time_limit} time",
+            "",
+            enhanced_statement
+        ]
+        
+        with open(script_path, "w") as script_file:
+            script_file.write("\n".join(script_content))
+        
+        os.chmod(script_path, 0o755)  # Make it executable
+        self.logger.info(f"Created job script: {script_path}")
+        return enhanced_statement, script_path
 
     def monitor_job_completion(self, job_id):
         """Monitor the completion of a Slurm job with enhanced logging.
