@@ -1086,7 +1086,7 @@ class Executor(object):
             
             # If all files now exist, we're done
             if not missing_files:
-                self.logger.debug(f"All output files now exist after retry {retry+1}")
+                self.logger.debug(f"All output files now exist after retry {retry + 1}")
                 return
                 
             # Double wait time for next retry (exponential backoff)
