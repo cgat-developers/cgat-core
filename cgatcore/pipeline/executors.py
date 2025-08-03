@@ -279,7 +279,7 @@ class SlurmExecutor(BaseExecutor):
                 run_time = time.time() - job_start_time
                 self.logger.info(f"Job {job_id} completed successfully after {run_time:.2f} seconds")
                 break
-            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
+            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY"]:
                 run_time = time.time() - job_start_time
                 self.logger.error(f"Job {job_id} failed with status: {status} after {run_time:.2f} seconds")
                 raise RuntimeError(f"Job {job_id} failed with status: {status}")
