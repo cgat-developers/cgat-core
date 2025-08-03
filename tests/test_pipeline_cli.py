@@ -74,7 +74,9 @@ def test_slurm_job_monitoring(mock_subprocess_run):
     ]
     
     executor = SlurmExecutor()
-    benchmark_data = executor.run(["echo 'test'"])
+    # Mock the time to avoid actual sleeps in tests
+    with patch('time.sleep'):
+        benchmark_data = executor.run(["echo 'test'"])
     
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
@@ -99,7 +101,7 @@ def test_slurm_job_monitoring_failure(mock_subprocess_run):
     ]
     
     executor = SlurmExecutor()
-    with pytest.raises(RuntimeError, match="Job 12345 failed with status: FAILED"):
+    with patch('time.sleep'), pytest.raises(RuntimeError, match="Job 12345 failed with status: FAILED"):
         executor.run(["echo 'test'"])
 
 
@@ -113,7 +115,8 @@ def test_sge_job_monitoring(mock_subprocess_run):
     ]
     
     executor = SGEExecutor()
-    benchmark_data = executor.run(["echo 'test'"])
+    with patch('time.sleep'):
+        benchmark_data = executor.run(["echo 'test'"])
     
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
@@ -134,7 +137,7 @@ def test_sge_job_monitoring_failure(mock_subprocess_run):
     ]
     
     executor = SGEExecutor()
-    with pytest.raises(RuntimeError, match="Job 12345 failed with exit status: 1"):
+    with patch('time.sleep'), pytest.raises(RuntimeError, match="Job 12345 failed with exit status: 1"):
         executor.run(["echo 'test'"])
 
 
@@ -148,7 +151,8 @@ def test_torque_job_monitoring(mock_subprocess_run):
     ]
     
     executor = TorqueExecutor()
-    benchmark_data = executor.run(["echo 'test'"])
+    with patch('time.sleep'):
+        benchmark_data = executor.run(["echo 'test'"])
     
     # Verify job submission and monitoring calls
     calls = mock_subprocess_run.call_args_list
@@ -169,7 +173,7 @@ def test_torque_job_monitoring_failure(mock_subprocess_run):
     ]
     
     executor = TorqueExecutor()
-    with pytest.raises(RuntimeError, match="Job 12345 failed with exit status: 1"):
+    with patch('time.sleep'), pytest.raises(RuntimeError, match="Job 12345 failed with exit status: 1"):
         executor.run(["echo 'test'"])
 
 

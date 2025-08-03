@@ -27,10 +27,15 @@ class SGEExecutor(BaseExecutor):
                 self.logger.error(f"SGE job submission failed: {process.stderr}")
                 raise RuntimeError(f"SGE job submission failed: {process.stderr}")
 
-            self.logger.info(f"SGE job submitted: {process.stdout.strip()}")
+            # Parse job ID from qsub output
+            output = process.stdout.strip()
+            # SGE typically returns just the job ID number
+            job_id = output.split()[0] if output else "unknown"
+            
+            self.logger.info(f"SGE job submitted with ID: {job_id}")
 
             # Monitor job completion
-            self.monitor_job_completion(process.stdout.strip())
+            self.monitor_job_completion(job_id)
 
             benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
 
@@ -47,9 +52,25 @@ class SGEExecutor(BaseExecutor):
             job_id (str): The SGE job ID to monitor.
 
         Raises:
-            RuntimeError: If the job fails or times out.
+            RuntimeError: If the job fails.
         """
+        import time
+        
+        # Track job start time
+        job_start_time = time.time()
+        self.logger.info(f"Started monitoring SGE job {job_id}")
+        
+        # Use consistent polling interval
+        polling_interval = 10
+        
         while True:
+            current_time = time.time()
+            elapsed = current_time - job_start_time
+            
+            # Periodically log status for debugging
+            if int(elapsed) % 60 == 0 and int(elapsed) > 0:
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed/60)} minutes")
+                
             # Use qstat to get job status
             cmd = f"qstat -j {job_id}"
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -73,7 +94,7 @@ class SGEExecutor(BaseExecutor):
                 raise RuntimeError(f"Failed to get job status: {process.stderr}")
             
             # Wait before checking again
-            time.sleep(10)
+            time.sleep(polling_interval)
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for SGE jobs.
@@ -196,120 +217,76 @@ class SlurmExecutor(BaseExecutor):
         return enhanced_statement, script_path
 
     def monitor_job_completion(self, job_id):
-        """Monitor the completion of a Slurm job with enhanced logging.
+        """Monitor the completion of a Slurm job.
 
         Args:
             job_id (str): The Slurm job ID to monitor.
 
         Raises:
-            RuntimeError: If the job fails or times out.
+            RuntimeError: If the job fails.
         """
         import time
-        import datetime
         
-        # Track job start time for diagnostics
+        # Track job start time and last status
         job_start_time = time.time()
-        self.logger.info(f"Started monitoring Slurm job {job_id} at {datetime.datetime.now().isoformat()}")
-        
-        # Record any status changes to track job lifecycle
+        self.logger.info(f"Started monitoring Slurm job {job_id}")
         last_status = None
-        status_history = []
         
-        # Add detailed check for time-based issues
-        check_count = 0
+        # Use consistent polling interval
+        polling_interval = 10
         
         while True:
-            check_count += 1
             current_time = time.time()
             elapsed = current_time - job_start_time
-            
-            # Every 30 seconds, log detailed timing info for debugging the 61s issue
-            if check_count % 3 == 0:
-                self.logger.info(f"TIMING: Job {job_id} has been running for {elapsed:.2f} seconds")
-                
-                # Special check around the 60-second mark
-                if 55 <= elapsed <= 65:
-                    self.logger.warning(f"CRITICAL TIMING WINDOW: Job {job_id} at {elapsed:.2f}s, checking Slurm details")
-                    
-                    # Get more detailed information when we're near the 60-second mark
-                    detail_cmd = f"scontrol show job {job_id}"
-                    try:
-                        detail_process = subprocess.run(detail_cmd, shell=True, capture_output=True, text=True)
-                        if detail_process.returncode == 0:
-                            self.logger.warning(f"Slurm job details at {elapsed:.2f}s:\n{detail_process.stdout}")
-                    except Exception as e:
-                        self.logger.error(f"Failed to get detailed job info: {str(e)}")
+            # Periodically log status for debugging
+            if int(elapsed) % 60 == 0 and int(elapsed) > 0:
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed/60)} minutes")
             
             # Use sacct to get job status
-            cmd = f"sacct -j {job_id} --format=State,Elapsed,TimeLimit,ReqMem --noheader --parsable2"
-            try:
-                process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-                
-                if process.returncode != 0:
-                    self.logger.error(f"Failed to get job status: {process.stderr}")
-                    if "slurm_load_jobs error: Invalid job id specified" in process.stderr:
-                        self.logger.error(f"Job {job_id} no longer exists in Slurm")
-                        raise RuntimeError(f"Job {job_id} disappeared from Slurm queue")
-                    else:
-                        raise RuntimeError(f"Failed to get job status: {process.stderr}")
-    
-                # Get the first line of status (main job status)
-                status_lines = process.stdout.strip().split('\n')
-                if not status_lines or not status_lines[0].strip():
-                    # Job status not available yet (just submitted), wait and continue
-                    self.logger.debug(f"Job {job_id} status not available yet, waiting...")
-                    time.sleep(5)
-                    continue
-                    
-                # Parse status line which includes multiple fields
-                fields = status_lines[0].strip().split('|')
-                status = fields[0].strip()
-                
-                # Track status changes
-                if status != last_status:
-                    timestamp = datetime.datetime.now().isoformat()
-                    status_history.append((timestamp, status))
-                    self.logger.info(f"Job {job_id} status changed: {last_status} -> {status} at {timestamp}")
-                    last_status = status
-                    
-                    # Log full status history on any change
-                    if len(status_history) > 1:
-                        history_log = "\n  ".join([f"{t}: {s}" for t, s in status_history])
-                        self.logger.info(f"Job {job_id} status history:\n  {history_log}")
-                
-                # Handle empty status (job just submitted or sacct delay)
-                if not status:
-                    time.sleep(5)
-                    continue
-                
-                if status in ["COMPLETED", "COMPLETED+"]:
-                    run_time = time.time() - job_start_time
-                    self.logger.info(f"Job {job_id} completed successfully after {run_time:.2f} seconds")
-                    break
-                elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
-                    run_time = time.time() - job_start_time
-                    self.logger.error(f"Job {job_id} failed with status: {status} after {run_time:.2f} seconds")
-                    
-                    # Check for 60-second timeouts specifically
-                    if 55 <= run_time <= 65:
-                        self.logger.critical(f"DETECTED 61-SECOND ISSUE: Job {job_id} failed right at the critical timepoint")
-                        
-                    raise RuntimeError(f"Job {job_id} failed with status: {status}")
-                elif status in ["RUNNING", "PENDING", "CONFIGURING"]:
-                    # Log status with additional info every 30 seconds
-                    if check_count % 3 == 0:
-                        self.logger.info(f"Job {job_id} is {status.lower()} for {elapsed:.2f} seconds")
+            cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if process.returncode != 0:
+                self.logger.error(f"Failed to get job status: {process.stderr}")
+                if "slurm_load_jobs error: Invalid job id specified" in process.stderr:
+                    self.logger.error(f"Job {job_id} no longer exists in Slurm")
+                    raise RuntimeError(f"Job {job_id} disappeared from Slurm queue")
                 else:
-                    # Log unknown status with timestamp
-                    self.logger.warning(f"Job {job_id} has unknown status: '{status}' at {elapsed:.2f}s")
+                    raise RuntimeError(f"Failed to get job status: {process.stderr}")
+
+            # Get the first line of status (main job status)
+            status_lines = process.stdout.strip().split('\n')
+            if not status_lines or not status_lines[0].strip():
+                # Job status not available yet (just submitted), wait and continue
+                self.logger.debug(f"Job {job_id} status not available yet, waiting...")
+                time.sleep(polling_interval)
+                continue
+                
+            # Parse status
+            status = status_lines[0].strip()
             
-            except Exception as e:
-                self.logger.error(f"Error checking job {job_id} status: {str(e)}")
-                # Don't fail the entire process for transient monitoring errors
-                # Just log it and continue monitoring
+            # Track status changes for logging
+            if status != last_status:
+                self.logger.info(f"Job {job_id} status: {status}")
+                last_status = status
             
-            # Wait before checking again - shorter interval for more responsive monitoring
-            time.sleep(10)
+            # Handle empty status (job just submitted or sacct delay)
+            if not status:
+                time.sleep(polling_interval)
+                continue
+            
+            if status in ["COMPLETED", "COMPLETED+"]:
+                run_time = time.time() - job_start_time
+                self.logger.info(f"Job {job_id} completed successfully after {run_time:.2f} seconds")
+                break
+            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
+                run_time = time.time() - job_start_time
+                self.logger.error(f"Job {job_id} failed with status: {status} after {run_time:.2f} seconds")
+                raise RuntimeError(f"Job {job_id} failed with status: {status}")
+            else:
+                # Job still running or pending, wait and check again
+                self.logger.debug(f"Job {job_id} status: {status}, waiting...")
+                time.sleep(polling_interval)
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Slurm jobs.
@@ -354,7 +331,9 @@ class TorqueExecutor(BaseExecutor):
                 self.logger.error(f"Torque job submission failed: {process.stderr}")
                 raise RuntimeError(f"Torque job submission failed: {process.stderr}")
 
-            job_id = process.stdout.strip()
+            output = process.stdout.strip()
+            # Torque typically returns the job ID in format like "123456.hostname"
+            job_id = output.split()[0] if output else "unknown"
             self.logger.info(f"Torque job submitted with ID: {job_id}")
 
             # Monitor job completion
@@ -377,7 +356,22 @@ class TorqueExecutor(BaseExecutor):
         Raises:
             RuntimeError: If the job fails or times out.
         """
+        import time
+        
+        # Track job start time
+        job_start_time = time.time()
+        self.logger.info(f"Started monitoring Torque job {job_id}")
+        
+        # Use consistent polling interval
+        polling_interval = 10
+        
         while True:
+            current_time = time.time()
+            elapsed = current_time - job_start_time
+            # Periodically log status for debugging
+            if int(elapsed) % 60 == 0 and int(elapsed) > 0:
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed/60)} minutes")
+            
             # Use qstat to get job status
             cmd = f"qstat -f {job_id}"
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -401,7 +395,7 @@ class TorqueExecutor(BaseExecutor):
                 raise RuntimeError(f"Failed to get job status: {process.stderr}")
             
             # Wait before checking again
-            time.sleep(10)
+            time.sleep(polling_interval)
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Torque jobs.
