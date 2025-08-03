@@ -69,7 +69,7 @@ class SGEExecutor(BaseExecutor):
             
             # Periodically log status for debugging
             if int(elapsed) % 60 == 0 and int(elapsed) > 0:
-                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed/60)} minutes")
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
                 
             # Use qstat to get job status
             cmd = f"qstat -j {job_id}"
@@ -240,7 +240,7 @@ class SlurmExecutor(BaseExecutor):
             elapsed = current_time - job_start_time
             # Periodically log status for debugging
             if int(elapsed) % 60 == 0 and int(elapsed) > 0:
-                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed/60)} minutes")
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
             
             # Use sacct to get job status
             cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
@@ -370,7 +370,7 @@ class TorqueExecutor(BaseExecutor):
             elapsed = current_time - job_start_time
             # Periodically log status for debugging
             if int(elapsed) % 60 == 0 and int(elapsed) > 0:
-                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed/60)} minutes")
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
             
             # Use qstat to get job status
             cmd = f"qstat -f {job_id}"
