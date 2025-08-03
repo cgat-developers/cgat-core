@@ -1159,49 +1159,32 @@ class Executor(object):
             # Use a global flag to prevent re-entry or concurrent execution
             global _cleanup_in_progress
             
-            # Enhanced logging for debugging signal storm
-            import traceback
+            # Minimal logging for end users
             import os
-            import datetime
-            
-            pid = os.getpid()
-            parent_pid = os.getppid()
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-            
-            self.logger.warning(f"SIGNAL DEBUG [{timestamp}]: Process {pid} (parent: {parent_pid}) received signal {signum}")
-            stack_trace = ''.join(traceback.format_stack(frame))
-            self.logger.warning(f"SIGNAL DEBUG: Stack trace at signal receipt:\n{stack_trace}")
             
             if _cleanup_in_progress:
-                self.logger.warning(f"SIGNAL DEBUG: Already handling signal {signum}, ignoring duplicate in pid {pid}")
+                # Silent handling of duplicate signals
                 return
                 
             _cleanup_in_progress = True
-            self.logger.warning(f"SIGNAL DEBUG: Set _cleanup_in_progress=True in pid {pid}")
             
             # Block all signals while we're cleaning up
             old_signals = {}
             for sig in [signal.SIGTERM, signal.SIGINT]:
                 old_signals[sig] = signal.getsignal(sig)
                 signal.signal(sig, signal.SIG_IGN)
-                self.logger.warning(f"SIGNAL DEBUG: Blocked signal {sig} in pid {pid}")
                 
             try:
-                self.logger.warning(f"SIGNAL DEBUG: Starting cleanup for pid {pid} due to signal {signum}")
-                self.logger.info(f"Received signal {signum} in main process. Starting clean-up (atomically).")
+                self.logger.info(f"Received signal {signum}. Starting clean-up...")
                 self.cleanup_all_jobs()
-                self.logger.warning(f"SIGNAL DEBUG: Completed cleanup for pid {pid}")
             except Exception as e:
                 self.logger.error(f"Error during signal handling cleanup: {e}")
-                self.logger.warning(f"SIGNAL DEBUG: Exception during cleanup: {str(e)}")
             finally:
                 # Restore original signal handlers before exiting
                 for sig, handler in old_signals.items():
                     signal.signal(sig, handler)
-                    self.logger.warning(f"SIGNAL DEBUG: Restored handler for signal {sig} in pid {pid}")
                 
-                self.logger.info(f"Main process exiting due to signal {signum}")
-                self.logger.warning(f"SIGNAL DEBUG: About to call os._exit({128 + signum}) in pid {pid}")
+                # Silent exit - no additional logging
                 # Use os._exit instead of exit() to prevent propagation
                 os._exit(128 + signum)
         
