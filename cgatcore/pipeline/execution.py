@@ -1099,72 +1099,43 @@ class Executor(object):
 
     def cleanup_all_jobs(self):
         """Clean up all remaining active jobs on interruption."""
-        self.logger.info("Cleaning up all job outputs due to pipeline interruption")
+        # Only log in the main process to avoid duplicate messages
+        if not hasattr(self, 'main_pid') or os.getpid() == self.main_pid:
+            self.logger.info("Cleaning up all job outputs due to pipeline interruption")
         for job_info in self.active_jobs:
             self.cleanup_failed_job(job_info)
         self.active_jobs.clear()  # Clear the list after cleanup
 
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
-        
-        This implementation uses a more robust approach to signal handling:
-        1. The main process registers a signal handler that cleans up and exits atomically
-        2. Worker processes completely IGNORE signals (SIG_IGN) to prevent cascades
-        3. Uses singleton pattern to ensure signal handlers are registered only once
-        
-        This prevents the signal storm problem where multiple processes receive signals.
-        """
+        """Set up signal handlers for graceful termination."""
+        import signal
         import os
-        import multiprocessing
-
-        # Different handling based on process type
-        is_main_process = multiprocessing.current_process().name == 'MainProcess'
-        process_name = multiprocessing.current_process().name
         
-        # Module-level variables as a singleton pattern to track handler registration
         global _signal_handlers_installed
-        global _worker_signals_ignored
         global _cleanup_in_progress
         
-        # Initialize globals if they don't exist
-        if '_signal_handlers_installed' not in globals():
-            _signal_handlers_installed = False
-        if '_worker_signals_ignored' not in globals():
-            _worker_signals_ignored = False
-        if '_cleanup_in_progress' not in globals():
-            _cleanup_in_progress = False
-
-        # WORKER PROCESS: Set signals to be completely ignored
-        if not is_main_process:
-            # Skip if already set up for this worker
-            if _worker_signals_ignored:
-                return
-                
-            self.logger.debug(f"Setting worker process {process_name} to ignore all signals")
-            for sig in [signal.SIGTERM, signal.SIGINT]:
-                # SIG_IGN makes the process completely ignore these signals
-                signal.signal(sig, signal.SIG_IGN)
-                
-            # Mark this worker as having signals ignored
-            _worker_signals_ignored = True
-            return
-
-        # MAIN PROCESS: Set up atomic handler with robust cleanup
-        # Skip setup if handlers are already installed in main process
+        # Store the main process ID for later reference
+        if not hasattr(self, 'main_pid'):
+            self.main_pid = os.getpid()
+        
+        # Check if we've already installed the handlers
         if _signal_handlers_installed:
             self.logger.debug("Signal handlers already installed in main process, skipping registration")
             return
-
+        
+        # Worker processes should ignore signals and let the main process handle them
+        if os.getpid() != self.main_pid:
+            # Don't log in worker processes
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            return
+        
         def atomic_signal_handler(signum, frame):
             # Use a global flag to prevent re-entry or concurrent execution
             global _cleanup_in_progress
             
             # Minimal logging for end users
             import os
-            
-            if _cleanup_in_progress:
-                # Silent handling of duplicate signals
-                return
                 
             _cleanup_in_progress = True
             
@@ -1175,7 +1146,9 @@ class Executor(object):
                 signal.signal(sig, signal.SIG_IGN)
                 
             try:
-                self.logger.info(f"Received signal {signum}. Starting clean-up...")
+                # Only log in the main process, not in worker processes, to avoid output duplication
+                if os.getpid() == self.main_pid:
+                    self.logger.info(f"Received signal {signum}. Starting clean-up...")
                 self.cleanup_all_jobs()
             except Exception as e:
                 self.logger.error(f"Error during signal handling cleanup: {e}")
