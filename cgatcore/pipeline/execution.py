@@ -1114,6 +1114,14 @@ class Executor(object):
         global _signal_handlers_installed
         global _cleanup_in_progress
         
+        # Initialize globals if they don't exist
+        if '_signal_handlers_installed' not in globals():
+            global _signal_handlers_installed
+            _signal_handlers_installed = False
+        if '_cleanup_in_progress' not in globals():
+            global _cleanup_in_progress
+            _cleanup_in_progress = False
+        
         # Store the main process ID for later reference
         if not hasattr(self, 'main_pid'):
             self.main_pid = os.getpid()
