@@ -187,7 +187,7 @@ class SlurmExecutor(BaseExecutor):
         enhanced_statement = self._prepare_statement_with_output_dirs(statement)
         
         # Slurm resource parameters
-        time_limit = self.config.get('job_time', '24:00:00')  # Default 24 hours
+        time_limit = self.config.get('job_time', '7-00:00:00')  # Default: 7 days
         memory = self.config.get('job_memory', '4G')
         cpus = self.config.get('job_threads', 1)
         
