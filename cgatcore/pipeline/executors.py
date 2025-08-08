@@ -1,6 +1,7 @@
 import subprocess
 import time
 import logging
+import re
 from cgatcore.pipeline.base_executor import BaseExecutor
 
 
@@ -140,10 +141,18 @@ class SlurmExecutor(BaseExecutor):
                 raise RuntimeError(f"Slurm job submission failed: {process.stderr}")
 
             sbatch_output = process.stdout.strip()
-            if "Submitted batch job" in sbatch_output:
-                job_id = sbatch_output.split()[-1]  # Get the last word (job ID)
+            # Robustly extract numeric job ID from sbatch output
+            # Expected formats include:
+            #   "Submitted batch job 3785666"
+            #   "Submitted batch job 3785666
+            #    ..." (additional info)
+            #   or any output containing at least one integer token
+            match = re.search(r"\b(\d+)\b", sbatch_output)
+            if match:
+                job_id = match.group(1)
             else:
-                job_id = sbatch_output  # Fallback to full output
+                self.logger.error(f"Could not parse Slurm job id from sbatch output: '{sbatch_output}'")
+                raise RuntimeError(f"Failed to parse Slurm job id from sbatch output: '{sbatch_output}'")
             
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
@@ -187,7 +196,14 @@ class SlurmExecutor(BaseExecutor):
         enhanced_statement = self._prepare_statement_with_output_dirs(statement)
         
         # Slurm resource parameters
-        time_limit = self.config.get('job_time', '7-00:00:00')  # Default: 7 days
+        # If job_time is omitted or explicitly set to an "unlimited" sentinel,
+        # we will NOT emit a --time directive, allowing partition/account defaults
+        # (which may be unlimited depending on cluster policy).
+        raw_time = self.config.get('job_time', None)
+        time_str = str(raw_time).strip().lower() if raw_time is not None else ""
+        unlimited_sentinels = {"", "none", "unlimited", "infinite", "inf", "0", "00:00:00", "0-00:00:00"}
+        emit_time = time_str not in unlimited_sentinels
+        time_limit = raw_time if emit_time else None
         memory = self.config.get('job_memory', '4G')
         cpus = self.config.get('job_threads', 1)
         
@@ -195,7 +211,6 @@ class SlurmExecutor(BaseExecutor):
         script_content = [
             "#!/bin/bash",
             f"#SBATCH --job-name={job_name}",
-            f"#SBATCH --time={time_limit}",
             f"#SBATCH --mem={memory}",
             f"#SBATCH --cpus-per-task={cpus}",
             f"#SBATCH --output={script_path}.o",
@@ -204,10 +219,15 @@ class SlurmExecutor(BaseExecutor):
             f"# Job: {job_name}",
             f"# Generated: {time.ctime()}",
             f"# ID: {unique_id}",
-            f"# Resources: {cpus} CPUs, {memory} memory, {time_limit} time",
+            f"# Resources: {cpus} CPUs, {memory} memory, {'unlimited' if not emit_time else time_limit} time",
             "",
-            enhanced_statement
         ]
+        # Append time directive only if requested/allowed
+        if emit_time and time_limit:
+            # Insert after job-name to keep directives grouped
+            script_content.insert(2, f"#SBATCH --time={time_limit}")
+        
+        script_content.append(enhanced_statement)
         
         with open(script_path, "w") as script_file:
             script_file.write("\n".join(script_content))
@@ -242,29 +262,37 @@ class SlurmExecutor(BaseExecutor):
             if int(elapsed) % 60 == 0 and int(elapsed) > 0:
                 self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
             
-            # Use sacct to get job status
+            # Prefer sacct to get job status (final accounting)
             cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
             if process.returncode != 0:
-                self.logger.error(f"Failed to get job status: {process.stderr}")
-                if "slurm_load_jobs error: Invalid job id specified" in process.stderr:
-                    self.logger.error(f"Job {job_id} no longer exists in Slurm")
-                    raise RuntimeError(f"Job {job_id} disappeared from Slurm queue")
-                else:
-                    raise RuntimeError(f"Failed to get job status: {process.stderr}")
-
-            # Get the first line of status (main job status)
-            status_lines = process.stdout.strip().split('\n')
-            if not status_lines or not status_lines[0].strip():
-                # Job status not available yet (just submitted), wait and continue
+                # Fallback to squeue for live state if sacct unavailable or accounting lag
+                self.logger.debug(f"sacct failed (rc={process.returncode}). Falling back to squeue: {process.stderr}")
+                sq_cmd = f"squeue -j {job_id} -h -o %T"
+                sq = subprocess.run(sq_cmd, shell=True, capture_output=True, text=True)
+                if sq.returncode != 0:
+                    self.logger.error(f"Both sacct and squeue failed: sacct='{process.stderr}', squeue='{sq.stderr}'")
+                    raise RuntimeError(f"Failed to get job status from Slurm: sacct='{process.stderr}', squeue='{sq.stderr}'")
+                status = sq.stdout.strip()
+                if not status:
+                    # No status in squeue either: assume job no longer in queue; try sacct once more for terminal state
+                    self.logger.debug(f"Job {job_id} not listed in squeue; re-querying sacct for terminal state")
+                    process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                    status_lines = process.stdout.strip().split('\n') if process.returncode == 0 else []
+                    status = status_lines[0].strip() if status_lines and status_lines[0].strip() else ""
+                # Continue below with common handling
+            else:
+                # Get the first line of status (main job status)
+                status_lines = process.stdout.strip().split('\n')
+                status = status_lines[0].strip() if status_lines and status_lines[0].strip() else ""
+            
+            if not status:
+                # Job status not available yet (just submitted) or accounting lag; wait and continue
                 self.logger.debug(f"Job {job_id} status not available yet, waiting...")
                 time.sleep(polling_interval)
                 continue
-                
-            # Parse status
-            status = status_lines[0].strip()
-            
+                 
             # Track status changes for logging
             if status != last_status:
                 self.logger.info(f"Job {job_id} status: {status}")
