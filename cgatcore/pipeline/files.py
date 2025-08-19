@@ -49,8 +49,8 @@ def get_temp_file(dir=None, shared=False, suffix="", mode="w+", encoding="utf-8"
 
     if not os.path.exists(dir):
         try:
-            os.makedirs(dir)
-        except OSError:
+            os.makedirs(dir, exist_ok=True)
+        except (OSError, FileExistsError):
             # avoid race condition when several processes try to create
             # temporary directory.
             pass
@@ -127,7 +127,11 @@ def get_temp_dir(dir=None, shared=False, clear=False):
             dir = get_params()['tmpdir']
 
     if not os.path.exists(dir):
-        os.makedirs(dir)
+        try:
+            os.makedirs(dir, exist_ok=True)
+        except FileExistsError:
+            # Directory was created by another process
+            pass
 
     tmpdir = tempfile.mkdtemp(dir=dir, prefix="ctmp")
     if clear:

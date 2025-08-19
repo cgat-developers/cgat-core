@@ -1,6 +1,7 @@
 import subprocess
 import time
 import logging
+import re
 from cgatcore.pipeline.base_executor import BaseExecutor
 
 
@@ -27,10 +28,15 @@ class SGEExecutor(BaseExecutor):
                 self.logger.error(f"SGE job submission failed: {process.stderr}")
                 raise RuntimeError(f"SGE job submission failed: {process.stderr}")
 
-            self.logger.info(f"SGE job submitted: {process.stdout.strip()}")
+            # Parse job ID from qsub output
+            output = process.stdout.strip()
+            # SGE typically returns just the job ID number
+            job_id = output.split()[0] if output else "unknown"
+            
+            self.logger.info(f"SGE job submitted with ID: {job_id}")
 
             # Monitor job completion
-            self.monitor_job_completion(process.stdout.strip())
+            self.monitor_job_completion(job_id)
 
             benchmark_data.append(self.collect_benchmark_data([statement], resource_usage=[]))
 
@@ -47,9 +53,25 @@ class SGEExecutor(BaseExecutor):
             job_id (str): The SGE job ID to monitor.
 
         Raises:
-            RuntimeError: If the job fails or times out.
+            RuntimeError: If the job fails.
         """
+        import time
+        
+        # Track job start time
+        job_start_time = time.time()
+        self.logger.info(f"Started monitoring SGE job {job_id}")
+        
+        # Use consistent polling interval
+        polling_interval = 10
+        
         while True:
+            current_time = time.time()
+            elapsed = current_time - job_start_time
+            
+            # Periodically log status for debugging
+            if int(elapsed) % 60 == 0 and int(elapsed) > 0:
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
+                
             # Use qstat to get job status
             cmd = f"qstat -j {job_id}"
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -73,7 +95,7 @@ class SGEExecutor(BaseExecutor):
                 raise RuntimeError(f"Failed to get job status: {process.stderr}")
             
             # Wait before checking again
-            time.sleep(10)
+            time.sleep(polling_interval)
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for SGE jobs.
@@ -118,7 +140,20 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Slurm job submission failed: {process.stderr}")
                 raise RuntimeError(f"Slurm job submission failed: {process.stderr}")
 
-            job_id = process.stdout.strip()
+            sbatch_output = process.stdout.strip()
+            # Robustly extract numeric job ID from sbatch output
+            # Expected formats include:
+            #   "Submitted batch job 3785666"
+            #   "Submitted batch job 3785666
+            #    ..." (additional info)
+            #   or any output containing at least one integer token
+            match = re.search(r"\b(\d+)\b", sbatch_output)
+            if match:
+                job_id = match.group(1)
+            else:
+                self.logger.error(f"Could not parse Slurm job id from sbatch output: '{sbatch_output}'")
+                raise RuntimeError(f"Failed to parse Slurm job id from sbatch output: '{sbatch_output}'")
+            
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
             # Monitor job completion
@@ -129,8 +164,77 @@ class SlurmExecutor(BaseExecutor):
         return benchmark_data
 
     def build_job_script(self, statement):
-        """Custom build job script for Slurm."""
-        return super().build_job_script(statement)
+        """Build a job script with Slurm-specific directives.
+        
+        Args:
+            statement (str): The command to execute
+            
+        Returns:
+            tuple: Enhanced statement and path to job script
+        """
+        import uuid
+        import time
+        import os
+        
+        # Get work_dir from the executor config or use current directory
+        work_dir = self.config.get('work_dir', os.getcwd())
+        
+        # Create job_scripts directory in work_dir if it doesn't exist
+        job_script_dir = os.path.join(work_dir, "job_scripts")
+        os.makedirs(job_script_dir, exist_ok=True)
+        
+        # Create a unique script name using job name (if available), timestamp, and UUID
+        job_name = self.config.get("job_name", "slurm_job")
+        timestamp = int(time.time())
+        unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
+        
+        # Format: ctmp_{job_name}_{timestamp}_{uuid}.sh
+        script_name = f"ctmp_{job_name}_{timestamp}_{unique_id}.sh"
+        script_path = os.path.join(job_script_dir, script_name)
+        
+        # Enhanced statement that handles output directory creation for shell redirection
+        enhanced_statement = self._prepare_statement_with_output_dirs(statement)
+        
+        # Slurm resource parameters
+        # If job_time is omitted or explicitly set to an "unlimited" sentinel,
+        # we will NOT emit a --time directive, allowing partition/account defaults
+        # (which may be unlimited depending on cluster policy).
+        raw_time = self.config.get('job_time', None)
+        time_str = str(raw_time).strip().lower() if raw_time is not None else ""
+        unlimited_sentinels = {"", "none", "unlimited", "infinite", "inf", "0", "00:00:00", "0-00:00:00"}
+        emit_time = time_str not in unlimited_sentinels
+        time_limit = raw_time if emit_time else None
+        memory = self.config.get('job_memory', '4G')
+        cpus = self.config.get('job_threads', 1)
+        
+        # Build Slurm job script with proper directives
+        script_content = [
+            "#!/bin/bash",
+            f"#SBATCH --job-name={job_name}",
+            f"#SBATCH --mem={memory}",
+            f"#SBATCH --cpus-per-task={cpus}",
+            f"#SBATCH --output={script_path}.o",
+            f"#SBATCH --error={script_path}.e",
+            "",
+            f"# Job: {job_name}",
+            f"# Generated: {time.ctime()}",
+            f"# ID: {unique_id}",
+            f"# Resources: {cpus} CPUs, {memory} memory, {'unlimited' if not emit_time else time_limit} time",
+            "",
+        ]
+        # Append time directive only if requested/allowed
+        if emit_time and time_limit:
+            # Insert after job-name to keep directives grouped
+            script_content.insert(2, f"#SBATCH --time={time_limit}")
+        
+        script_content.append(enhanced_statement)
+        
+        with open(script_path, "w") as script_file:
+            script_file.write("\n".join(script_content))
+        
+        os.chmod(script_path, 0o755)  # Make it executable
+        self.logger.info(f"Created job script: {script_path}")
+        return enhanced_statement, script_path
 
     def monitor_job_completion(self, job_id):
         """Monitor the completion of a Slurm job.
@@ -139,29 +243,78 @@ class SlurmExecutor(BaseExecutor):
             job_id (str): The Slurm job ID to monitor.
 
         Raises:
-            RuntimeError: If the job fails or times out.
+            RuntimeError: If the job fails.
         """
+        import time
+        
+        # Track job start time and last status
+        job_start_time = time.time()
+        self.logger.info(f"Started monitoring Slurm job {job_id}")
+        last_status = None
+        
+        # Use consistent polling interval
+        polling_interval = 10
+        
         while True:
-            # Use sacct to get job status
+            current_time = time.time()
+            elapsed = current_time - job_start_time
+            # Periodically log status for debugging
+            if int(elapsed) % 60 == 0 and int(elapsed) > 0:
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
+            
+            # Prefer sacct to get job status (final accounting)
             cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
             if process.returncode != 0:
-                self.logger.error(f"Failed to get job status: {process.stderr}")
-                raise RuntimeError(f"Failed to get job status: {process.stderr}")
-
-            status = process.stdout.strip()
+                # Fallback to squeue for live state if sacct unavailable or accounting lag
+                self.logger.debug(f"sacct failed (rc={process.returncode}). Falling back to squeue: {process.stderr}")
+                sq_cmd = f"squeue -j {job_id} -h -o %T"
+                sq = subprocess.run(sq_cmd, shell=True, capture_output=True, text=True)
+                if sq.returncode != 0:
+                    self.logger.error(f"Both sacct and squeue failed: sacct='{process.stderr}', squeue='{sq.stderr}'")
+                    raise RuntimeError(f"Failed to get job status from Slurm: sacct='{process.stderr}', squeue='{sq.stderr}'")
+                status = sq.stdout.strip()
+                if not status:
+                    # No status in squeue either: assume job no longer in queue; try sacct once more for terminal state
+                    self.logger.debug(f"Job {job_id} not listed in squeue; re-querying sacct for terminal state")
+                    process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                    status_lines = process.stdout.strip().split('\n') if process.returncode == 0 else []
+                    status = status_lines[0].strip() if status_lines and status_lines[0].strip() else ""
+                # Continue below with common handling
+            else:
+                # Get the first line of status (main job status)
+                status_lines = process.stdout.strip().split('\n')
+                status = status_lines[0].strip() if status_lines and status_lines[0].strip() else ""
             
-            # Check job status
+            if not status:
+                # Job status not available yet (just submitted) or accounting lag; wait and continue
+                self.logger.debug(f"Job {job_id} status not available yet, waiting...")
+                time.sleep(polling_interval)
+                continue
+                 
+            # Track status changes for logging
+            if status != last_status:
+                self.logger.info(f"Job {job_id} status: {status}")
+                last_status = status
+            
+            # Handle empty status (job just submitted or sacct delay)
+            if not status:
+                time.sleep(polling_interval)
+                continue
+            
             if status in ["COMPLETED", "COMPLETED+"]:
-                self.logger.info(f"Job {job_id} completed successfully")
+                run_time = time.time() - job_start_time
+                self.logger.info(f"Job {job_id} completed successfully after {run_time:.2f} seconds")
                 break
-            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
-                self.logger.error(f"Job {job_id} failed with status: {status}")
+            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY"]:
+                run_time = time.time() - job_start_time
+                self.logger.error(f"Job {job_id} failed with status: {status} after {run_time:.2f} seconds")
                 raise RuntimeError(f"Job {job_id} failed with status: {status}")
-            
-            # Wait before checking again
-            time.sleep(10)
+            else:
+                # Job still running or pending, wait and check again
+                self.logger.debug(f"Job {job_id} status: {status}, waiting...")
+                time.sleep(polling_interval)
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Slurm jobs.
@@ -206,7 +359,9 @@ class TorqueExecutor(BaseExecutor):
                 self.logger.error(f"Torque job submission failed: {process.stderr}")
                 raise RuntimeError(f"Torque job submission failed: {process.stderr}")
 
-            job_id = process.stdout.strip()
+            output = process.stdout.strip()
+            # Torque typically returns the job ID in format like "123456.hostname"
+            job_id = output.split()[0] if output else "unknown"
             self.logger.info(f"Torque job submitted with ID: {job_id}")
 
             # Monitor job completion
@@ -229,7 +384,22 @@ class TorqueExecutor(BaseExecutor):
         Raises:
             RuntimeError: If the job fails or times out.
         """
+        import time
+        
+        # Track job start time
+        job_start_time = time.time()
+        self.logger.info(f"Started monitoring Torque job {job_id}")
+        
+        # Use consistent polling interval
+        polling_interval = 10
+        
         while True:
+            current_time = time.time()
+            elapsed = current_time - job_start_time
+            # Periodically log status for debugging
+            if int(elapsed) % 60 == 0 and int(elapsed) > 0:
+                self.logger.debug(f"Still monitoring job {job_id} after {int(elapsed / 60)} minutes")
+            
             # Use qstat to get job status
             cmd = f"qstat -f {job_id}"
             process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -253,7 +423,7 @@ class TorqueExecutor(BaseExecutor):
                 raise RuntimeError(f"Failed to get job status: {process.stderr}")
             
             # Wait before checking again
-            time.sleep(10)
+            time.sleep(polling_interval)
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Torque jobs.

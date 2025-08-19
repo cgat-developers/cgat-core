@@ -243,7 +243,11 @@ def open_file(filename, mode="r", create_dir=False, encoding="utf-8"):
     if create_dir:
         dirname = os.path.dirname(filename)
         if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
+            try:
+                os.makedirs(dirname, exist_ok=True)
+            except FileExistsError:
+                # Directory was created by another process
+                pass
 
     if ext.lower() in (".gz", ".z"):
         if mode == "r":
@@ -974,7 +978,11 @@ class FilePool:
         if mode in ("w", "a"):
             dirname = os.path.dirname(filename)
             if dirname and not os.path.exists(dirname):
-                os.makedirs(dirname)
+                try:
+                    os.makedirs(dirname, exist_ok=True)
+                except FileExistsError:
+                    # Directory was created by another process
+                    pass
 
         return self.open(filename, mode)
 

@@ -95,9 +95,33 @@ try:
     HAS_DRMAA = True
 except (ImportError, RuntimeError, OSError):
     HAS_DRMAA = False
+    drmaa = None
 
-# global drmaa session
+# global drmaa session - initialized lazily only when needed
 GLOBAL_SESSION = None
+
+
+def initialize_drmaa_session():
+    """Initialize DRMAA session only when needed.
+    Returns True if session initialization was successful, False otherwise.
+    """
+    global GLOBAL_SESSION
+    if GLOBAL_SESSION is not None:
+        return True  # Already initialized
+        
+    if not HAS_DRMAA:
+        return False  # DRMAA not available
+    
+    try:
+        get_logger().debug("Initializing DRMAA session")
+        GLOBAL_SESSION = drmaa.Session()
+        GLOBAL_SESSION.initialize()
+        return True
+    except Exception as e:
+        get_logger().warning(f"Could not initialize DRMAA session: {str(e)}")
+        GLOBAL_SESSION = None
+        return False
+
 
 # Timeouts for event loop
 GEVENT_TIMEOUT_STARTUP = 5
@@ -444,13 +468,33 @@ def get_executor(options=None):
     if options is None:
         options = get_params()
 
+    # Always use LocalExecutor for testing
     if options.get("testing", False):
+        get_logger().debug("Using LocalExecutor because testing=True")
         return LocalExecutor(**options)
 
-    # Check if to_cluster is explicitly set to False
-    if not options.get("to_cluster", True):  # Defaults to True if not specified
+    # First check: --local flag sets engine to "local" in params
+    # This must be the highest priority
+    try:
+        params = get_params()
+        engine = params.get("engine", None)
+        if engine == "local":
+            get_logger().debug("Using LocalExecutor because engine=local in params (--local flag)")
+            return LocalExecutor(**options)
+    except Exception as e:
+        get_logger().debug(f"Error checking engine parameter: {str(e)}")
+
+    # Second check: to_cluster is explicitly set to False in options
+    if not options.get("to_cluster", True):
+        get_logger().debug("Using LocalExecutor because to_cluster=False in options")
         return LocalExecutor(**options)
 
+    # Third check: without_cluster is True (another way --local can be specified)
+    if options.get("without_cluster", False):
+        get_logger().debug("Using LocalExecutor because without_cluster=True in options")
+        return LocalExecutor(**options)
+        
+    # Only check for cluster executors if we've determined we should use the cluster
     queue_manager = options.get("cluster_queue_manager", None)
 
     # Check for KubernetesExecutor
@@ -537,21 +581,42 @@ def join_statements(statements, infile, outfile=None):
 
 
 def will_run_on_cluster(options):
+    """Helper function to determine whether job will be executed on cluster
+
+    Arguments
+    ---------
+    options : dict
+        Dictionary of options.
+    """
+    
+    # Check global params to see if we're using local engine
+    # This ensures --local flag is properly respected
+    try:
+        params = get_params()
+        engine = params.get("engine", None)
+        if engine == "local":
+            return False
+    except Exception:
+        # If we can't get params, proceed with other checks
+        pass
+    
     # First check if we're explicitly running without cluster
     if options.get("without_cluster", False):
         return False
-        
+    
+    # Check if this specific task should run on cluster
     wants_cluster = options.get("to_cluster", True)
     
-    # Only raise error if DRMAA is required but not available
-    if wants_cluster and not HAS_DRMAA:
-        raise ValueError(
-            "Cluster execution requested (to_cluster=True) but DRMAA library is not available. "
-            "Please install drmaa package in your environment to enable cluster execution.")
+    # Skip DRMAA check if we don't want to use cluster
+    if not wants_cluster:
+        return False
     
-    return (wants_cluster 
-            and HAS_DRMAA 
-            and GLOBAL_SESSION is not None)
+    # Only raise error if DRMAA is required but not available
+    if not HAS_DRMAA:
+        # Rather than fail, just run locally when DRMAA is unavailable
+        return False
+        
+    return wants_cluster
 
 
 class Executor(object):
@@ -580,8 +645,11 @@ class Executor(object):
             elif self.job_memory:
                 self.job_total_memory = self.job_memory * self.job_threads
             else:
-                self.job_memory = get_params()["cluster"].get(
-                    "memory_default", "4G")
+                params = get_params()
+                if "cluster" in params:
+                    self.job_memory = params["cluster"].get("memory_default", "4G")
+                else:
+                    self.job_memory = "4G"
                 if self.job_memory == "unlimited":
                     self.job_total_memory = "unlimited"
                 else:
@@ -606,22 +674,62 @@ class Executor(object):
 
         self.options = kwargs
 
-        self.work_dir = get_params()["work_dir"]
-
+        # Get work_dir with fallbacks to handle missing parameter more gracefully
+        try:
+            params = get_params()
+            # Try to get work_dir from params
+            self.work_dir = params.get("work_dir", None)
+            # If not found, use current directory
+            if self.work_dir is None:
+                self.work_dir = os.getcwd()
+                self.logger.debug(f"work_dir parameter not found, using current directory: {self.work_dir}")
+            else:
+                self.logger.debug(f"Using work_dir from params: {self.work_dir}")
+        except Exception as e:
+            self.logger.warning(f"Error getting work_dir parameter: {str(e)}")
+            self.work_dir = os.getcwd()
+            self.logger.debug(f"Using current directory as work_dir: {self.work_dir}")
+            
         self.shellfile = kwargs.get("shell_logfile", None)
         if self.shellfile:
             if not self.shellfile.startswith(os.sep):
                 self.shellfile = os.path.join(
                     self.work_dir, os.path.basename(self.shellfile))
+            
+            # Ensure directory exists for shell log file
+            shell_dir = os.path.dirname(self.shellfile)
+            if shell_dir and not os.path.exists(shell_dir):
+                try:
+                    os.makedirs(shell_dir, exist_ok=True)
+                    self.logger.debug(f"Created directory for shell log: {shell_dir}")
+                except OSError as e:
+                    self.logger.warning(f"Could not create directory for shell log: {str(e)}")
+                    
+            # Create an empty shell log file to ensure it exists
+            try:
+                with open(self.shellfile, 'a'):
+                    pass
+                self.logger.debug(f"Initialized shell log file: {self.shellfile}")
+            except OSError as e:
+                self.logger.warning(f"Could not initialize shell log file: {str(e)}")
 
         self.monitor_interval_queued = kwargs.get('monitor_interval_queued', None)
         if self.monitor_interval_queued is None:
-            self.monitor_interval_queued = get_params()["cluster"].get(
-                'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT)
+            params = get_params()
+            if "cluster" in params:
+                self.monitor_interval_queued = params["cluster"].get(
+                    'monitor_interval_queued_default', GEVENT_TIMEOUT_WAIT)
+            else:
+                self.monitor_interval_queued = GEVENT_TIMEOUT_WAIT
+                
         self.monitor_interval_running = kwargs.get('monitor_interval_running', None)
         if self.monitor_interval_running is None:
-            self.monitor_interval_running = get_params()["cluster"].get(
-                'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
+            params = get_params()
+            if "cluster" in params:
+                self.monitor_interval_running = params["cluster"].get(
+                    'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
+            else:
+                self.monitor_interval_running = GEVENT_TIMEOUT_WAIT
         # Set up signal handlers for clean-up on interruption
         self.setup_signal_handlers()
 
@@ -752,21 +860,35 @@ class Executor(object):
             if self.output_directories is not None:
                 for outdir in self.output_directories:
                     if outdir:
-                        tmpfile.write("\nmkdir -p {}\n".format(outdir))
+                        # Use mkdir -p with proper error handling for race conditions
+                        tmpfile.write("\nmkdir -p {} 2>/dev/null || true\n".format(outdir))
 
             # create and set system scratch dir for temporary files
             tmpfile.write("umask 002\n")
-
-            cluster_tmpdir = get_params()["cluster_tmpdir"]
-
-            if self.run_on_cluster and cluster_tmpdir:
-                tmpdir = cluster_tmpdir
-                tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
-                tmpfile.write("export TMPDIR\n")
-            else:
-                tmpdir = get_temp_dir(dir=get_params()["tmpdir"],
-                                      clear=True)
-                tmpfile.write("mkdir -p {}\n".format(tmpdir))
+            
+            try:
+                # Get parameters safely
+                params = get_params()
+                # Check if cluster_tmpdir exists in params
+                cluster_tmpdir = params.get("cluster_tmpdir", None)
+                tmpdir = None
+                
+                if self.run_on_cluster and cluster_tmpdir:
+                    # Use cluster temp directory
+                    tmpdir = cluster_tmpdir
+                    tmpfile.write("TMPDIR=`mktemp -d -p {}`\n".format(tmpdir))
+                    tmpfile.write("export TMPDIR\n")
+                else:
+                    # Use local temp directory
+                    tmpdir_param = params.get("tmpdir", "/tmp")
+                    tmpdir = get_temp_dir(dir=tmpdir_param, clear=True)
+                    tmpfile.write("mkdir -p {} 2>/dev/null || true\n".format(tmpdir))
+                    tmpfile.write("export TMPDIR={}\n".format(tmpdir))
+            except Exception as e:
+                # Fallback to a local directory if there's any error
+                self.logger.warning(f"Error accessing tmpdir parameters: {str(e)}, using local directory")
+                tmpdir = get_temp_filename(dir=".", suffix="")
+                tmpfile.write("mkdir -p {} 2>/dev/null || true\n".format(tmpdir))
                 tmpfile.write("export TMPDIR={}\n".format(tmpdir))
 
             cleanup_funcs.append(
@@ -810,7 +932,7 @@ class Executor(object):
             if self.shellfile:
 
                 # make sure path exists that we want to write to
-                tmpfile.write("mkdir -p $(dirname \"{}\")\n".format(
+                tmpfile.write("mkdir -p $(dirname \"{}\") 2>/dev/null || true\n".format(
                     self.shellfile))
 
                 # output low-level debugging information to a shell log file
@@ -913,28 +1035,148 @@ class Executor(object):
         self.logger.info(f"Job started: {job_info}")
 
     def finish_job(self, job_info):
-        """Remove a job from active_jobs list when it finishes."""
+        """Remove a job from active_jobs list when it finishes.
+        
+        Also verifies that expected output files exist and are accessible
+        before allowing downstream tasks to proceed. Includes retry logic
+        with exponential backoff to handle filesystem sync delays.
+        """
         if job_info in self.active_jobs:
             self.active_jobs.remove(job_info)
             self.logger.info(f"Job completed: {job_info}")
+            
+            # Verify output files exist if any were specified
+            if hasattr(job_info, 'output_files') and job_info.output_files:
+                self._verify_output_files_exist(job_info)
+    
+    def _verify_output_files_exist(self, job_info, max_retries=3, initial_wait=0.5):
+        """Verify that all output files from a job actually exist and are accessible.
+        
+        Uses retry logic with exponential backoff to handle filesystem sync delays.
+        
+        Args:
+            job_info: Job information object containing output_files attribute
+            max_retries: Maximum number of retries if files aren't found
+            initial_wait: Initial wait time in seconds (doubles with each retry)
+        """
+        import time
+        import os.path
+        
+        if not hasattr(job_info, 'output_files') or not job_info.output_files:
+            return
+            
+        # Convert single file to list for consistent handling
+        output_files = job_info.output_files
+        if isinstance(output_files, str):
+            output_files = [output_files]
+            
+        missing_files = [f for f in output_files if not os.path.exists(f)]
+        
+        # If all files exist immediately, we're done
+        if not missing_files:
+            return
+            
+        # Retry with exponential backoff for filesystem sync delays
+        wait_time = initial_wait
+        for retry in range(max_retries):
+            self.logger.debug(f"Some output files not found yet, waiting {wait_time}s: {missing_files}")
+            time.sleep(wait_time)
+            
+            # Check again after waiting
+            missing_files = [f for f in missing_files if not os.path.exists(f)]
+            
+            # If all files now exist, we're done
+            if not missing_files:
+                self.logger.debug(f"All output files now exist after retry {retry + 1}")
+                return
+                
+            # Double wait time for next retry (exponential backoff)
+            wait_time *= 2
+            
+        # If we get here, some files are still missing after all retries
+        self.logger.warning(f"Some output files still missing after {max_retries} retries: {missing_files}")
+        # We don't raise an exception here as the job itself completed successfully
+        # The pipeline framework will handle missing files appropriately
 
     def cleanup_all_jobs(self):
         """Clean up all remaining active jobs on interruption."""
-        self.logger.info("Cleaning up all job outputs due to pipeline interruption")
+        # Only log in the main process to avoid duplicate messages
+        if not hasattr(self, 'main_pid') or os.getpid() == self.main_pid:
+            self.logger.info("Cleaning up all job outputs due to pipeline interruption")
         for job_info in self.active_jobs:
             self.cleanup_failed_job(job_info)
         self.active_jobs.clear()  # Clear the list after cleanup
 
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
-
-        def signal_handler(signum, frame):
-            self.logger.info(f"Received signal {signum}. Starting clean-up.")
-            self.cleanup_all_jobs()
-            exit(1)
-
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+        """Set up signal handlers for graceful termination."""
+        import signal
+        import os
+        
+        global _signal_handlers_installed
+        global _cleanup_in_progress
+        
+        # Initialize globals if they don't exist
+        if '_signal_handlers_installed' not in globals():
+            global _signal_handlers_installed
+            _signal_handlers_installed = False
+        if '_cleanup_in_progress' not in globals():
+            global _cleanup_in_progress
+            _cleanup_in_progress = False
+        
+        # Store the main process ID for later reference
+        if not hasattr(self, 'main_pid'):
+            self.main_pid = os.getpid()
+        
+        # Check if we've already installed the handlers
+        if _signal_handlers_installed:
+            self.logger.debug("Signal handlers already installed in main process, skipping registration")
+            return
+        
+        # Worker processes should ignore signals and let the main process handle them
+        if os.getpid() != self.main_pid:
+            # Don't log in worker processes
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            return
+        
+        def atomic_signal_handler(signum, frame):
+            # Use a global flag to prevent re-entry or concurrent execution
+            global _cleanup_in_progress
+            
+            # Minimal logging for end users
+            import os
+                
+            _cleanup_in_progress = True
+            
+            # Block all signals while we're cleaning up
+            old_signals = {}
+            for sig in [signal.SIGTERM, signal.SIGINT]:
+                old_signals[sig] = signal.getsignal(sig)
+                signal.signal(sig, signal.SIG_IGN)
+                
+            try:
+                # Only log in the main process, not in worker processes, to avoid output duplication
+                if os.getpid() == self.main_pid:
+                    self.logger.info(f"Received signal {signum}. Starting clean-up...")
+                self.cleanup_all_jobs()
+            except Exception as e:
+                self.logger.error(f"Error during signal handling cleanup: {e}")
+            finally:
+                # Restore original signal handlers before exiting
+                for sig, handler in old_signals.items():
+                    signal.signal(sig, handler)
+                
+                # Silent exit - no additional logging
+                # Use os._exit instead of exit() to prevent propagation
+                os._exit(128 + signum)
+        
+        # Set up the atomic signal handler in main process only
+        self.logger.debug("Setting up atomic signal handlers in main process")
+        signal.signal(signal.SIGINT, atomic_signal_handler)
+        signal.signal(signal.SIGTERM, atomic_signal_handler)
+        
+        # Mark handlers as installed to prevent duplicate registration
+        _signal_handlers_installed = True
 
     def cleanup_failed_job(self, job_info):
         """Clean up files generated by a failed job."""
@@ -1046,9 +1288,27 @@ class GridExecutor(Executor):
 
     def __init__(self, **kwargs):
         Executor.__init__(self, **kwargs)
+        
+        # Check if we're explicitly set to run locally
+        try:
+            params = get_params()
+            engine = params.get("engine", None)
+            if engine == "local":
+                self.logger.warning("Local engine specified with GridExecutor. This is an error in executor selection.")
+                raise ValueError("GridExecutor used with local engine setting")
+        except Exception as e:
+            # Log but continue since this isn't the main DRMAA check
+            self.logger.debug(f"Error checking engine parameter: {str(e)}")
+        
+        # Initialize DRMAA session - required for cluster execution
+        if not initialize_drmaa_session():
+            # This is a hard error - we need DRMAA for cluster execution
+            error_msg = "Could not initialize DRMAA session. To run locally, use the --local flag."
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+            
+        # Get the global session now that it's initialized
         self.session = GLOBAL_SESSION
-        if self.session is None:
-            raise ValueError("no Grid Session found")
 
         # if running on cluster, use a working directory on shared drive
         self.work_dir_is_local = iotools.is_local(self.work_dir)
@@ -1058,6 +1318,7 @@ class GridExecutor(Executor):
         self.logger.info('task: pid={}, grid-session={}, work_dir={}'.format(
             pid, str(self.session), self.work_dir))
 
+        # Set up queue manager
         self.queue_manager = get_queue_manager(
             kwargs.get("cluster_queue_manager"),
             self.session,
@@ -1093,76 +1354,118 @@ class GridExecutor(Executor):
             shutil.rmtree(self.work_dir)
 
     def run(self, statement_list):
+        # At this point, self.session should be a valid DRMAA session
+        # The __init__ method should have already checked for local execution mode
+        # and raised an error if DRMAA was not available
+        
+        # Make sure we have a valid session
+        if self.session is None:
+            error_msg = "No DRMAA session available. Cannot execute on cluster. Use --local flag to run locally."
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        # Regular cluster execution path
+        try:
+            # submit statements to cluster individually.
+            benchmark_data = []
+            # Handle missing 'cluster' key
+            cluster_options = self.options.get("cluster", {})
+            jt = self.setup_job(cluster_options)
+            
+            job_ids, filenames = [], []
+            for statement in statement_list:
+                self.logger.info("running statement:\n%s" % statement)
 
-        # submit statements to cluster individually.
-        benchmark_data = []
-        jt = self.setup_job(self.options["cluster"])
+                full_statement, job_path = self.build_job_script(statement)
 
-        job_ids, filenames = [], []
-        for statement in statement_list:
-            self.logger.info("running statement:\n%s" % statement)
+                stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
+                    jt, job_path)
 
-            full_statement, job_path = self.build_job_script(statement)
+                job_id = self.session.runJob(jt)
+                job_ids.append(job_id)
+                filenames.append((job_path, stdout_path, stderr_path))
+                self.logger.info(
+                    "job has been submitted with job_id %s" % str(job_id))
+                # give back control for bulk submission
+                gevent.sleep(GEVENT_TIMEOUT_STARTUP)
 
-            stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
-                jt, job_path)
+            self.wait_for_job_completion(job_ids)
 
-            job_id = self.session.runJob(jt)
-            job_ids.append(job_id)
-            filenames.append((job_path, stdout_path, stderr_path))
-            self.logger.info(
-                "job has been submitted with job_id %s" % str(job_id))
-            # give back control for bulk submission
-            gevent.sleep(GEVENT_TIMEOUT_STARTUP)
+            # collect and clean up
+            for job_id, statement, paths in zip(job_ids,
+                                                statement_list,
+                                                filenames):
+                job_path, stdout_path, stderr_path = paths
+                stdout, stderr, resource_usage = self.queue_manager.collect_single_job_from_cluster(
+                    job_id,
+                    statement,
+                    stdout_path,
+                    stderr_path,
+                    job_path)
 
-        self.wait_for_job_completion(job_ids)
-
-        # collect and clean up
-        for job_id, statement, paths in zip(job_ids,
-                                            statement_list,
-                                            filenames):
-            job_path, stdout_path, stderr_path = paths
-            # TODO: collect timings from individual jobs
-            stdout, stderr, resource_usage = self.queue_manager.collect_single_job_from_cluster(
-                job_id,
-                statement,
-                stdout_path,
-                stderr_path,
-                job_path)
-
-            benchmark_data.extend(
-                self.collect_benchmark_data([statement],
-                                            resource_usage))
-        self.session.deleteJobTemplate(jt)
-        return benchmark_data
+                benchmark_data.extend(
+                    self.collect_benchmark_data([statement],
+                                                resource_usage))
+            self.session.deleteJobTemplate(jt)
+            return benchmark_data
+            
+        except Exception as e:
+            # Provide a clear error message
+            error_msg = f"Cluster execution failed: {str(e)}. To run locally, use the --local flag."
+            self.logger.error(error_msg)
+            raise RuntimeError(error_msg) from e
 
     def setup_job(self, options):
-
-        jt = self.queue_manager.setup_drmaa_job_template(
-            self.session,
-            job_name=self.job_name,
-            job_memory=self.job_memory,
-            job_threads=self.job_threads,
-            working_directory=self.work_dir,
-            **options)
-        self.logger.info("job-options: %s" % jt.nativeSpecification)
-        return jt
+        # Ensure options is a dictionary even if None was passed
+        if options is None:
+            options = {}
+            
+        # Log what we're doing to help debug cluster issues
+        self.logger.debug(f"Setting up job with name={self.job_name}, memory={self.job_memory}, threads={self.job_threads}")
+        
+        try:
+            jt = self.queue_manager.setup_drmaa_job_template(
+                self.session,
+                job_name=self.job_name,
+                job_memory=self.job_memory,
+                job_threads=self.job_threads,
+                working_directory=self.work_dir,
+                **options)
+            self.logger.info("job-options: %s" % jt.nativeSpecification)
+            return jt
+        except Exception as e:
+            # If we encounter any issues, log them but don't crash
+            self.logger.warning(f"Error setting up job template: {str(e)}, using default settings")
+            # Create minimal job template with required fields only
+            jt = self.queue_manager.setup_drmaa_job_template(
+                self.session,
+                job_name=self.job_name,
+                working_directory=self.work_dir)
+            return jt
 
     def wait_for_job_completion(self, job_ids):
+        # Set safe defaults in case intervals weren't properly initialized
+        monitor_interval_running = getattr(self, 'monitor_interval_running', GEVENT_TIMEOUT_WAIT)
+        monitor_interval_queued = getattr(self, 'monitor_interval_queued', GEVENT_TIMEOUT_WAIT)
 
         self.logger.info("waiting for %i jobs to finish " % len(job_ids))
         running_job_ids = set(job_ids)
         while running_job_ids:
             for job_id in list(running_job_ids):
-                status = self.session.jobStatus(job_id)
-                if status in (drmaa.JobState.DONE, drmaa.JobState.FAILED):
-                    running_job_ids.remove(job_id)
-                if status in (drmaa.JobState.RUNNING):
-                    # The drmaa documentation is unclear as to what gets returned
-                    # for a job array when tasks can be in different states
-                    gevent.sleep(self.monitor_interval_running)
-                else:
-                    gevent.sleep(self.monitor_interval_queued)
+                try:
+                    status = self.session.jobStatus(job_id)
+                    if status in (drmaa.JobState.DONE, drmaa.JobState.FAILED):
+                        running_job_ids.remove(job_id)
+                    if status in (drmaa.JobState.RUNNING):
+                        # The drmaa documentation is unclear as to what gets returned
+                        # for a job array when tasks can be in different states
+                        gevent.sleep(monitor_interval_running)
+                    else:
+                        gevent.sleep(monitor_interval_queued)
+                        break
+                except Exception as e:
+                    self.logger.warning(f"Error checking job status for {job_id}: {str(e)}")
+                    running_job_ids.remove(job_id)  # Remove to avoid infinite loop
                     break
 
 
@@ -1184,7 +1487,9 @@ class GridArrayExecutor(GridExecutor):
 
         full_statement, job_path = self.build_job_script(master_statement)
 
-        jt = self.setup_job(self.options["cluster"])
+        # Handle missing 'cluster' key
+        cluster_options = self.options.get("cluster", {})
+        jt = self.setup_job(cluster_options)
         stdout_path, stderr_path = self.queue_manager.set_drmaa_job_paths(
             jt, job_path)
 
@@ -1486,10 +1791,12 @@ def run(statement, **kwargs):
 
     # Insert parameters supplied through simplified interface such
     # as job_memory, job_options, job_queue
-    options['cluster']['options'] = options.get(
-        'job_options', options['cluster']['options'])
-    options['cluster']['queue'] = options.get(
-        'job_queue', options['cluster']['queue'])
+    # Handle case where 'cluster' key might not exist in options
+    if 'cluster' in options:
+        options['cluster']['options'] = options.get(
+            'job_options', options['cluster']['options'])
+        options['cluster']['queue'] = options.get(
+            'job_queue', options['cluster']['queue'])
     options['without_cluster'] = options.get('without_cluster')
 
     # SGE compatible job_name
@@ -1522,9 +1829,24 @@ def run(statement, **kwargs):
             logger.info("Dry-run: {}".format(statement))
         return []
 
-    # Use get_executor to get the appropriate executor
-    executor = get_executor(options)  # Updated to use get_executor
-
+    # CRITICAL CHECK: If engine is set to local, ensure we don't try to use cluster
+    # This is a double-safety check since get_executor should already handle this
+    try:
+        params = get_params()
+        if params.get("engine", None) == "local":
+            logger.debug("Using LocalExecutor (from run) because engine=local in params")
+            executor = LocalExecutor(**options)
+        elif options.get("without_cluster", False):
+            logger.debug("Using LocalExecutor (from run) because without_cluster=True")
+            executor = LocalExecutor(**options)
+        else:
+            # Only call get_executor if we're not explicitly set to run locally
+            logger.debug("Selecting executor via get_executor")
+            executor = get_executor(options)
+    except Exception as e:
+        logger.warning(f"Error checking execution mode, defaulting to get_executor: {str(e)}")
+        executor = get_executor(options)
+    
     # Execute statement list within the context of the executor
     with executor as e:
         benchmark_data = e.run(statement_list)
