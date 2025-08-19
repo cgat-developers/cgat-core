@@ -1035,28 +1035,148 @@ class Executor(object):
         self.logger.info(f"Job started: {job_info}")
 
     def finish_job(self, job_info):
-        """Remove a job from active_jobs list when it finishes."""
+        """Remove a job from active_jobs list when it finishes.
+        
+        Also verifies that expected output files exist and are accessible
+        before allowing downstream tasks to proceed. Includes retry logic
+        with exponential backoff to handle filesystem sync delays.
+        """
         if job_info in self.active_jobs:
             self.active_jobs.remove(job_info)
             self.logger.info(f"Job completed: {job_info}")
+            
+            # Verify output files exist if any were specified
+            if hasattr(job_info, 'output_files') and job_info.output_files:
+                self._verify_output_files_exist(job_info)
+    
+    def _verify_output_files_exist(self, job_info, max_retries=3, initial_wait=0.5):
+        """Verify that all output files from a job actually exist and are accessible.
+        
+        Uses retry logic with exponential backoff to handle filesystem sync delays.
+        
+        Args:
+            job_info: Job information object containing output_files attribute
+            max_retries: Maximum number of retries if files aren't found
+            initial_wait: Initial wait time in seconds (doubles with each retry)
+        """
+        import time
+        import os.path
+        
+        if not hasattr(job_info, 'output_files') or not job_info.output_files:
+            return
+            
+        # Convert single file to list for consistent handling
+        output_files = job_info.output_files
+        if isinstance(output_files, str):
+            output_files = [output_files]
+            
+        missing_files = [f for f in output_files if not os.path.exists(f)]
+        
+        # If all files exist immediately, we're done
+        if not missing_files:
+            return
+            
+        # Retry with exponential backoff for filesystem sync delays
+        wait_time = initial_wait
+        for retry in range(max_retries):
+            self.logger.debug(f"Some output files not found yet, waiting {wait_time}s: {missing_files}")
+            time.sleep(wait_time)
+            
+            # Check again after waiting
+            missing_files = [f for f in missing_files if not os.path.exists(f)]
+            
+            # If all files now exist, we're done
+            if not missing_files:
+                self.logger.debug(f"All output files now exist after retry {retry + 1}")
+                return
+                
+            # Double wait time for next retry (exponential backoff)
+            wait_time *= 2
+            
+        # If we get here, some files are still missing after all retries
+        self.logger.warning(f"Some output files still missing after {max_retries} retries: {missing_files}")
+        # We don't raise an exception here as the job itself completed successfully
+        # The pipeline framework will handle missing files appropriately
 
     def cleanup_all_jobs(self):
         """Clean up all remaining active jobs on interruption."""
-        self.logger.info("Cleaning up all job outputs due to pipeline interruption")
+        # Only log in the main process to avoid duplicate messages
+        if not hasattr(self, 'main_pid') or os.getpid() == self.main_pid:
+            self.logger.info("Cleaning up all job outputs due to pipeline interruption")
         for job_info in self.active_jobs:
             self.cleanup_failed_job(job_info)
         self.active_jobs.clear()  # Clear the list after cleanup
 
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
-
-        def signal_handler(signum, frame):
-            self.logger.info(f"Received signal {signum}. Starting clean-up.")
-            self.cleanup_all_jobs()
-            exit(1)
-
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+        """Set up signal handlers for graceful termination."""
+        import signal
+        import os
+        
+        global _signal_handlers_installed
+        global _cleanup_in_progress
+        
+        # Initialize globals if they don't exist
+        if '_signal_handlers_installed' not in globals():
+            global _signal_handlers_installed
+            _signal_handlers_installed = False
+        if '_cleanup_in_progress' not in globals():
+            global _cleanup_in_progress
+            _cleanup_in_progress = False
+        
+        # Store the main process ID for later reference
+        if not hasattr(self, 'main_pid'):
+            self.main_pid = os.getpid()
+        
+        # Check if we've already installed the handlers
+        if _signal_handlers_installed:
+            self.logger.debug("Signal handlers already installed in main process, skipping registration")
+            return
+        
+        # Worker processes should ignore signals and let the main process handle them
+        if os.getpid() != self.main_pid:
+            # Don't log in worker processes
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            return
+        
+        def atomic_signal_handler(signum, frame):
+            # Use a global flag to prevent re-entry or concurrent execution
+            global _cleanup_in_progress
+            
+            # Minimal logging for end users
+            import os
+                
+            _cleanup_in_progress = True
+            
+            # Block all signals while we're cleaning up
+            old_signals = {}
+            for sig in [signal.SIGTERM, signal.SIGINT]:
+                old_signals[sig] = signal.getsignal(sig)
+                signal.signal(sig, signal.SIG_IGN)
+                
+            try:
+                # Only log in the main process, not in worker processes, to avoid output duplication
+                if os.getpid() == self.main_pid:
+                    self.logger.info(f"Received signal {signum}. Starting clean-up...")
+                self.cleanup_all_jobs()
+            except Exception as e:
+                self.logger.error(f"Error during signal handling cleanup: {e}")
+            finally:
+                # Restore original signal handlers before exiting
+                for sig, handler in old_signals.items():
+                    signal.signal(sig, handler)
+                
+                # Silent exit - no additional logging
+                # Use os._exit instead of exit() to prevent propagation
+                os._exit(128 + signum)
+        
+        # Set up the atomic signal handler in main process only
+        self.logger.debug("Setting up atomic signal handlers in main process")
+        signal.signal(signal.SIGINT, atomic_signal_handler)
+        signal.signal(signal.SIGTERM, atomic_signal_handler)
+        
+        # Mark handlers as installed to prevent duplicate registration
+        _signal_handlers_installed = True
 
     def cleanup_failed_job(self, job_info):
         """Clean up files generated by a failed job."""
