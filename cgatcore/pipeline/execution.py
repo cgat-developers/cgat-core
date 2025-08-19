@@ -860,7 +860,8 @@ class Executor(object):
             if self.output_directories is not None:
                 for outdir in self.output_directories:
                     if outdir:
-                        tmpfile.write("\nmkdir -p {}\n".format(outdir))
+                        # Use mkdir -p with proper error handling for race conditions
+                        tmpfile.write("\nmkdir -p {} 2>/dev/null || true\n".format(outdir))
 
             # create and set system scratch dir for temporary files
             tmpfile.write("umask 002\n")
@@ -881,13 +882,13 @@ class Executor(object):
                     # Use local temp directory
                     tmpdir_param = params.get("tmpdir", "/tmp")
                     tmpdir = get_temp_dir(dir=tmpdir_param, clear=True)
-                    tmpfile.write("mkdir -p {}\n".format(tmpdir))
+                    tmpfile.write("mkdir -p {} 2>/dev/null || true\n".format(tmpdir))
                     tmpfile.write("export TMPDIR={}\n".format(tmpdir))
             except Exception as e:
                 # Fallback to a local directory if there's any error
                 self.logger.warning(f"Error accessing tmpdir parameters: {str(e)}, using local directory")
-                tmpdir = get_temp_filename(root=".", suffix="")
-                tmpfile.write("mkdir -p {}\n".format(tmpdir))
+                tmpdir = get_temp_filename(dir=".", suffix="")
+                tmpfile.write("mkdir -p {} 2>/dev/null || true\n".format(tmpdir))
                 tmpfile.write("export TMPDIR={}\n".format(tmpdir))
 
             cleanup_funcs.append(
@@ -931,7 +932,7 @@ class Executor(object):
             if self.shellfile:
 
                 # make sure path exists that we want to write to
-                tmpfile.write("mkdir -p $(dirname \"{}\")\n".format(
+                tmpfile.write("mkdir -p $(dirname \"{}\") 2>/dev/null || true\n".format(
                     self.shellfile))
 
                 # output low-level debugging information to a shell log file

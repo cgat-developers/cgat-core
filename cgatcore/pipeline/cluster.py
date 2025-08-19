@@ -208,7 +208,7 @@ class DRMAACluster(object):
         return stdout, stderr, resource_usage
 
     def get_drmaa_job_stdout_stderr(self, stdout_path, stderr_path,
-                                    tries=5, encoding="utf-8"):
+                                    tries=10, encoding="utf-8"):
         '''get stdout/stderr allowing for some lag.
 
         Try at most *tries* times. If unsuccessfull, throw OSError
@@ -217,33 +217,50 @@ class DRMAACluster(object):
 
         Returns tuple of stdout and stderr as unicode strings.
         '''
+        # Increased timeout and tries for Python 3.11 compatibility
+        timeout_wait = max(GEVENT_TIMEOUT_WAIT, 2)  # Minimum 2 seconds
+        
         x = tries
         while x >= 0:
-            if os.path.exists(stdout_path):
+            if os.path.exists(stdout_path) and os.path.getsize(stdout_path) >= 0:
                 break
-            gevent.sleep(GEVENT_TIMEOUT_WAIT)
+            gevent.sleep(timeout_wait)
             x -= 1
 
         x = tries
         while x >= 0:
-            if os.path.exists(stderr_path):
+            if os.path.exists(stderr_path) and os.path.getsize(stderr_path) >= 0:
                 break
-            gevent.sleep(GEVENT_TIMEOUT_WAIT)
+            gevent.sleep(timeout_wait)
             x -= 1
 
-        try:
-            with open(stdout_path, "r", encoding=encoding) as inf:
-                stdout = inf.readlines()
-        except IOError as msg:
-            get_logger().warning("could not open stdout: %s" % msg)
-            stdout = []
+        # Add retry logic for file reading with better error handling
+        stdout = []
+        stderr = []
+        
+        for attempt in range(3):  # Retry up to 3 times
+            try:
+                if os.path.exists(stdout_path):
+                    with open(stdout_path, "r", encoding=encoding) as inf:
+                        stdout = inf.readlines()
+                break
+            except (IOError, OSError) as msg:
+                if attempt == 2:  # Last attempt
+                    get_logger().warning("could not open stdout after 3 attempts: %s" % msg)
+                else:
+                    gevent.sleep(1)  # Wait before retry
 
-        try:
-            with open(stderr_path, "r", encoding=encoding) as inf:
-                stderr = inf.readlines()
-        except IOError as msg:
-            get_logger().warning("could not open stdout: %s" % msg)
-            stderr = []
+        for attempt in range(3):  # Retry up to 3 times
+            try:
+                if os.path.exists(stderr_path):
+                    with open(stderr_path, "r", encoding=encoding) as inf:
+                        stderr = inf.readlines()
+                break
+            except (IOError, OSError) as msg:
+                if attempt == 2:  # Last attempt
+                    get_logger().warning("could not open stderr after 3 attempts: %s" % msg)
+                else:
+                    gevent.sleep(1)  # Wait before retry
 
         try:
             os.unlink(stdout_path)

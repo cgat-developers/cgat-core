@@ -578,7 +578,11 @@ def open_file(filename, mode="r", create_dir=False, encoding="utf-8"):
     if create_dir:
         dirname = os.path.abspath(os.path.dirname(filename))
         if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
+            try:
+                os.makedirs(dirname, exist_ok=True)
+            except FileExistsError:
+                # Directory was created by another process
+                pass
 
     if ext.lower() in (".gz", ".z"):
         # in gzip, r defaults to "rt", so make it compatible with open

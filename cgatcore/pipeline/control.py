@@ -410,7 +410,11 @@ def clone_pipeline(srcdir, destdir=None):
             if _ignore(d):
                 continue
             dest = os.path.join(os.path.join(destdir, relpath, d))
-            os.mkdir(dest)
+            try:
+                os.makedirs(dest, exist_ok=True)
+            except FileExistsError:
+                # Directory was created by another process
+                pass
             # touch
             s = os.stat(os.path.join(root, d))
             os.utime(dest, (s.st_atime, s.st_mtime))
@@ -1432,7 +1436,11 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     work_dir = get_params().get("work_dir")
     if not os.path.exists(work_dir):
         E.info("working directory {} does not exist - creating".format(work_dir))
-        os.makedirs(work_dir)
+        try:
+            os.makedirs(work_dir, exist_ok=True)
+        except FileExistsError:
+            # Directory was created by another process
+            pass
     logger.info("changing directory to {}".format(work_dir))
     os.chdir(work_dir)
 
@@ -1479,8 +1487,9 @@ def run_workflow(args, argv=None, pipeline=None):
         if not os.path.exists(get_params()["tmpdir"]):
             logger.warn(f"Local temporary directory {get_params()['tmpdir']} did not exist - created")
             try:
-                os.makedirs(get_params()["tmpdir"])
-            except OSError:
+                os.makedirs(get_params()["tmpdir"], exist_ok=True)
+            except (OSError, FileExistsError):
+                # Directory creation failed or was created by another process
                 pass
 
         logger.info(f"Temporary directory is {get_params()['tmpdir']}")
