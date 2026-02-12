@@ -303,7 +303,7 @@ import textwrap
 import random
 import uuid
 import yaml
-import shlex as pipes  # Use shlex as a replacement for pipes
+import shlex  # Use shlex.quote() as a replacement for pipes.quote()
 # import convenience functions from logging
 import logging
 import logging.config
@@ -1408,9 +1408,9 @@ def run(statement,
         if "bash" not in shell:
             raise ValueError(
                 "require bash for advanced shell syntax: <()")
-        # Note: pipes.quote is deprecated. In Py3, use shlex.quote
-        # (not present in Py2.7)
-        statement = "%s -c %s" % (shell, pipes.quote(statement))
+        # Note: pipes.quote was deprecated and removed in Python 3.13.
+        # Use shlex.quote() instead (available since Python 3.3)
+        statement = "%s -c %s" % (shell, shlex.quote(statement))
 
     if return_stdout:
         try:
