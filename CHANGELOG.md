@@ -1,3 +1,7 @@
+# Version 0.6.18
+
+- Python 3.13 compatibility: Replace deprecated `pipes.quote()` with `shlex.quote()` (PEP 594)
+
 # Version 0.6.15
 
 - additional py3.10 compatibility [contributed by @tschoonj]
