@@ -37,7 +37,7 @@ jobs:
             echo "installer-url=https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh" >> $GITHUB_ENV
           fi
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           installer-url: ${{ env.installer-url }}
           python-version: ${{ matrix.python-version }}
