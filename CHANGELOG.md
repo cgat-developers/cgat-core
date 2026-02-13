@@ -1,3 +1,7 @@
+# Version 0.6.20
+
+- Fix pipeline parallelism: pass `multiprocess` to `ruffus.pipeline_run()` so multiple jobs run in parallel again
+
 # Version 0.6.19
 
 - Update GitHub Actions workflows to use latest action versions
