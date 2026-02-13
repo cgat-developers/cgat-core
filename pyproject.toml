@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cgatcore"
-version = "0.6.17"
+version = "0.6.18"
 description = "cgatcore: the Computational Genomics Analysis Toolkit"
 authors = [
     { name = "Adam Cribbs", email = "adam.cribbs@ndorms.ox.ac.uk" }
