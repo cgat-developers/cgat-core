@@ -1,3 +1,8 @@
+# Version 0.6.19
+
+- Update GitHub Actions workflows to use latest action versions
+- Fix mkdocs configuration for compatibility with newer mkdocstrings versions
+
 # Version 0.6.18
 
 - Python 3.13 compatibility: Replace deprecated `pipes.quote()` with `shlex.quote()` (PEP 594)
