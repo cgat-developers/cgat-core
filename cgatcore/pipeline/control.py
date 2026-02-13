@@ -44,7 +44,8 @@ except (ImportError, RuntimeError, OSError):
 
 import cgatcore.experiment as E
 import cgatcore.iotools as iotools
-from cgatcore.pipeline.parameters import input_validation, get_params, get_parameters
+from cgatcore.pipeline.parameters import (
+    input_validation, get_params, get_parameters, write_params_init_file)
 from cgatcore.experiment import get_header, MultiLineFormatter
 from cgatcore.pipeline.utils import get_caller, get_caller_locals, is_test
 from cgatcore.pipeline.execution import execute, start_session, \
@@ -1251,6 +1252,9 @@ def initialize(argv=None, caller=None, defaults=None, optparse=True, **kwargs):
     logger.info("changing directory to {}".format(work_dir))
     os.chdir(work_dir)
 
+    # Write params snapshot for spawned worker processes (multiprocess with spawn)
+    write_params_init_file(work_dir)
+
     logger.info("pipeline has been initialized")
 
     return args
@@ -1302,7 +1306,8 @@ def run_workflow(args, argv=None, pipeline=None):
                     logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
                     exceptions_terminate_immediately=args.exceptions_terminate_immediately,
                     checksum_level=args.ruffus_checksums_level, pipeline=pipeline,
-                    one_second_per_job=False
+                    one_second_per_job=False,
+                    multiprocess=args.multiprocess
                 )
                 
             except ruffus.ruffus_exceptions.RethrownJobError as ex:
