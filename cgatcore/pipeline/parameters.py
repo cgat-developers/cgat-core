@@ -7,6 +7,7 @@ Reference
 """
 
 import collections
+import json
 import os
 import sys
 import platform
@@ -561,8 +562,58 @@ def check_parameter(param):
         raise ValueError("need `%s` to be set" % param)
 
 
+def _get_serializable_params():
+    """Return a dict of PARAMS entries that are JSON-serializable (for worker init file)."""
+    out = {}
+    for k, v in PARAMS.items():
+        try:
+            json.dumps(v)
+            out[k] = v
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
+def _load_params_in_worker():
+    """Load PARAMS from init file in a spawned worker process (multiprocess spawn)."""
+    global HAVE_INITIALIZED
+    path = os.environ.get("CGAT_PARAMS_INIT_FILE")
+    if not path or not os.path.exists(path):
+        return
+    try:
+        with open(path, "rt", encoding="utf8") as f:
+            loaded = json.load(f)
+        PARAMS.update(loaded)
+        HAVE_INITIALIZED = True
+    except Exception:
+        pass
+
+
+def write_params_init_file(work_dir):
+    """Write a JSON snapshot of PARAMS for spawned worker processes.
+    Call from the main process after initialize(); set CGAT_PARAMS_INIT_FILE in env.
+    """
+    if not HAVE_INITIALIZED:
+        return
+    try:
+        data = _get_serializable_params()
+        path = os.path.join(os.path.abspath(work_dir), "cgat_params_init_{}.json".format(os.getpid()))
+        with open(path, "wt", encoding="utf8") as f:
+            json.dump(data, f, indent=0)
+        os.environ["CGAT_PARAMS_INIT_FILE"] = path
+    except Exception:
+        pass
+
+
 def get_params():
     """return handle to global parameter dictionary"""
+    if not HAVE_INITIALIZED:
+        try:
+            import multiprocessing
+            if multiprocessing.current_process().name != "MainProcess":
+                _load_params_in_worker()
+        except ImportError:
+            pass
     return PARAMS
 
 
