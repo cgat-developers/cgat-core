@@ -1403,9 +1403,7 @@ def run(statement,
     # remove new lines
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
 
-    # Only wrap for real bash process substitution <( cmd ), not "<(" in paths/variables.
-    # Match "<(" at start of statement or after whitespace to avoid false positives.
-    if re.search(r'(^|\s)<\(', statement):
+    if "<(" in statement:
         shell = os.environ.get('SHELL', "/bin/bash")
         if "bash" not in shell:
             raise ValueError(

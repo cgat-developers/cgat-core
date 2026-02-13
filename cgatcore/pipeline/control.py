@@ -1302,7 +1302,8 @@ def run_workflow(args, argv=None, pipeline=None):
                     logger=logger, verbose=args.loglevel, log_exceptions=args.log_exceptions,
                     exceptions_terminate_immediately=args.exceptions_terminate_immediately,
                     checksum_level=args.ruffus_checksums_level, pipeline=pipeline,
-                    one_second_per_job=False
+                    one_second_per_job=False,
+                    multiprocess=args.multiprocess
                 )
                 
             except ruffus.ruffus_exceptions.RethrownJobError as ex:
