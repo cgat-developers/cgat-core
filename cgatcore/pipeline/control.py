@@ -1391,7 +1391,7 @@ def run_workflow(args, argv=None, pipeline=None):
 
         # Generate default config files
         elif args.pipeline_action == "config":
-            pipeline_path = os.path.splitext(get_caller().__file__)[0]
+            pipeline_path = os.path.splitext(get_caller(1).__file__)[0]
             general_path = os.path.join(os.path.dirname(pipeline_path), "configuration")
             write_config_files(pipeline_path, general_path)
 
