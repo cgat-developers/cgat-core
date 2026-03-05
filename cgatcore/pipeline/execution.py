@@ -923,12 +923,19 @@ class Executor(object):
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
 
-        Call this once from the main control loop only.  Do not call from
-        Executor.__init__ because gevent monkey-patches signal.signal() and
-        accumulates watchers rather than replacing them, causing every
-        Executor instance to register its own handler.
+        Call this once from the main control loop only.  The handler guards
+        against firing in ruffus worker subprocesses: ruffus forks N workers
+        (multiprocess=N) after the handler is installed, so each worker
+        inherits it and would otherwise run cleanup when the process group
+        receives SIGTERM on normal exit.
         """
+        import multiprocessing
+
         def signal_handler(signum, frame):
+            # Workers inherit this handler via fork.  Only the main process
+            # should perform clean-up.
+            if multiprocessing.current_process().name != "MainProcess":
+                return
             self.logger.info(f"Received signal {signum}. Starting clean-up.")
             self.cleanup_all_jobs()
             exit(1)
