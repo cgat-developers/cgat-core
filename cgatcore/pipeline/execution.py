@@ -923,7 +923,15 @@ class Executor(object):
         self.active_jobs.clear()  # Clear the list after cleanup
 
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
+        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
+
+        Only installed in the main process; ruffus worker subprocesses inherit
+        signal dispositions from the parent but should not run cleanup themselves,
+        otherwise every worker logs the signal and tries to clean up in parallel.
+        """
+        import multiprocessing
+        if multiprocessing.current_process().name != 'MainProcess':
+            return
 
         def signal_handler(signum, frame):
             self.logger.info(f"Received signal {signum}. Starting clean-up.")
