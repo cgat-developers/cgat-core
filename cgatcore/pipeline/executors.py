@@ -118,7 +118,13 @@ class SlurmExecutor(BaseExecutor):
                 self.logger.error(f"Slurm job submission failed: {process.stderr}")
                 raise RuntimeError(f"Slurm job submission failed: {process.stderr}")
 
-            job_id = process.stdout.strip()
+            # sbatch outputs "Submitted batch job <id>" - extract the numeric ID
+            stdout = process.stdout.strip()
+            try:
+                job_id = stdout.split()[-1]
+                int(job_id)  # validate it's numeric
+            except (IndexError, ValueError):
+                raise RuntimeError(f"Could not parse job ID from sbatch output: {stdout!r}")
             self.logger.info(f"Slurm job submitted with ID: {job_id}")
 
             # Monitor job completion
@@ -135,33 +141,61 @@ class SlurmExecutor(BaseExecutor):
     def monitor_job_completion(self, job_id):
         """Monitor the completion of a Slurm job.
 
+        Uses squeue to poll while the job is alive (pending/running), then
+        falls back to sacct to retrieve the final exit status.  This avoids
+        querying the accounting database before the job has been recorded.
+
         Args:
             job_id (str): The Slurm job ID to monitor.
 
         Raises:
             RuntimeError: If the job fails or times out.
         """
-        while True:
-            # Use sacct to get job status
-            cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
-            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            
-            if process.returncode != 0:
-                self.logger.error(f"Failed to get job status: {process.stderr}")
-                raise RuntimeError(f"Failed to get job status: {process.stderr}")
+        TERMINAL_STATES = {"FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL", "OUT_OF_MEMORY"}
 
-            status = process.stdout.strip()
-            
-            # Check job status
-            if status in ["COMPLETED", "COMPLETED+"]:
-                self.logger.info(f"Job {job_id} completed successfully")
+        # Poll with squeue while the job is still in the queue
+        while True:
+            cmd = f"squeue -j {job_id} -h -o %T"
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            state = process.stdout.strip()
+
+            if not state:
+                # Job has left the queue - check accounting for final status
                 break
-            elif status in ["FAILED", "TIMEOUT", "CANCELLED", "NODE_FAIL"]:
-                self.logger.error(f"Job {job_id} failed with status: {status}")
-                raise RuntimeError(f"Job {job_id} failed with status: {status}")
-            
-            # Wait before checking again
+
+            self.logger.info(f"Job {job_id} state: {state}")
+
+            if state in TERMINAL_STATES:
+                raise RuntimeError(f"Job {job_id} failed with status: {state}")
+
             time.sleep(10)
+
+        # Job is no longer in squeue; query sacct for final status.
+        # Retry a few times because sacct may lag slightly behind job completion.
+        for attempt in range(10):
+            cmd = f"sacct -j {job_id} --format=State,ExitCode --noheader --parsable2"
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+            if process.returncode != 0:
+                raise RuntimeError(f"sacct query failed for job {job_id}: {process.stderr}")
+
+            # sacct returns one line per job step; examine the batch step (first line)
+            lines = [l.strip() for l in process.stdout.splitlines() if l.strip()]
+            if lines:
+                # format is "STATE|EXITCODE"
+                state = lines[0].split("|")[0].split()[0]  # handle "CANCELLED by X"
+                self.logger.info(f"Job {job_id} final state: {state}")
+
+                if state == "COMPLETED":
+                    self.logger.info(f"Job {job_id} completed successfully")
+                    return
+                elif any(state.startswith(s) for s in TERMINAL_STATES):
+                    raise RuntimeError(f"Job {job_id} failed with status: {state}")
+                # Any other state (e.g. COMPLETING) - wait and retry
+
+            time.sleep(5)
+
+        raise RuntimeError(f"Job {job_id} did not reach a terminal state after sacct retries")
 
     def collect_benchmark_data(self, statements, resource_usage=None):
         """Collect benchmark data for Slurm jobs.
