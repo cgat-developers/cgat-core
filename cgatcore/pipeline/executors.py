@@ -180,7 +180,7 @@ class SlurmExecutor(BaseExecutor):
                 raise RuntimeError(f"sacct query failed for job {job_id}: {process.stderr}")
 
             # sacct returns one line per job step; examine the batch step (first line)
-            lines = [l.strip() for l in process.stdout.splitlines() if l.strip()]
+            lines = [line.strip() for line in process.stdout.splitlines() if line.strip()]
             if lines:
                 # format is "STATE|EXITCODE"
                 state = lines[0].split("|")[0].split()[0]  # handle "CANCELLED by X"
