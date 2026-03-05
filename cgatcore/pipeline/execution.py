@@ -619,6 +619,7 @@ class Executor(object):
         if self.monitor_interval_running is None:
             self.monitor_interval_running = get_params()["cluster"].get(
                 'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
+
     def __enter__(self):
         return self
 
