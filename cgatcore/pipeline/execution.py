@@ -619,9 +619,6 @@ class Executor(object):
         if self.monitor_interval_running is None:
             self.monitor_interval_running = get_params()["cluster"].get(
                 'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
-        # Set up signal handlers for clean-up on interruption
-        self.setup_signal_handlers()
-
     def __enter__(self):
         return self
 
@@ -925,14 +922,11 @@ class Executor(object):
     def setup_signal_handlers(self):
         """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
 
-        Only installed in the main process; ruffus worker subprocesses inherit
-        signal dispositions from the parent but should not run cleanup themselves,
-        otherwise every worker logs the signal and tries to clean up in parallel.
+        Call this once from the main control loop only.  Do not call from
+        Executor.__init__ because gevent monkey-patches signal.signal() and
+        accumulates watchers rather than replacing them, causing every
+        Executor instance to register its own handler.
         """
-        import multiprocessing
-        if multiprocessing.current_process().name != 'MainProcess':
-            return
-
         def signal_handler(signum, frame):
             self.logger.info(f"Received signal {signum}. Starting clean-up.")
             self.cleanup_all_jobs()
