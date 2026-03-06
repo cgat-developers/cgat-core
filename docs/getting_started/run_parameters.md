@@ -1,82 +1,85 @@
-# Cluster configuration
+# Run parameters
 
-Currently, cgatcore supports the following workload managers: SGE, SLURM and Torque. The default cluster options are set for SunGrid Engine (SGE). If you are using a different workload manager, you need to configure your cluster settings accordingly by creating a `.cgat.yml` file in your home directory.
+## Command-line options
 
-This configuration file allows you to override the default settings. To view the hardcoded parameters for cgatcore, refer to the [parameters.py file](https://github.com/cgat-developers/cgat-core/blob/eb6d29e5fe1439de2318aeb5cdfa730f36ec3af4/cgatcore/pipeline/parameters.py#L67).
+All cgatcore pipelines accept the following options:
 
-For an example of configuring a PBSPro workload manager, see the provided [config example](https://github.com/AntonioJBT/pipeline_example/blob/master/Docker_and_config_file_examples/cgat.yml).
-
-The `.cgat.yml` file in your home directory will take precedence over the default cgatcore settings. For instance, adding the following configuration to `.cgat.yml` will implement cluster settings for SLURM:
-
-```yaml
-memory_resource: mem
-
-options: --time=00:10:00 --cpus-per-task=8 --mem=1G
-
-queue_manager: slurm
-
-queue: NONE
-
-parallel_environment: "dedicated"
+```
+python my_pipeline.py <action> [options]
 ```
 
-This setup specifies memory resource allocation (`mem`), runtime limits (`walltime`), selection of CPU and memory resources, and the use of the PBSPro queue manager, among other settings. Make sure to adjust the parameters according to your cluster environment to optimise the workload manager for your pipeline runs.
+### Actions
 
-## Default Parameters
+| Action | Description |
+|--------|-------------|
+| `make <task>` | Run `<task>` and all prerequisites |
+| `show <task>` | Print tasks that would run (dry-run) |
+| `touch <task>` | Mark outputs as up-to-date without running |
+| `config` | Write a default `pipeline.yml` to the working directory |
+| `svg` | Write a dependency graph SVG |
+| `state` | Print up-to-date / out-of-date status of all tasks |
+| `printconfig` | Print all active parameter values |
 
-The following are some of the default parameters in `cgatcore` that can be overridden in your `.cgat.yml` file:
+### General options
 
-- **memory_resource**: Defines the memory resource name (e.g., `mem` for PBSPro).
-- **options**: Specifies additional options for job submission (e.g., `-l walltime=00:10:00`).
-- **queue_manager**: The queue manager to be used (e.g., `pbspro`, `slurm`).
-- **queue**: The default queue for job submission.
-- **parallel_environment**: Specifies the parallel environment settings.
+| Option | Description |
+|--------|-------------|
+| `-v N, --loglevel N` | Verbosity: 0=errors, 1=info, 2+=debug (default: 1) |
+| `-p N, --multiprocess N` | Parallel ruffus workers (default: half CPU count, or 40 on cluster) |
+| `--local` | Run all jobs locally (no cluster submission) |
+| `--without-cluster` | Alias for `--local` |
+| `--log FILE` | Write log to FILE (default: `pipeline.log`) |
+| `--checksums N` | Ruffus checksum level (0=timestamp, 1=file-content, etc.) |
+| `--exceptions-terminate-immediately` | Stop on first failure rather than waiting for parallel tasks |
+| `--force-run TASK` | Force re-run of TASK even if outputs are up-to-date |
+| `--dry-run` | Print statements without executing them |
 
-## Additional Parameters
+## Per-task options
 
-The following additional parameters can also be configured in your `.cgat.yml` file:
+Options can be passed per `P.run()` call:
 
-- **cluster_queue**: Specifies the cluster queue to use (default: `all.q`).
-- **cluster_priority**: Sets the priority of jobs in the cluster queue (default: `-10`).
-- **cluster_num_jobs**: Limits the number of jobs to submit to the cluster queue (default: `100`).
-- **cluster_memory_resource**: Name of the consumable resource to request memory (default: `mem_free`).
-- **cluster_memory_default**: Default amount of memory allocated for each job (default: `4G`).
-- **cluster_memory_ulimit**: Ensures requested memory is not exceeded via ulimit (default: `False`).
-- **cluster_options**: General cluster options for job submission.
-- **cluster_parallel_environment**: Parallel environment for multi-threaded jobs (default: `dedicated`).
-- **cluster_queue_manager**: Specifies the cluster queue manager (default: `sge`).
-- **cluster_tmpdir**: Directory specification for temporary files on cluster nodes. If set to `False`, the general `tmpdir` parameter is used.
-
-These parameters allow you to customize the cluster environment to better suit your pipeline's needs.
-
-## Example Configurations
-
-### SLURM Configuration
-
-```yaml
-memory_resource: mem
-
-options: --time=00:10:00 --cpus-per-task=8 --mem=1G
-
-queue_manager: slurm
-
-queue: NONE
-
-parallel_environment: "dedicated"
+```python
+P.run(statement, job_memory="8G", job_threads=4, job_queue="highmem")
 ```
 
-### Torque Configuration
+Or set as local variables in the task function (they are picked up automatically):
 
-```yaml
-memory_resource: mem
-
-options: -l walltime=00:10:00 -l nodes=1:ppn=8
-
-queue_manager: torque
-
-queue: NONE
-
-parallel_environment: "dedicated"
+```python
+@transform(...)
+def my_task(infile, outfile):
+    job_memory = "16G"
+    job_threads = 8
+    statement = "..."
+    P.run(statement)
 ```
 
-These configurations specify memory allocation, runtime limits, and other settings specific to each workload manager. Adjust these parameters to suit your cluster environment.
+### Per-task options reference
+
+| Option | Description |
+|--------|-------------|
+| `job_memory` | Memory per thread, e.g. `"4G"` |
+| `job_total_memory` | Total memory for the job (divided by `job_threads`) |
+| `job_threads` | Number of threads/CPUs |
+| `job_options` | Extra scheduler options, e.g. `"--time=12:00:00"` |
+| `job_queue` | Queue/partition override |
+| `job_condaenv` | Conda environment to activate inside the job |
+| `to_cluster` | `False` to force local execution for this task |
+
+## Configuration files
+
+Pipeline parameters are read from YAML files in this order (later entries override earlier):
+
+1. cgatcore built-in defaults
+2. `/etc/cgat/pipeline.yml`
+3. `~/.cgat.yml`
+4. `pipeline.yml` in the working directory
+5. Command-line arguments
+
+Generate a template `pipeline.yml` for the current pipeline:
+
+```bash
+python my_pipeline.py config
+```
+
+See [Cluster configuration](../pipeline_modules/cluster.md) for cluster-specific
+YAML settings.

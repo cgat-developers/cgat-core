@@ -1,60 +1,80 @@
 # Pipeline Control Module
 
-The Control module in CGAT-core is responsible for managing the overall execution flow of the pipeline. It provides functions and classes for running the pipeline, handling command-line arguments, and controlling the pipeline's behaviour.
+The control module (`cgatcore/pipeline/control.py`) manages the overall execution
+flow of a cgatcore pipeline.  It parses command-line arguments, initialises logging
+and the DRMAA session, and drives ruffus to execute pipeline tasks.
 
-## Key Functions
+## Entry point: `P.main()`
 
-### `run_pipeline()`
-
-This function is the main entry point for executing a pipeline. It sets up the pipeline, processes command-line arguments, and runs the specified tasks.
+Every cgatcore pipeline script should call `P.main()` at the bottom:
 
 ```python
-from cgatcore import pipeline as P
+import cgatcore.pipeline as P
 
-def my_pipeline():
-    # Define your pipeline tasks here
-    pass
+# ... pipeline task definitions ...
 
 if __name__ == "__main__":
-    P.run_pipeline(pipeline_func=my_pipeline)
+    sys.exit(P.main(sys.argv))
 ```
 
-### `get_parameters()`
+`P.main()` calls `run_workflow()` internally, which handles all supported pipeline
+actions (see below).
 
-Retrieves pipeline parameters from configuration files and command-line arguments.
+## Pipeline actions
 
-```python
-PARAMS = P.get_parameters("pipeline.yml")
+Run a pipeline script with one of the following actions:
+
+| Action | Description |
+|--------|-------------|
+| `make <task>` | Execute `<task>` and all its dependencies |
+| `show <task>` | Print which tasks would run without executing them |
+| `touch <task>` | Mark output files as up-to-date without running tasks |
+| `config` | Write a default `pipeline.yml` configuration file to the current directory |
+| `svg` | Render the pipeline dependency graph as an SVG |
+| `state` | Print the state (up-to-date / out-of-date) of all tasks |
+| `printconfig` | Print all active parameter values |
+
+Example:
+
+```bash
+python my_pipeline.py make all -v 5
+python my_pipeline.py config
+python my_pipeline.py show all
 ```
 
-## `Pipeline` Class
+## Common command-line options
 
-The `Pipeline` class is the core class for managing pipeline execution. It provides methods for adding tasks, running the pipeline, and handling dependencies.
+| Option | Description |
+|--------|-------------|
+| `-v / --loglevel` | Verbosity level (0 = errors only, 1 = info, 2+ = debug) |
+| `-p / --multiprocess` | Number of parallel ruffus workers (default: half CPU count locally, 40 on cluster) |
+| `--local` | Run all jobs locally, ignoring cluster settings |
+| `--without-cluster` | Alias for `--local` |
+| `--log / --pipeline-logfile` | Path to the pipeline log file |
+| `--checksums` | Ruffus checksum level for determining out-of-date tasks |
 
-```python
-pipeline = P.Pipeline()
-pipeline.add_task(my_task)
-pipeline.run()
-```
+## `run_workflow()`
 
-## Command-line Interface
+`run_workflow()` is the internal function that:
 
-The Control module provides a command-line interface for running pipelines. Common options include:
+1. Creates an `Executor` instance (for signal handling and job tracking)
+2. Starts the DRMAA session if available (`start_session()`)
+3. Calls `ruffus.pipeline_run()` with the appropriate options
+4. Handles errors by summarising ruffus exceptions and optionally cleaning up jobs
 
-- `--pipeline-action`: Specify the action to perform (e.g., `show`, `plot`, `run`)
-- `--local`: Run the pipeline locally instead of on a cluster
-- `--multiprocess`: Specify the number of processes to use for local execution
+## `initialize()`
 
-### Example usage:
+Called automatically by `P.main()` on first invocation.  Reads configuration files
+and sets up logging.  Configuration is loaded from (in priority order):
 
-```sh
-python my_pipeline.py --pipeline-action run --local
-```
+1. `/etc/cgat/pipeline.yml` (site-wide defaults)
+2. `~/.cgat.yml` (user defaults)
+3. `pipeline.yml` in the current working directory
+4. Command-line arguments
 
-For more detailed information on pipeline control and execution, refer to the Pipeline Execution documentation.
+## Signal handling
 
-## Next Steps
-
-These new pages provide more comprehensive documentation for the CGAT-core pipeline modules and S3 integration. You should create similar pages for the other modules (Database, Files, Cluster, Execution, Utils, Parameters) and S3-related topics (S3 Decorators, Configuring S3).
-
-Remember to include code examples, explanations of key concepts, and links to other relevant parts of the documentation. As you continue to develop and expand the CGAT-core functionality, make sure to update the documentation accordingly.
+The pipeline installs a SIGTERM/SIGINT handler in the main process only.  When the
+signal is received, any tracked active jobs are cleaned up before exit.  Ruffus
+worker subprocesses (forked from the main process) ignore these signals so that
+cleanup runs exactly once.
