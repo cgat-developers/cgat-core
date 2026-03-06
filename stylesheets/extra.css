@@ -1,0 +1,226 @@
+/* CGAT-Core Custom Theme Colors */
+:root {
+    --md-primary-fg-color: #A4216A;
+    --md-primary-fg-color--light: #D1E751;
+    --md-primary-fg-color--dark: #6DCFF6;
+    --md-accent-fg-color: #F7941E;
+    --md-accent-fg-color--transparent: #F7941E1A;
+}
+
+/* Header customization */
+.md-header {
+    background-color: white;
+    color: #2C2C2C;
+    box-shadow: 0 0 0.2rem rgba(0,0,0,.1), 0 0.2rem 0.4rem rgba(0,0,0,.2);
+}
+
+.md-header__title {
+    color: #2C2C2C;
+}
+
+.md-header__button {
+    color: #2C2C2C;
+}
+
+.md-search__input {
+    background-color: rgba(0,0,0,.05);
+    color: #2C2C2C;
+}
+
+.md-search__input::placeholder {
+    color: #2C2C2C;
+    opacity: 0.7;
+}
+
+/* Navigation tabs customization */
+.md-tabs {
+    background-color: var(--md-primary-fg-color);
+    color: white;
+}
+
+.md-tabs__link {
+    color: white;
+    opacity: 0.7;
+}
+
+.md-tabs__link--active,
+.md-tabs__link:hover {
+    color: white;
+    opacity: 1;
+}
+
+/* Light mode customizations */
+[data-md-color-scheme="default"] {
+    --md-default-fg-color: #1A1A1A;
+    --md-default-fg-color--light: #2C2C2C;
+    --md-default-fg-color--lighter: #404040;
+    --md-default-fg-color--lightest: #686868;
+    --md-default-bg-color: #FFFFFF;
+    --md-code-bg-color: #F5F5F5;
+    --md-code-fg-color: #24292E;
+    --md-typeset-a-color: #A4216A;
+    --md-typeset-mark-color: #D1E75133;
+}
+
+/* Dark mode customizations */
+[data-md-color-scheme="slate"] {
+    --md-default-fg-color: #FFFFFF;
+    --md-default-fg-color--light: #E5E5E5;
+    --md-default-bg-color: #1A1A1A;
+    --md-code-bg-color: #2D2D2D;
+    --md-code-fg-color: #E5E5E5;
+    --md-typeset-a-color: #6DCFF6;
+    --md-typeset-mark-color: #D1E75133;
+}
+
+/* Main content text customization */
+.md-typeset {
+    color: var(--md-default-fg-color);
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+    color: var(--md-default-fg-color);
+    font-weight: 600;
+}
+
+/* Navigation customization */
+.md-nav__item {
+    color: var(--md-default-fg-color);
+}
+
+.md-nav__link {
+    color: var(--md-default-fg-color) !important;
+}
+
+.md-nav__link:hover {
+    color: var(--md-accent-fg-color) !important;
+}
+
+.md-nav__link--active {
+    color: var(--md-primary-fg-color) !important;
+}
+
+/* Button customization */
+.md-button {
+    background-color: var(--md-primary-fg-color);
+    border-color: var(--md-primary-fg-color);
+    color: white !important;
+}
+
+.md-button:hover {
+    background-color: var(--md-accent-fg-color);
+    border-color: var(--md-accent-fg-color);
+}
+
+/* Code block customization */
+.highlight .nx {
+    color: var(--md-code-fg-color);
+}
+
+/* Admonition customization */
+.md-typeset .admonition,
+.md-typeset details {
+    border-left: 0.2rem solid var(--md-primary-fg-color);
+}
+
+.md-typeset .admonition.note,
+.md-typeset details.note {
+    border-left-color: var(--md-accent-fg-color);
+}
+
+/* Search highlighting */
+.md-search-result__link:hover {
+    background-color: var(--md-accent-fg-color--transparent);
+}
+
+/* Table customization */
+.md-typeset table:not([class]) th {
+    background-color: var(--md-primary-fg-color);
+    color: var(--md-default-bg-color);
+}
+
+/* Progress bars */
+.md-progress__bar {
+    background-color: var(--md-primary-fg-color);
+}
+
+/* Footer customization */
+.md-footer {
+    background-color: var(--md-primary-fg-color);
+}
+
+.md-footer-meta {
+    background-color: var(--md-primary-fg-color--dark);
+}
+
+/* Logo customization */
+.md-header__button.md-logo {
+    padding: 0.2rem;
+    margin: 0.2rem;
+}
+
+.md-header__button.md-logo img {
+    height: 2.2rem;
+    width: auto;
+}
+
+/* Reduce logo size on mobile */
+@media screen and (max-width: 76.1875em) {
+    .md-header__button.md-logo img {
+        height: 1.8rem;
+    }
+}
+
+/* Center logo vertically */
+.md-header__button.md-logo {
+    display: flex;
+    align-items: center;
+}
+
+/* Custom logo size */
+.md-header__button.md-logo img, 
+.md-header__button.md-logo svg {
+    height: 2rem;
+    width: auto;
+}
+
+/* Repository link customization */
+.md-header__source {
+    background-color: rgba(0,0,0,.05);
+    color: #2C2C2C;
+}
+
+/* Search overlay customization */
+.md-search__overlay {
+    background-color: white;
+}
+
+/* Announcement bar customization */
+.md-announce {
+    background-color: var(--md-primary-fg-color);
+    color: white;
+}
+
+.md-announce__inner {
+    color: white;
+}
+
+.md-announce a {
+    color: white;
+    text-decoration: underline;
+}
+
+.md-announce a:hover {
+    color: var(--md-primary-fg-color--light);
+}
+
+.md-announce .twemoji {
+    color: white;
+}
