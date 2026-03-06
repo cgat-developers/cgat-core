@@ -66,38 +66,32 @@ def test_kubernetes_executor_runs_correctly(kubernetes_run_patch):
 
 @patch('subprocess.run')
 def test_slurm_job_monitoring(mock_subprocess_run):
-    # Setup mock responses for job submission and status checks
+    # New flow: sbatch -> squeue (running) -> squeue (empty, left queue) -> sacct (completed)
     mock_subprocess_run.side_effect = [
-        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
-        Mock(returncode=0, stdout="RUNNING\n", stderr=""),  # First status check
-        Mock(returncode=0, stdout="COMPLETED\n", stderr="")  # Second status check
+        Mock(returncode=0, stdout="Submitted batch job 12345\n", stderr=""),  # sbatch
+        Mock(returncode=0, stdout="RUNNING\n", stderr=""),   # squeue: job running
+        Mock(returncode=0, stdout="\n", stderr=""),           # squeue: job left queue
+        Mock(returncode=0, stdout="COMPLETED|0:0\n", stderr=""),  # sacct: completed
     ]
-    
+
     executor = SlurmExecutor()
     benchmark_data = executor.run(["echo 'test'"])
-    
-    # Verify job submission and monitoring calls
+
     calls = mock_subprocess_run.call_args_list
-    assert len(calls) == 3
-    
-    # Check job submission
-    submit_call = calls[0]
-    assert "sbatch" in submit_call.args[0]
-    
-    # Check monitoring calls
-    monitor_calls = calls[1:]
-    for call in monitor_calls:
-        assert "sacct -j 12345" in call.args[0]
+    assert "sbatch" in calls[0].args[0]
+    assert "squeue -j 12345" in calls[1].args[0]
+    assert "squeue -j 12345" in calls[2].args[0]
+    assert "sacct -j 12345" in calls[3].args[0]
 
 
 @patch('subprocess.run')
 def test_slurm_job_monitoring_failure(mock_subprocess_run):
-    # Setup mock responses for job submission and failed status
+    # Job appears in squeue as FAILED
     mock_subprocess_run.side_effect = [
-        Mock(returncode=0, stdout="12345\n", stderr=""),  # Job submission
-        Mock(returncode=0, stdout="FAILED\n", stderr="")  # Status shows failure
+        Mock(returncode=0, stdout="Submitted batch job 12345\n", stderr=""),  # sbatch
+        Mock(returncode=0, stdout="FAILED\n", stderr=""),   # squeue: job failed
     ]
-    
+
     executor = SlurmExecutor()
     with pytest.raises(RuntimeError, match="Job 12345 failed with status: FAILED"):
         executor.run(["echo 'test'"])

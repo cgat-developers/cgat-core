@@ -540,17 +540,14 @@ def will_run_on_cluster(options):
     # First check if we're explicitly running without cluster
     if options.get("without_cluster", False):
         return False
-        
+
     wants_cluster = options.get("to_cluster", True)
-    
-    # Only raise error if DRMAA is required but not available
-    if wants_cluster and not HAS_DRMAA:
-        raise ValueError(
-            "Cluster execution requested (to_cluster=True) but DRMAA library is not available. "
-            "Please install drmaa package in your environment to enable cluster execution.")
-    
-    return (wants_cluster 
-            and HAS_DRMAA 
+
+    # Return True only when DRMAA is present and a session is active.
+    # When DRMAA is absent the CLI-based executors in get_executor() are used
+    # as a fallback, so we do not raise here.
+    return (wants_cluster
+            and HAS_DRMAA
             and GLOBAL_SESSION is not None)
 
 
@@ -622,8 +619,6 @@ class Executor(object):
         if self.monitor_interval_running is None:
             self.monitor_interval_running = get_params()["cluster"].get(
                 'monitor_interval_running_default', GEVENT_TIMEOUT_WAIT)
-        # Set up signal handlers for clean-up on interruption
-        self.setup_signal_handlers()
 
     def __enter__(self):
         return self
@@ -926,9 +921,21 @@ class Executor(object):
         self.active_jobs.clear()  # Clear the list after cleanup
 
     def setup_signal_handlers(self):
-        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM."""
+        """Set up signal handlers to clean up jobs on SIGINT and SIGTERM.
+
+        Call this once from the main control loop only.  The handler guards
+        against firing in ruffus worker subprocesses: ruffus forks N workers
+        (multiprocess=N) after the handler is installed, so each worker
+        inherits it and would otherwise run cleanup when the process group
+        receives SIGTERM on normal exit.
+        """
+        import multiprocessing
 
         def signal_handler(signum, frame):
+            # Workers inherit this handler via fork.  Only the main process
+            # should perform clean-up.
+            if multiprocessing.current_process().name != "MainProcess":
+                return
             self.logger.info(f"Received signal {signum}. Starting clean-up.")
             self.cleanup_all_jobs()
             exit(1)
@@ -1522,8 +1529,16 @@ def run(statement, **kwargs):
             logger.info("Dry-run: {}".format(statement))
         return []
 
-    # Use get_executor to get the appropriate executor
-    executor = get_executor(options)  # Updated to use get_executor
+    # Prefer DRMAA (GridExecutor) when available - it is the stable, battle-tested
+    # path.  Fall back to the CLI-based executors only when DRMAA is absent.
+    wants_cluster = (
+        options.get("to_cluster", True)
+        and not options.get("without_cluster", False)
+    )
+    if wants_cluster and HAS_DRMAA and GLOBAL_SESSION is not None:
+        executor = GridExecutor(**options)
+    else:
+        executor = get_executor(options)
 
     # Execute statement list within the context of the executor
     with executor as e:

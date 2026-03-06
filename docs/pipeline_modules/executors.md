@@ -2,189 +2,201 @@
 
 ## Overview
 
-This documentation describes several executor classes for job scheduling in computational pipelines. Each of these classes inherits from the `BaseExecutor` and is responsible for submitting jobs to a different type of cluster system or local machine. The following executors are available:
+Executors are responsible for submitting pipeline statements to a compute
+backend and waiting for them to finish.  cgatcore selects the executor
+automatically based on availability:
 
-- `SGEExecutor`: Submits jobs to an SGE (Sun Grid Engine) cluster.
-- `SlurmExecutor`: Submits jobs to a Slurm cluster.
-- `TorqueExecutor`: Submits jobs to a Torque cluster.
-- `LocalExecutor`: Executes jobs locally.
-- `KubernetesExecutor`: Submits jobs to a Kubernetes cluster.
+1. **DRMAA / `GridExecutor`** — preferred when `slurm-drmaa`, `drmaa-python`,
+   or any compatible DRMAA library is installed and a DRMAA session is active.
+   This is the stable, battle-tested path used by most HPC clusters.
+2. **CLI-based executors** (`SlurmExecutor`, `SGEExecutor`, `TorqueExecutor`)
+   — fallback when DRMAA is unavailable.  They use standard command-line tools
+   (`sbatch`, `qsub`, `squeue`, `sacct`, etc.) to submit and monitor jobs.
+3. **`LocalExecutor`** — used when `to_cluster=False` or `without_cluster=True`,
+   or when no cluster scheduler is detected.
 
-Each executor has specific methods and logging functionality that enable it to handle job submission, monitoring, and error management effectively.
+The CLI executors all inherit from `BaseExecutor` (in
+`cgatcore/pipeline/base_executor.py`) and are defined in
+`cgatcore/pipeline/executors.py`.  The DRMAA-based `GridExecutor` lives in
+`cgatcore/pipeline/execution.py`.
 
-## `SGEExecutor`
+---
 
-The `SGEExecutor` is responsible for running jobs on an SGE cluster. It extends the `BaseExecutor` class.
+## `BaseExecutor`
+
+`BaseExecutor` defines the interface that all CLI-based executors must
+implement.  It is not intended to be used directly.
+
+### Constructor
+
+```python
+BaseExecutor(**kwargs)
+```
+
+All keyword arguments are stored in `self.config` and are available to
+subclasses.  Key configuration keys:
+
+| Key | Description |
+|-----|-------------|
+| `job_script_dir` | Directory where temporary job scripts are written (defaults to the system temp dir) |
+| `job_name` | Name passed to the scheduler for the job |
 
 ### Methods
 
-#### `__init__(self, **kwargs)`
-Initialises the `SGEExecutor` and sets up a logger for the instance.
-
 #### `run(self, statement_list)`
-Runs the provided list of statements using SGE.
-
-- **Arguments**:
-  - `statement_list`: A list of shell command statements to be executed.
-
-- **Workflow**:
-  - Builds an SGE job submission command for each statement.
-  - Uses `subprocess.run()` to submit jobs using the `qsub` command.
-  - Handles job submission errors, logs relevant information, and monitors job completion.
+Abstract — must be implemented by subclasses.  Receives a list of shell
+statements, submits them to the backend, blocks until they complete, and
+returns benchmark data.
 
 #### `build_job_script(self, statement)`
-Builds a job script for SGE based on the provided statement.
+Writes `statement` to a temporary bash script under `job_script_dir` and
+returns `(statement, script_path)`.  Subclasses call this to obtain the
+script path for submission.
 
-- **Overrides**: This method is an override of the `BaseExecutor.build_job_script()`.
+#### `collect_benchmark_data(self, statements, resource_usage=None)`
+Returns a dict with basic timing and resource information.  Subclasses may
+override this to populate richer data.
+
+#### `collect_metric_data(self, *args, **kwargs)`
+Abstract hook for collecting scheduler-specific metrics.
+
+#### `__enter__` / `__exit__`
+Supports use as a context manager (`with executor as e: ...`).
+
+---
 
 ## `SlurmExecutor`
 
-The `SlurmExecutor` is responsible for running jobs on a Slurm cluster. It also extends the `BaseExecutor` class.
+CLI-based executor for Slurm clusters.  Used automatically when DRMAA is
+unavailable and `cluster_queue_manager = slurm` is configured.
 
-### Methods
+### Job submission
 
-#### `__init__(self, **kwargs)`
-Initialises the `SlurmExecutor` and sets up a logger for the instance.
+Jobs are submitted with `sbatch`:
 
-#### `run(self, statement_list)`
-Runs the provided list of statements using Slurm.
+```
+sbatch --job-name=<name> --output=<path>.o --error=<path>.e <script>
+```
 
-- **Arguments**:
-  - `statement_list`: A list of shell command statements to be executed.
+`sbatch` prints `Submitted batch job <id>` on success.  The executor
+extracts the numeric job ID from this output and validates it before
+proceeding.
 
-- **Workflow**:
-  - Builds a Slurm job submission command for each statement using `sbatch`.
-  - Uses `subprocess.run()` to submit jobs to the Slurm scheduler.
-  - Monitors the job submission status, logs relevant information, and handles any errors.
+### Job monitoring
 
-#### `build_job_script(self, statement)`
-Builds a job script for submission on Slurm.
+Monitoring uses a two-phase approach that avoids querying the accounting
+database before a job is recorded:
 
-- **Overrides**: This method is an override of the `BaseExecutor.build_job_script()`.
+1. **`squeue -j <id> -h -o %T`** — polled every 10 seconds while the job
+   is in the queue (PENDING, RUNNING, etc.).  Terminal states detected here
+   (`FAILED`, `TIMEOUT`, `CANCELLED`, `NODE_FAIL`, `OUT_OF_MEMORY`) cause an
+   immediate `RuntimeError`.
+2. **`sacct -j <id> --format=State,ExitCode --noheader --parsable2`** —
+   queried once the job leaves the queue, with up to 10 retries (5-second
+   intervals) to allow for accounting lag.  The state from the first output
+   line (the batch step) is used; `CANCELLED by ...` is handled correctly.
+
+### Error handling
+
+| Condition | Behaviour |
+|-----------|-----------|
+| `sbatch` non-zero exit | `RuntimeError: Slurm job submission failed` |
+| `sbatch` output not parseable as integer | `RuntimeError: Could not parse job ID` |
+| Job enters terminal failure state in `squeue` | `RuntimeError: Job <id> failed with status: <state>` |
+| `sacct` non-zero exit | `RuntimeError: sacct query failed` |
+| Job does not reach terminal state after retries | `RuntimeError: did not reach a terminal state after sacct retries` |
+
+---
+
+## `SGEExecutor`
+
+CLI-based executor for Sun Grid Engine (and compatible) clusters.
+
+Jobs are submitted with `qsub`.  Status is checked with `qstat -j <id>`;
+when that returns non-zero (job no longer queued), final status is obtained
+from `qacct -j <id>`.
+
+---
 
 ## `TorqueExecutor`
 
-The `TorqueExecutor` class runs jobs on a Torque cluster, using `qsub` for job submissions.
+CLI-based executor for Torque/PBS clusters.
 
-### Methods
+Jobs are submitted with `qsub`.  Status is checked with `qstat -f <id>`;
+when that returns non-zero, final status is obtained from `tracejob <id>`.
 
-#### `__init__(self, **kwargs)`
-Initialises the `TorqueExecutor` and sets up a logger for the instance.
-
-#### `run(self, statement_list)`
-Runs the provided list of statements using Torque.
-
-- **Arguments**:
-  - `statement_list`: A list of shell command statements to be executed.
-
-- **Workflow**:
-  - Builds a job script and submits it using the `qsub` command.
-  - Uses `subprocess.run()` to handle the submission and logs all related information.
-  - Handles job submission errors and monitors job completion.
-
-#### `build_job_script(self, statement)`
-Builds a job script for submission on a Torque cluster.
-
-- **Overrides**: This method is an override of the `BaseExecutor.build_job_script()`.
+---
 
 ## `LocalExecutor`
 
-The `LocalExecutor` runs jobs on the local machine without the need for cluster scheduling. This is useful for development, testing, or when the jobs are small enough to run locally.
+Runs statements directly on the local machine using `subprocess.Popen`.
+Useful for development, testing, or single-node workloads.
 
-### Methods
+No scheduler interaction takes place; stdout/stderr are captured and any
+non-zero return code raises a `RuntimeError`.
 
-#### `__init__(self, **kwargs)`
-Initialises the `LocalExecutor` and sets up a logger for the instance.
-
-#### `run(self, statement_list)`
-Runs the provided list of statements locally.
-
-- **Arguments**:
-  - `statement_list`: A list of shell command statements to be executed.
-
-- **Workflow**:
-  - Builds the job script and runs it locally using `subprocess.Popen()`.
-  - Monitors the output and logs the job status.
-  - Handles any runtime errors by logging them and raising exceptions as needed.
-
-#### `build_job_script(self, statement)`
-Builds a job script for local execution.
-
-- **Overrides**: This method is an override of the `BaseExecutor.build_job_script()`.
+---
 
 ## `KubernetesExecutor`
 
-The `KubernetesExecutor` is used for running jobs on a Kubernetes cluster.
+Submits jobs as Kubernetes `Job` objects via the Python Kubernetes client.
+
+### Constructor
+
+Loads the Kubernetes configuration (`~/.kube/config` or in-cluster config)
+and sets up Core and Batch API clients.
 
 ### Methods
 
-#### `__init__(self, **kwargs)`
-Initialises the `KubernetesExecutor`.
+| Method | Description |
+|--------|-------------|
+| `run(statement, job_path, job_condaenv)` | Submit a job, wait for completion, collect logs and benchmark data, then clean up |
+| `_wait_for_job_completion(job_name)` | Poll `read_namespaced_job_status()` until succeeded or failed |
+| `_get_pod_logs(job_name)` | Retrieve stdout/stderr from the job's pod |
+| `_cleanup_job(job_name)` | Delete the job and associated pods |
+| `collect_benchmark_data(job_name, resource_usage_file)` | Gather CPU/memory metrics from the pod |
+| `collect_metric_data(process, start_time, end_time, time_data_file)` | Save timing data |
 
-- **Workflow**:
-  - Loads the Kubernetes configuration and sets up both Core and Batch API clients for job management.
-  - Logs information about successful or failed configuration loads.
+---
 
-#### `run(self, statement, job_path, job_condaenv)`
-Runs a job using Kubernetes.
+## Logging
 
-- **Arguments**:
-  - `statement`: The shell command to be executed within a Kubernetes job.
-  - `job_path`: Path for the job files.
-  - `job_condaenv`: Conda environment to be used within the job container.
+All CLI executors use `logging.getLogger(__name__)` (i.e. the
+`cgatcore.pipeline.executors` logger).  Set verbosity >= 2 (`-v 2`) to see
+`INFO`-level messages including job IDs, state transitions, and final status.
 
-- **Workflow**:
-  - Defines the Kubernetes job specification, including container image, command, and job parameters.
-  - Submits the job using `create_namespaced_job()` and waits for its completion.
-  - Collects job logs and benchmark data for analysis.
-  - Cleans up the Kubernetes job once it is complete.
+The older `E.info()` / `E.warn()` helpers (from `cgatcore.experiment`) are
+used in the DRMAA-based `GridExecutor` and `Executor` classes.
 
-#### `_wait_for_job_completion(self, job_name)`
-Waits for the Kubernetes job to complete.
+---
 
-- **Arguments**:
-  - `job_name`: The name of the job.
+## Executor selection logic
 
-- **Workflow**:
-  - Repeatedly queries the job status using `read_namespaced_job_status()` until it succeeds or fails.
+```
+P.run(statement)
+    |
+    +- DRMAA available AND session active AND to_cluster=True?
+    |       +- YES -> GridExecutor  (DRMAA, stable path)
+    |
+    +- NO -> get_executor(options)
+                |
+                +- testing=True or to_cluster=False -> LocalExecutor
+                +- cluster_queue_manager=slurm + sbatch found -> SlurmExecutor
+                +- cluster_queue_manager=sge  + qsub found   -> SGEExecutor
+                +- cluster_queue_manager=torque + qsub found -> TorqueExecutor
+                +- cluster_queue_manager=kubernetes          -> KubernetesExecutor
+                +- fallback                                  -> LocalExecutor
+```
 
-#### `_get_pod_logs(self, job_name)`
-Retrieves the logs of the pod associated with the specified Kubernetes job.
-
-- **Arguments**:
-  - `job_name`: The name of the job.
-
-#### `_cleanup_job(self, job_name)`
-Deletes the Kubernetes job and its associated pods.
-
-- **Arguments**:
-  - `job_name`: The name of the job to be deleted.
-
-#### `collect_benchmark_data(self, job_name, resource_usage_file)`
-Collects benchmark data such as CPU and memory usage from the job's pod(s).
-
-- **Arguments**:
-  - `job_name`: Name of the job for which benchmark data is being collected.
-  - `resource_usage_file`: Path to a file where resource usage data will be saved.
-
-#### `collect_metric_data(self, process, start_time, end_time, time_data_file)`
-Collects and saves metric data related to job duration.
-
-- **Arguments**:
-  - `process`: The name of the process.
-  - `start_time`: Timestamp when the job started.
-  - `end_time`: Timestamp when the job ended.
-  - `time_data_file`: Path to a file where timing data will be saved.
-
-## Logging and Error Handling
-
-All executor classes use the Python `logging` module to log different stages of job submission, execution, and monitoring. Logging levels like `INFO`, `ERROR`, and `WARNING` are used to provide information on job progress and errors. Executors also make use of exception handling to raise `RuntimeError` when job submission or execution fails.
-
-## Notes
-- The job script generation is handled by the `build_job_script()` function, which is customised per executor but is based on the implementation from `BaseExecutor`.
-- Job monitoring and benchmark data collection are placeholder implementations in some of the executors. Users should consider implementing job-specific monitoring and resource management tailored to their requirements.
+---
 
 ## Summary
 
-The executor classes provide a modular way to submit jobs to different cluster systems or run them locally. Each executor manages the nuances of the corresponding cluster scheduler, allowing seamless integration with cgatcore pipelines. They provide functionalities such as job submission, logging, monitoring, and benchmarking, ensuring a streamlined and customisable workflow for distributed computing environments.
-
+| Executor | Backend | Submission | Monitoring |
+|----------|---------|------------|------------|
+| `GridExecutor` | DRMAA | DRMAA session | DRMAA session |
+| `SlurmExecutor` | Slurm CLI | `sbatch` | `squeue` then `sacct` |
+| `SGEExecutor` | SGE CLI | `qsub` | `qstat` then `qacct` |
+| `TorqueExecutor` | Torque CLI | `qsub` | `qstat` then `tracejob` |
+| `KubernetesExecutor` | Kubernetes API | `create_namespaced_job` | `read_namespaced_job_status` |
+| `LocalExecutor` | Local | `subprocess.Popen` | return code |
