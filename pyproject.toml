@@ -24,6 +24,14 @@ classifiers = [
     "Operating System :: MacOS"
 ]
 readme = "README.md"
+dependencies = [
+    "apsw",
+    "gevent",
+    "pandas",
+    "PyYAML",
+    "ruffus",
+    "SQLAlchemy",
+]
 
 [project.urls]
 Documentation = "https://github.com/cgat-developers/cgat-core"

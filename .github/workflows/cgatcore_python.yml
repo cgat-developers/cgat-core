@@ -3,6 +3,23 @@ name: cgatcore
 on: [push, pull_request]
 
 jobs:
+  clean-wheel-import:
+    name: Clean wheel import
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install from project metadata only
+        run: python -m pip install .
+
+      - name: Import the public pipeline interface
+        run: python -c "from cgatcore import pipeline as P; assert callable(P.initialize)"
+
   build:
     name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
